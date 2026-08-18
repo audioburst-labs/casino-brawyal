@@ -31,9 +31,9 @@ func test_reel_sticker_replaces_symbol() -> void:
 	assert_eq(reel.symbols, [S, C, S, D] as Array[StringName])
 
 
-func test_machine_starts_with_three_default_reels() -> void:
+func test_machine_starts_with_default_reel_count() -> void:
 	var machine := SlotMachine.new()
-	assert_eq(machine.reels.size(), 3)
+	assert_eq(machine.reels.size(), SlotMachine.START_REELS)
 	for reel in machine.reels:
 		assert_eq(reel.symbols, [S, C, H, D] as Array[StringName])
 
@@ -43,13 +43,13 @@ func test_machine_spin_returns_symbol_per_reel_with_matching_payout() -> void:
 	var rng := _rng()
 	for i in 20:
 		var result := machine.spin(rng)
-		assert_eq(result.symbols.size(), 3)
+		assert_eq(result.symbols.size(), SlotMachine.START_REELS)
 		assert_eq(result.payout, Payout.compute(result.symbols))
 
 
 func test_add_reel_appends_default_reel_up_to_eight() -> void:
 	var machine := SlotMachine.new()
-	for i in 5:
+	for i in SlotMachine.MAX_REELS - SlotMachine.START_REELS:
 		assert_true(machine.add_reel())
 	assert_eq(machine.reels.size(), 8)
 	assert_false(machine.add_reel())

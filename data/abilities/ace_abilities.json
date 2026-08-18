@@ -2,142 +2,173 @@
   "type": "abilities",
   "items": [
     {
-      "id": "card_flick",
-      "name": "Card Flick",
+      "id": "card_sling",
+      "name": "Card Sling",
       "pool": "starter",
       "rarity": "starter",
       "cost": [{"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 4, "times": 1}],
+      "effects": [{"op": "damage", "amount": 10, "times": 1}],
       "bonus_suit": "spade",
       "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "damage", "amount": 2, "times": 1}],
-      "description": "Flick a razor card for 4 damage. Spade: +2 damage."
+      "bonus_effects": [{"op": "apply_status", "status": "mark", "stacks": 1, "target": "enemy"}],
+      "keywords": ["mark"],
+      "description": "Deal 10 damage. If Spade - Mark."
     },
     {
-      "id": "dagger_throw",
-      "name": "Dagger Throw",
+      "id": "quick_maneuvers",
+      "name": "Quick Maneuvers",
       "pool": "starter",
       "rarity": "starter",
-      "cost": [{"suit": "spade"}, {"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 9, "times": 1}],
-      "bonus_suit": "spade",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "apply_status", "status": "weak", "stacks": 1, "target": "enemy"}],
-      "description": "Hurl a dagger for 9 damage. All Spades: inflict 1 Weak."
-    },
-    {
-      "id": "card_guard",
-      "name": "Card Guard",
-      "pool": "starter",
-      "rarity": "starter",
-      "cost": [{"suit": "club"}],
-      "effects": [{"op": "gain_block", "amount": 7}],
-      "bonus_suit": "club",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "gain_block", "amount": 3}],
-      "description": "Fan cards into a guard for 7 Block. Club: +3 Block."
-    },
-    {
-      "id": "fan_of_blades",
-      "name": "Fan of Blades",
-      "rarity": "uncommon",
-      "cost": [{"suit": "spade"}, {"suit": "spade"}, {"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 3, "times": 3}],
-      "bonus_suit": "spade",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "damage", "amount": 3, "times": 1}],
-      "description": "Deal 3 damage 3 times. All Spades: one extra hit."
-    },
-    {
-      "id": "shuffle",
-      "name": "Shuffle",
-      "rarity": "common",
       "cost": [{"suit": "any"}],
-      "effects": [{"op": "convert_chips", "to_suit": "spade", "count": 2}],
-      "description": "Convert 2 chips in the tray into Spades."
-    },
-    {
-      "id": "mark_the_sucker",
-      "name": "Mark the Sucker",
-      "rarity": "common",
-      "cost": [{"suit": "heart"}, {"suit": "any"}],
-      "effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 2, "target": "enemy"}],
-      "bonus_suit": "heart",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 1, "target": "enemy"}],
-      "description": "Inflict 2 Vulnerable. All Hearts: +1 Vulnerable."
-    },
-    {
-      "id": "low_blow",
-      "name": "Low Blow",
-      "rarity": "common",
-      "cost": [{"suit": "club"}, {"suit": "spade"}],
-      "effects": [
-        {"op": "damage", "amount": 5, "times": 1},
-        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "enemy"}
-      ],
-      "description": "Deal 5 damage and inflict 1 Weak."
-    },
-    {
-      "id": "ace_up_the_sleeve",
-      "name": "Ace Up the Sleeve",
-      "rarity": "rare",
-      "cost": [{"suit": "diamond"}, {"suit": "diamond"}],
-      "effects": [{"op": "respin_reel"}],
+      "effects": [{"op": "gain_block", "amount": 5}],
       "bonus_suit": "diamond",
       "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
-      "description": "Spin the machine again this round. All Diamonds: +1 Diamond chip."
+      "bonus_mode": "replace",
+      "bonus_effects": [{"op": "gain_block", "amount": 8}],
+      "keywords": ["block"],
+      "description": "Gain 5 Block. If Diamond - Gain 8 instead."
     },
     {
-      "id": "loaded_dice",
-      "name": "Loaded Dice",
+      "id": "color_up",
+      "name": "Color Up",
+      "pool": "starter",
+      "rarity": "starter",
+      "cost": [{"suit": "any"}],
+      "per_turn": 1,
+      "effects": [{"op": "add_chips", "suit": "spade", "count": 1}],
+      "keywords": [],
+      "description": "Gain a Spade. (Once per turn.)"
+    },
+    {
+      "id": "double_down",
+      "name": "Double Down",
+      "rarity": "common",
+      "cost": [{"suit": "any"}, {"suit": "spade"}],
+      "effects": [
+        {"op": "damage", "amount": 20, "times": 1},
+        {"op": "cash_in"}
+      ],
+      "keywords": ["cash_in", "mark"],
+      "description": "Deal 20 damage. Cash In."
+    },
+    {
+      "id": "heartsteal",
+      "name": "HeartSteal",
+      "rarity": "common",
+      "cost": [{"suit": "any"}, {"suit": "heart"}],
+      "effects": [
+        {"op": "gain_block", "amount": 10},
+        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "all_enemies"}
+      ],
+      "keywords": ["weak", "block"],
+      "description": "Gain 10 Block. Apply Weak 1 to all enemies."
+    },
+    {
+      "id": "pocket_rockets",
+      "name": "Pocket Rockets",
+      "rarity": "common",
+      "cost": [{"suit": "any"}, {"suit": "any"}],
+      "effects": [{"op": "damage", "amount": 20, "times": 1}],
+      "keywords": [],
+      "description": "Deal 20 damage."
+    },
+    {
+      "id": "slow_playing",
+      "name": "Slow Playing",
       "rarity": "uncommon",
+      "cost": [{"suit": "heart"}, {"suit": "diamond"}],
+      "per_turn": 1,
+      "effects": [{"op": "gain_block", "amount": 30, "condition": "solo_ability_this_round"}],
+      "keywords": ["block"],
+      "description": "If this is the only ability used this turn, gain 30 Block."
+    },
+    {
+      "id": "house_edge",
+      "name": "House Edge",
+      "rarity": "uncommon",
+      "cost": [{"suit": "any"}, {"suit": "spade"}, {"suit": "club"}],
+      "passive": true,
+      "effects": [{"op": "mark_random_unmarked"}],
+      "keywords": ["mark"],
+      "description": "At the start of your turn, Mark a random unmarked enemy."
+    },
+    {
+      "id": "bust",
+      "name": "Bust",
+      "rarity": "uncommon",
+      "cost": [{"suit": "spade"}, {"suit": "club"}],
+      "effects": [
+        {"op": "cash_in"},
+        {"op": "damage_missing_pct", "pct": 0.3}
+      ],
+      "keywords": ["cash_in", "mark"],
+      "description": "Cash In. Deal 30% of the target's missing health."
+    },
+    {
+      "id": "dazzling_personality",
+      "name": "Dazzling Personality",
+      "rarity": "uncommon",
+      "cost": [{"suit": "any"}, {"suit": "heart"}, {"suit": "club"}],
+      "effects": [
+        {"op": "apply_status", "status": "mark", "stacks": 1, "target": "all_enemies"},
+        {"op": "apply_status", "status": "weak", "stacks": 3, "target": "all_enemies"}
+      ],
+      "keywords": ["mark", "weak"],
+      "description": "Mark and apply Weak 3 to all enemies."
+    },
+    {
+      "id": "face_reader",
+      "name": "Face Reader",
+      "rarity": "uncommon",
+      "cost": [{"suit": "any"}, {"suit": "diamond"}],
+      "per_turn": 1,
+      "passive": true,
+      "effects": [{"op": "block_per_enemy", "amount": 2}],
+      "keywords": ["block"],
+      "description": "At the start of your turn, gain 2 Block per enemy."
+    },
+    {
+      "id": "bad_beat",
+      "name": "Bad Beat",
+      "rarity": "common",
       "cost": [{"suit": "club"}, {"suit": "diamond"}],
-      "effects": [
-        {"op": "add_chips", "suit": "spade", "count": 1},
-        {"op": "add_chips", "suit": "diamond", "count": 1}
-      ],
-      "description": "Roll the weighted bones: gain a Spade chip and a Diamond chip."
+      "effects": [{"op": "gain_block", "amount": 15, "condition": "no_enemy_marked"}],
+      "keywords": ["mark", "block"],
+      "description": "If no enemy is marked, gain 15 Block."
     },
     {
-      "id": "sleight_of_hand",
-      "name": "Sleight of Hand",
-      "rarity": "common",
-      "cost": [{"suit": "heart"}, {"suit": "any"}],
-      "effects": [
-        {"op": "damage", "amount": 4, "times": 1},
-        {"op": "heal_pct", "pct": 0.03}
-      ],
-      "bonus_suit": "heart",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "heal_pct", "pct": 0.03}],
-      "description": "Deal 4 damage and palm 3% of your max HP back. All Hearts: heal double."
-    },
-    {
-      "id": "all_in",
-      "name": "All In",
-      "rarity": "rare",
-      "cost": [{"suit": "any"}, {"suit": "any"}, {"suit": "any"}, {"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 4, "times": 4}],
-      "bonus_suit": "spade",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "damage", "amount": 4, "times": 2}],
-      "description": "Push the whole stack: deal 4 damage 4 times. All Spades: 2 extra hits."
-    },
-    {
-      "id": "bleed_them_dry",
-      "name": "Bleed Them Dry",
+      "id": "on_a_roll",
+      "name": "On a Roll",
       "rarity": "uncommon",
-      "cost": [{"suit": "diamond"}, {"suit": "any"}],
+      "cost": [{"suit": "any"}, {"suit": "spade"}, {"suit": "club"}],
       "effects": [
-        {"op": "damage", "amount": 6, "times": 1},
-        {"op": "gain_coins", "min": 3, "max": 6}
+        {"op": "damage", "amount": 10, "times": 1},
+        {"op": "cash_in"},
+        {"op": "apply_status", "status": "mark", "stacks": 1, "target": "enemy"}
       ],
-      "bonus_suit": "diamond",
-      "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "gain_coins", "min": 4, "max": 8}],
-      "description": "Deal 6 damage and shake loose 3-6 coins. All Diamonds: bonus coins."
+      "keywords": ["mark", "cash_in"],
+      "description": "Deal 10. Cash In. Mark."
+    },
+    {
+      "id": "pay_line",
+      "name": "Pay Line",
+      "rarity": "rare",
+      "cost": [{"suit": "spade"}, {"suit": "diamond"}, {"suit": "heart"}, {"suit": "club"}],
+      "effects": [
+        {"op": "damage", "amount": 30, "times": 1},
+        {"op": "respin_reel"}
+      ],
+      "keywords": ["go_again"],
+      "description": "Deal 30. Go Again."
+    },
+    {
+      "id": "flush",
+      "name": "Flush",
+      "rarity": "rare",
+      "cost": [{"suit": "spade"}, {"suit": "spade"}, {"suit": "spade"}, {"suit": "spade"}, {"suit": "spade"}],
+      "effects": [{"op": "damage", "amount": 50, "times": 1, "target": "all_enemies"}],
+      "keywords": [],
+      "description": "Deal 50 to all enemies."
     }
   ]
 }

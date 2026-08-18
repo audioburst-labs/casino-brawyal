@@ -2,22 +2,32 @@ class_name EncounterFactory
 extends RefCounted
 ## Builds CombatSim configs from a run + chosen encounter option.
 ## Shared by the Game flow and the headless RunBot so rules never drift.
-## Stage bands: encounters 1-3 -> stage 1, 4-6 -> 2, 7-9 -> 3, boss -> 99.
-## Hard Combat: "advanced" draws from stage+1, "buffed" applies x1.25 HP/dmg.
+##
+## Lineup stages follow the capabilities sheet: enc 1 -> 1, 2-3 -> 2, 4-5 -> 3,
+## 6-7 -> 4, 8-9 -> 5, boss -> 6. Hard Combat "advanced" draws from stage+1
+## (capped at 5), "buffed" applies x1.25 HP/damage. The chosen lineup's gold
+## range rides along in the config for the reward screen.
+
+const MAX_NORMAL_STAGE := 5
+
+
+static func stage_for_encounter(encounter: int) -> int:
+	if encounter <= 1:
+		return 1
+	return clampi(2 + (encounter - 2) / 2, 2, MAX_NORMAL_STAGE)
 
 
 static func combat_config(db: ContentDB, run: RunState,
 		rng: RandomNumberGenerator, option: Dictionary) -> Dictionary:
 	var encounter := run.history.size()
-	var stage := clampi(((encounter - 1) / 3) + 1, 1, 3)
-	var lineup_stage := stage
+	var lineup_stage := stage_for_encounter(encounter)
 	var hp_mult := 1.0
 	var dmg_mult := 1.0
 	if option.type == &"boss":
 		lineup_stage = ContentDB.BOSS_STAGE
 	elif option.type == &"hard_combat":
 		if str(option.get("variant", "buffed")) == "advanced":
-			lineup_stage = mini(stage + 1, 3)
+			lineup_stage = mini(lineup_stage + 1, MAX_NORMAL_STAGE)
 		else:
 			hp_mult = 1.25
 			dmg_mult = 1.25
@@ -32,4 +42,6 @@ static func combat_config(db: ContentDB, run: RunState,
 		"hp_mult": hp_mult,
 		"dmg_mult": dmg_mult,
 		"relics": run.relic_ids,
+		"gold_min": lineup.gold_min,
+		"gold_max": lineup.gold_max,
 	}

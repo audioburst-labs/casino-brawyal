@@ -38,7 +38,7 @@ func test_bot_plays_full_runs_to_completion() -> void:
 
 func test_encounter_factory_builds_valid_combat_configs() -> void:
 	var run := RunState.new()
-	run.ability_ids = [&"card_flick"]
+	run.ability_ids = [&"card_sling"]
 	run.record_visit(&"combat")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7

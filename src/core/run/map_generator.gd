@@ -1,10 +1,11 @@
 class_name MapGenerator
 extends RefCounted
 ## Generates the next encounter choice lazily from the run history.
-## Placement rules (design doc):
+## Placement rules (design doc + patch 0.1 "Ori fixes"):
 ##   #1 always Combat (auto-start) - #10 always Boss
 ##   Rest offered only at #4 and #9 - the final Shop option appears at #9
-##   Shop: max 3 visits, never right after a visited shop
+##   Shop: max 3 visits, never right after a visited shop, never at #2,
+##   and at least 2 shop OFFERS per run (forced late if needed)
 ##   Treasure: max 2 visits, only after #2, never right after a treasure
 ##   Hard Combat: only after #3 - the two options always differ in type
 
@@ -20,17 +21,29 @@ static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dic
 		var partner: Dictionary
 		if encounter == 9 and _shop_allowed(run):
 			partner = {"type": &"shop"}
+			run.shop_offers += 1
 		else:
 			partner = _roll_option(run, rng, [&"rest"])
 		return [partner, {"type": &"rest"}]
 
+	# At least 2 shop offers per run: if only #9's guaranteed shop is left,
+	# force one now (encounters 6-8 qualify).
+	if encounter >= 6 and encounter <= 8 and run.shop_offers < 1 and _shop_allowed(run):
+		run.shop_offers += 1
+		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
+
 	var first := _roll_option(run, rng, [])
 	var second := _roll_option(run, rng, [first.type])
+	for option in [first, second]:
+		if option.type == &"shop":
+			run.shop_offers += 1
 	return [first, second]
 
 
 static func _shop_allowed(run: RunState) -> bool:
-	return run.count_visited(&"shop") < 3 and run.last_visited() != &"shop"
+	return run.encounter_number() != 2 \
+		and run.count_visited(&"shop") < 3 \
+		and run.last_visited() != &"shop"
 
 
 static func _treasure_allowed(run: RunState) -> bool:

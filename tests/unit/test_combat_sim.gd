@@ -2,19 +2,21 @@ extends GutTest
 ## CombatSim: the full combat round loop —
 ## begin_round (intents + spin) -> chip assignment (abilities auto-fire)
 ## -> end_assignment (discard tray, enemy phase) -> next round.
+## Uses Bouncer (graph: slam -> double_jab -> ...) and Manager
+## (graph: clipboard_strike -> performance_review -> ...) for determinism.
 
 var _db: ContentDB
 
 
 func before_all() -> void:
 	_db = ContentDB.new()
-	assert_true(_db.load_all("res://data"))
+	assert_true(_db.load_all("res://data"), str(_db.errors))
 
 
-func _sim(enemies: Array = ["security_goon"], seed_value: int = 7) -> CombatSim:
+func _sim(enemies: Array = ["bouncer"], seed_value: int = 7) -> CombatSim:
 	return CombatSim.new(_db, {
 		"hero": "ace",
-		"abilities": ["card_flick", "dagger_throw", "card_guard"],
+		"abilities": ["card_sling", "quick_maneuvers", "double_down"],
 		"enemies": enemies,
 		"seed": seed_value,
 	})
@@ -45,8 +47,9 @@ func test_full_ability_auto_fires_with_suit_bonus() -> void:
 	sim.tray.add(&"spade", 1)
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
-	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_flick: 4 dmg, spade bonus +2
-	assert_eq(enemy.hp, hp_before - 6)
+	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_sling: 10 dmg, spade -> Mark
+	assert_eq(enemy.hp, hp_before - 10)
+	assert_true(enemy.has_status(&"mark"))
 	assert_has(_types(sim.drain_events()), &"ability_fired")
 
 
@@ -56,8 +59,9 @@ func test_off_suit_chip_skips_the_bonus() -> void:
 	sim.tray.add(&"heart", 1)
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
-	sim.assign_chip(&"heart", 0, 0)  # card_flick without spade bonus
-	assert_eq(enemy.hp, hp_before - 4)
+	sim.assign_chip(&"heart", 0, 0)  # card_sling without the spade bonus
+	assert_eq(enemy.hp, hp_before - 10)
+	assert_false(enemy.has_status(&"mark"))
 
 
 func test_assign_requires_matching_suit_and_available_chip() -> void:
@@ -66,35 +70,35 @@ func test_assign_requires_matching_suit_and_available_chip() -> void:
 	sim.tray.discard_all()
 	assert_false(sim.assign_chip(&"spade", 0, 0), "no chip in tray")
 	sim.tray.add(&"heart", 1)
-	assert_false(sim.assign_chip(&"heart", 1, 0), "dagger_throw slot 0 needs spade")
+	assert_false(sim.assign_chip(&"heart", 2, 1), "double_down slot 1 needs spade")
 
 
 func test_partial_fill_persists_across_rounds_but_tray_discards() -> void:
 	var sim := _sim()
 	sim.begin_round()
-	sim.tray.add(&"spade", 1)
-	sim.assign_chip(&"spade", 1, 0)  # dagger_throw slot 1 of 2
+	sim.tray.add(&"club", 1)
+	sim.assign_chip(&"club", 2, 0)  # double_down slot 0 of 2 (any)
 	sim.end_assignment()
 	assert_eq(sim.tray.total(), 0, "unassigned chips discard at end of assignment")
 	sim.begin_round()
-	assert_eq(sim.abilities[1].filled[0], &"spade", "socketed chip persists")
+	assert_eq(sim.abilities[2].filled[0], &"club", "socketed chip persists")
 
 
 func test_enemy_phase_executes_intent_on_hero() -> void:
 	var sim := _sim()
 	sim.begin_round()
 	sim.tray.discard_all()
-	sim.end_assignment()  # security_goon round 1: jab = 2x3
-	assert_eq(sim.hero.hp, 70 - 6)
+	sim.end_assignment()  # bouncer round 1: slam = 1x10
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 10)
 
 
-func test_block_absorbs_per_hit() -> void:
+func test_block_absorbs_damage() -> void:
 	var sim := _sim()
 	sim.begin_round()
-	sim.hero.gain_block(4)
+	sim.hero.gain_block(6)
 	sim.tray.discard_all()
-	sim.end_assignment()  # jab 2x3 vs 4 block -> 2 hp lost
-	assert_eq(sim.hero.hp, 70 - 2)
+	sim.end_assignment()  # slam 10 vs 6 block -> 4 hp lost
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 4)
 
 
 func test_weak_enemy_deals_less() -> void:
@@ -102,8 +106,8 @@ func test_weak_enemy_deals_less() -> void:
 	sim.begin_round()
 	sim.enemies[0].apply_status(&"weak", 1)
 	sim.tray.discard_all()
-	sim.end_assignment()  # jab per hit floor(3*0.75)=2 -> 4 total
-	assert_eq(sim.hero.hp, 70 - 4)
+	sim.end_assignment()  # slam 10 * 0.75 = 7.5 -> 8 (half-up)
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 8)
 
 
 func test_stunned_enemy_skips_its_move() -> void:
@@ -112,15 +116,15 @@ func test_stunned_enemy_skips_its_move() -> void:
 	sim.enemies[0].apply_status(&"stun", 1)
 	sim.tray.discard_all()
 	sim.end_assignment()
-	assert_eq(sim.hero.hp, 70)
+	assert_eq(sim.hero.hp, sim.hero.max_hp)
 
 
 func test_killing_all_enemies_wins_the_combat() -> void:
 	var sim := _sim()
 	sim.begin_round()
-	sim.enemies[0].hp = 4
+	sim.enemies[0].hp = 5
 	sim.tray.add(&"spade", 1)
-	sim.assign_chip(&"spade", 0, 0)  # 6 damage kills
+	sim.assign_chip(&"spade", 0, 0)  # 10 damage kills
 	var types := _types(sim.drain_events())
 	assert_has(types, &"actor_died")
 	assert_has(types, &"combat_won")
@@ -138,37 +142,29 @@ func test_hero_death_loses_the_combat() -> void:
 
 
 func test_ability_hits_the_selected_target() -> void:
-	var sim := _sim(["security_goon", "card_shark"])
+	var sim := _sim(["bouncer", "server"])
 	sim.begin_round()
 	sim.set_target(&"enemy_0")
+	var hp_a := sim.enemies[0].hp
+	var hp_b := sim.enemies[1].hp
 	sim.tray.add(&"spade", 1)
 	sim.assign_chip(&"spade", 0, 0)
-	assert_eq(sim.enemies[0].hp, 22 - 6)
-	assert_eq(sim.enemies[1].hp, 16)
-
-
-func test_enemy_self_status_move_buffs_the_enemy() -> void:
-	# Bouncer's first move is Velvet Wall: no damage, gains Taunt on itself.
-	var sim := _sim(["bouncer"])
-	sim.begin_round()
-	sim.tray.discard_all()
-	sim.end_assignment()
-	assert_eq(sim.hero.hp, 70, "velvet wall deals no damage")
-	assert_true(sim.enemies[0].has_status(&"taunt"))
+	assert_eq(sim.enemies[0].hp, hp_a - 10)
+	assert_eq(sim.enemies[1].hp, hp_b)
 
 
 func test_enemy_debuff_is_applied_to_hero() -> void:
-	var sim := _sim()
-	# Round 1 and 2 are jabs; round 3 is haymaker (1x8 + weak 1).
-	for i in 3:
+	# Manager: clipboard_strike (1x20), then performance_review (Vulnerable 3).
+	var sim := _sim(["manager"])
+	for i in 2:
 		sim.begin_round()
 		sim.tray.discard_all()
 		sim.end_assignment()
-	assert_eq(sim.hero.hp, 70 - 6 - 6 - 8)
-	# Weak was applied on round 3 and ticks at round end, so it is gone now;
-	# check it was recorded via events instead.
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 20)
+	assert_eq(sim.hero.status_stacks(&"vulnerable"), 2,
+		"vulnerable 3 applied on round 2, ticked once at round end")
 	var had_status := false
 	for event: CombatEvent in sim.drain_events():
-		if event.type == &"status_applied" and event.data.get("status") == &"weak":
+		if event.type == &"status_applied" and event.data.get("status") == &"vulnerable":
 			had_status = true
 	assert_true(had_status)

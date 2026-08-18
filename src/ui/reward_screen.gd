@@ -7,12 +7,14 @@ var _ability_row: HBoxContainer
 
 func setup(args: Dictionary) -> void:
 	build_screen("Winnings", "res://assets/backgrounds/bg_casino_floor.png")
-	var encounter := int(args.get("encounter", 1))
 	var reward_rng := Game.rng.stream(&"rewards")
 
-	var coins := Rewards.roll_coins(encounter, reward_rng)
+	var coins := Rewards.roll_coins(
+		int(args.get("gold_min", 0)), int(args.get("gold_max", 0)), reward_rng)
 	Game.run.coins += coins
 	add_info_label("🪙 +%d coins" % coins, 30)
+	if int(args.get("healed", 0)) > 0:
+		add_info_label("❤ Hard combat won — recovered %d HP" % int(args.healed), 24)
 
 	if args.get("hard", false):
 		var relic := Rewards.random_unowned_relic(Db.content, Game.run, reward_rng)

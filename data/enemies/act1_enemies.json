@@ -2,170 +2,124 @@
   "type": "enemies",
   "items": [
     {
-      "id": "security_goon",
-      "name": "Security Goon",
-      "hp": 22,
-      "stage": 1,
-      "brain": {"type": "sequence", "loop": true, "steps": ["jab", "jab", "haymaker"]},
-      "moves": {
-        "jab": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
-        "haymaker": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 8,
-            "debuffs": [{"status": "weak", "stacks": 1}]
-          }
-        }
-      }
-    },
-    {
-      "id": "slot_gremlin",
-      "name": "Slot Gremlin",
-      "hp": 14,
-      "stage": 1,
-      "brain": {"type": "weighted", "weights": {"scratch": 2, "coin_bite": 1}},
-      "moves": {
-        "scratch": {"intent": {"instances": 2, "per_hit": 2, "debuffs": []}},
-        "coin_bite": {"intent": {"instances": 1, "per_hit": 5, "debuffs": []}}
-      }
-    },
-    {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp": 30,
-      "stage": 2,
-      "brain": {"type": "sequence", "loop": true, "steps": ["velvet_wall", "shove", "shove"]},
+      "hp_min": 95,
+      "hp_max": 105,
+      "brain": {
+        "type": "graph",
+        "start": "slam",
+        "edges": {
+          "slam": ["double_jab"],
+          "double_jab": ["slam", "pump_up"],
+          "pump_up": ["slam"]
+        }
+      },
       "moves": {
-        "velvet_wall": {
+        "slam": {"intent": {"instances": 1, "per_hit": 10, "debuffs": []}},
+        "double_jab": {"intent": {"instances": 2, "per_hit": 5, "debuffs": []}},
+        "pump_up": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
             "debuffs": [],
-            "self_status": [{"status": "taunt", "stacks": 2}]
+            "self_status": [{"status": "strength", "stacks": 3}],
+            "self_heal": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "server",
+      "name": "Server",
+      "hp_min": 45,
+      "hp_max": 55,
+      "brain": {
+        "type": "weighted",
+        "weights": {"tray_smash": 1, "spilled_drink": 1, "glass_barrage": 1},
+        "no_repeat_last": true
+      },
+      "moves": {
+        "tray_smash": {"intent": {"instances": 1, "per_hit": 15, "debuffs": []}},
+        "spilled_drink": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [{"status": "weak", "stacks": 2}]
           }
         },
-        "shove": {"intent": {"instances": 1, "per_hit": 7, "debuffs": []}}
+        "glass_barrage": {"intent": {"instances": 3, "per_hit": 8, "debuffs": []}}
       }
     },
     {
-      "id": "croupier",
-      "name": "Croupier",
-      "hp": 18,
-      "stage": 2,
-      "brain": {"type": "sequence", "loop": true, "steps": ["rake_sweep", "mark_bet"]},
+      "id": "dealer",
+      "name": "Dealer",
+      "hp_min": 45,
+      "hp_max": 55,
+      "brain": {"type": "sequence", "loop": true, "steps": ["deal_the_cards"]},
       "moves": {
-        "rake_sweep": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
-        "mark_bet": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 4,
-            "debuffs": [{"status": "vulnerable", "stacks": 1}]
-          }
+        "deal_the_cards": {
+          "intent": {"instances": 1, "per_hit": 0, "debuffs": [], "blackjack": true}
         }
       }
     },
     {
-      "id": "pit_boss",
-      "name": "Pit Boss",
-      "hp": 26,
-      "stage": 3,
-      "brain": {"type": "weighted", "weights": {"cane_strike": 2, "raise_stakes": 1}, "no_repeat": "raise_stakes"},
+      "id": "manager",
+      "name": "Manager",
+      "hp_min": 63,
+      "hp_max": 77,
+      "brain": {
+        "type": "graph",
+        "start": "clipboard_strike",
+        "edges": {
+          "clipboard_strike": ["performance_review"],
+          "performance_review": ["clipboard_strike", "call_staff"],
+          "call_staff": ["clipboard_strike"]
+        }
+      },
       "moves": {
-        "cane_strike": {"intent": {"instances": 1, "per_hit": 6, "debuffs": []}},
-        "raise_stakes": {
+        "clipboard_strike": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
+        "performance_review": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
-            "debuffs": [],
-            "self_status": [{"status": "strength", "stacks": 2}]
+            "debuffs": [{"status": "vulnerable", "stacks": 3}]
           }
+        },
+        "call_staff": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
         }
-      }
-    },
-    {
-      "id": "tipsy_patron",
-      "name": "Tipsy Patron",
-      "hp": 20,
-      "stage": 2,
-      "brain": {"type": "weighted", "weights": {"wild_swing": 2, "bottle_toss": 2, "stumble": 1}},
-      "moves": {
-        "wild_swing": {"intent": {"instances": 1, "per_hit": 8, "debuffs": []}},
-        "bottle_toss": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
-        "stumble": {"intent": {"instances": 0, "per_hit": 0, "debuffs": []}}
-      }
-    },
-    {
-      "id": "loan_shark",
-      "name": "Loan Shark",
-      "hp": 24,
-      "stage": 3,
-      "brain": {"type": "sequence", "loop": true, "steps": ["collect", "collect", "foreclose"]},
-      "moves": {
-        "collect": {"intent": {"instances": 1, "per_hit": 5, "debuffs": []}},
-        "foreclose": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 14,
-            "debuffs": [{"status": "weak", "stacks": 1}]
-          }
-        }
-      }
-    },
-    {
-      "id": "chip_golem",
-      "name": "Chip Golem",
-      "hp": 45,
-      "stage": 3,
-      "brain": {"type": "sequence", "loop": true, "steps": ["chip_spray", "slam"]},
-      "moves": {
-        "chip_spray": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}},
-        "slam": {"intent": {"instances": 1, "per_hit": 9, "debuffs": []}}
       }
     },
     {
       "id": "mr_moneyman",
       "name": "Mr. Moneyman",
-      "hp": 110,
-      "stage": 99,
+      "hp_min": 190,
+      "hp_max": 210,
       "brain": {
-        "type": "phased",
-        "phases": [
-          {"hp_below": 1.0, "brain": {"type": "sequence", "loop": true, "steps": ["money_toss", "money_toss", "big_bet"]}},
-          {"hp_below": 0.5, "brain": {"type": "sequence", "loop": true, "steps": ["jackpot", "money_toss"]}}
-        ]
+        "type": "graph",
+        "start": "call_servers",
+        "edges": {
+          "call_servers": ["money_barrage"],
+          "money_barrage": ["call_servers", "call_bouncer", "encore", "bonuses"],
+          "call_bouncer": ["money_barrage"],
+          "encore": ["money_barrage"],
+          "bonuses": ["money_barrage"]
+        }
       },
       "moves": {
-        "money_toss": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}},
-        "big_bet": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 9,
-            "debuffs": [{"status": "vulnerable", "stacks": 1}]
-          }
+        "call_servers": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 2}}
         },
-        "jackpot": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 13,
-            "debuffs": [{"status": "weak", "stacks": 2}]
-          }
-        }
-      }
-    },
-    {
-      "id": "card_shark",
-      "name": "Card Shark",
-      "hp": 16,
-      "stage": 1,
-      "brain": {"type": "weighted", "weights": {"card_toss": 2, "sharp_deal": 1}, "no_repeat": "sharp_deal"},
-      "moves": {
-        "card_toss": {"intent": {"instances": 3, "per_hit": 2, "debuffs": []}},
-        "sharp_deal": {
-          "intent": {
-            "instances": 1,
-            "per_hit": 5,
-            "debuffs": [{"status": "vulnerable", "stacks": 2}]
-          }
+        "money_barrage": {"intent": {"instances": 3, "per_hit": 10, "debuffs": []}},
+        "call_bouncer": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 1}}
+        },
+        "encore": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "ally_attack_again": true}
+        },
+        "bonuses": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 30}
         }
       }
     }

@@ -1,9 +1,11 @@
 class_name SlotMachine
 extends RefCounted
-## The player's slot machine: 3 reels to start, upgradeable to MAX_REELS.
+## The player's slot machine: 4 reels to start, upgradeable to MAX_REELS.
 ## Reels resolve left to right.
+## (Patch 0.1: raised from 3 to 4 to offset the "no free chips" payout fix —
+## the enemy sheet is tuned against pre-fix chip income.)
 
-const START_REELS := 3
+const START_REELS := 4
 const MAX_REELS := 8
 
 var reels: Array[Reel] = []

@@ -1,5 +1,5 @@
 extends GutTest
-## Relics fire their effects at combat trigger points.
+## Relics fire their effects at combat trigger points (patch 0.1 relic set).
 
 var _db: ContentDB
 
@@ -12,56 +12,52 @@ func before_all() -> void:
 func _sim(relics: Array) -> CombatSim:
 	return CombatSim.new(_db, {
 		"hero": "ace",
-		"abilities": ["card_flick"],
-		"enemies": ["security_goon"],
+		"abilities": ["card_sling"],
+		"enemies": ["bouncer"],
 		"seed": 3,
 		"relics": relics,
 	})
 
 
-func test_combat_started_relics_fire_on_first_round_only() -> void:
-	var sim := _sim(["lucky_rabbit_foot", "brass_knuckles"])
+func test_bounty_list_queues_gold_per_kill() -> void:
+	var sim := _sim(["bounty_list"])
 	sim.begin_round()
-	assert_eq(sim.hero.block, 5, "rabbit foot grants 5 block")
-	assert_eq(sim.hero.status_stacks(&"strength"), 1, "knuckles grant 1 strength")
-	sim.tray.discard_all()
-	sim.end_assignment()
-	sim.begin_round()
-	assert_eq(sim.hero.status_stacks(&"strength"), 1, "combat_started fires once")
-
-
-func test_spin_resolved_relics_modify_the_tray() -> void:
-	var charm_sim := _sim(["spade_charm"])
-	charm_sim.begin_round()
-	assert_gt(charm_sim.tray.count(&"spade"), 0, "one chip converts to spade")
-
-	var chip_sim := _sim(["house_chip"])
-	var base_sim := _sim([])
-	chip_sim.begin_round()
-	base_sim.begin_round()
-	assert_eq(chip_sim.tray.total(), base_sim.tray.total() + 1,
-		"house chip mints one bonus chip")
-
-
-func test_combat_won_relics_queue_run_rewards() -> void:
-	var sim := _sim(["gold_tooth"])
-	sim.begin_round()
-	sim.enemies[0].hp = 1
-	sim.tray.discard_all()
+	sim.enemies[0].hp = 5
 	sim.tray.add(&"spade", 1)
 	sim.assign_chip(&"spade", 0, 0)
 	assert_eq(sim.phase, CombatSim.Phase.ENDED)
-	var has_coin_op := false
+	var kill_gold := sim.pending_rewards.filter(
+		func(op: Dictionary) -> bool: return op.get("op") == "gain_coins" and int(op.get("amount", 0)) == 5)
+	assert_eq(kill_gold.size(), 1, "5 gold queued for the kill")
+
+
+func test_gamblers_pass_trades_gold_on_victory() -> void:
+	var sim := _sim(["gamblers_pass"])
+	sim.begin_round()
+	sim.enemies[0].hp = 5
+	sim.tray.add(&"spade", 1)
+	sim.assign_chip(&"spade", 0, 0)
+	var has_loss := false
+	var has_gain := false
 	for op: Dictionary in sim.pending_rewards:
-		if op.get("op") == "gain_coins":
-			has_coin_op = true
-	assert_true(has_coin_op, "gold tooth queues bonus coins for the run layer")
+		if op.get("op") == "lose_coins":
+			has_loss = true
+		if op.get("op") == "gain_coins" and op.has("min"):
+			has_gain = true
+	assert_true(has_loss and has_gain)
+
+
+func test_suit_protection_grants_block_per_gem() -> void:
+	var sim := _sim(["spade_protection"])
+	sim.begin_round()
+	var spades: int = sim.last_payout.get(&"spade", 0)
+	assert_eq(sim.hero.block, spades * 2)
 
 
 func test_relic_triggered_event_is_emitted() -> void:
-	var sim := _sim(["lucky_rabbit_foot"])
+	var sim := _sim(["spade_protection"])
 	sim.begin_round()
 	var triggered := sim.drain_events().filter(
 		func(e: CombatEvent) -> bool: return e.type == &"relic_triggered")
 	assert_eq(triggered.size(), 1)
-	assert_eq(triggered[0].data.relic, &"lucky_rabbit_foot")
+	assert_eq(triggered[0].data.relic, &"spade_protection")

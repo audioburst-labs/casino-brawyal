@@ -6,6 +6,11 @@ extends RefCounted
 
 var def: Defs.AbilityDef
 var filled: Array[StringName] = []  # one entry per cost slot; &"" = empty
+var uses_this_round := 0            # for per_turn-limited abilities
+
+
+func exhausted() -> bool:
+	return def.per_turn > 0 and uses_this_round >= def.per_turn
 
 
 func _init(ability_def: Defs.AbilityDef) -> void:

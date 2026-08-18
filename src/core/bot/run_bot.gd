@@ -56,7 +56,8 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 	run.hp = maxi(1, sim.hero.hp)
 	RunEffects.apply(sim.pending_rewards, db, run, rng.stream(&"rewards"))
 	if option.type != &"boss":
-		run.coins += Rewards.roll_coins(run.history.size(), rng.stream(&"rewards"))
+		run.coins += Rewards.roll_coins(
+			int(config.gold_min), int(config.gold_max), rng.stream(&"rewards"))
 		var choices := Rewards.ability_choices(db, run, rng.stream(&"rewards"))
 		if not choices.is_empty():
 			run.ability_ids.append(choices[choice_rng.randi_range(0, choices.size() - 1)])
@@ -64,6 +65,7 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 			var relic := Rewards.random_unowned_relic(db, run, rng.stream(&"rewards"))
 			if relic != &"":
 				run.relic_ids.append(relic)
+			run.hp = mini(run.max_hp, run.hp + int(ceil(run.max_hp * 0.15)))
 	return true
 
 
@@ -78,18 +80,18 @@ static func _play_story(db: ContentDB, run: RunState, rng: GameRng,
 static func _play_shop(db: ContentDB, run: RunState, rng: GameRng,
 		choice_rng: RandomNumberGenerator) -> void:
 	var stock := ShopStock.generate(db, run, rng.stream(&"shop"))
-	# Priorities: a relic, then an ability, then a reel if rich.
+	# Priorities: reels are the core scaling (more chips per spin), then
+	# abilities, then a relic with whatever is left.
+	var reel: Dictionary = stock.reel
+	if reel.available and run.spend(int(reel.price)):
+		run.machine.add_reel()
+	for offer: Dictionary in stock.abilities:
+		if run.spend(int(offer.price)):
+			run.ability_ids.append(offer.id)
 	for offer: Dictionary in stock.relics:
 		if run.spend(int(offer.price)):
 			run.relic_ids.append(offer.id)
 			break
-	for offer: Dictionary in stock.abilities:
-		if run.spend(int(offer.price)):
-			run.ability_ids.append(offer.id)
-			break
-	var reel: Dictionary = stock.reel
-	if reel.available and run.coins >= int(reel.price) + 50 and run.spend(int(reel.price)):
-		run.machine.add_reel()
 	# One sticker toward spades when affordable, applied to a random slot.
 	if not stock.stickers.is_empty():
 		var sticker: Dictionary = stock.stickers[0]

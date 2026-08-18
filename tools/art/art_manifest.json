@@ -491,6 +491,101 @@
       "prompt": "A single game icon meaning 'any card suit', centered on a fully transparent background: a rounded four-pointed compass-rose arrangement of the four playing card suit symbols — small spade (midnight blue) on top, heart (crimson) on the right, club (emerald) on the bottom, diamond (sapphire) on the left — tightly clustered around a small gold star in the center. Thick dark outlines, chunky cartoon shapes, reads clearly at small sizes, fills most of the frame. Nothing else."
     },
     {
+      "id": "enemy_server",
+      "out": "assets/characters/enemy_server.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a snooty casino cocktail server. Slim and quick, in a maroon waistcoat with gold buttons over a cream shirt, black bowtie, a round serving tray balanced on one raised hand loaded with wobbling glasses, the other hand flinging a cocktail glass forward with green liquid arcing out. Smug expression. Facing slightly left, mid-stride. Exaggerated cartoon proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "status_mark",
+      "out": "assets/icons/status_mark.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a playing-card spade symbol blazing with green, teal and purple magical flames, hovering like a curse mark. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "relic_gamblers_pass",
+      "out": "assets/icons/relic_gamblers_pass.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: an exclusive gold-trimmed maroon VIP membership card with a spade emblem and a gold clip, small sparkle. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_bounty_list",
+      "out": "assets/icons/relic_bounty_list.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a rolled parchment bounty list with three crossed-out silhouette portraits and a gold coin pinned to it. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_spade_protection",
+      "out": "assets/icons/relic_spade_protection.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a midnight-blue spade symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_heart_protection",
+      "out": "assets/icons/relic_heart_protection.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a crimson heart symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_club_protection",
+      "out": "assets/icons/relic_club_protection.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a dark-green club (clover) symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_diamond_protection",
+      "out": "assets/icons/relic_diamond_protection.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a sapphire-blue diamond (lozenge) symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_high_stakes",
+      "out": "assets/icons/relic_high_stakes.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a towering precarious stack of casino chips with flames flickering at its top, one chip mid-fall, dramatic red-gold lighting. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_high_roller",
+      "out": "assets/icons/relic_high_roller.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: three golden slot-machine reels all showing the same glowing spade symbol, with a burst of golden light behind them. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_dark_emblem",
+      "out": "assets/icons/relic_dark_emblem.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a dark iron medallion split in two halves showing a midnight spade and a deep-green club, joined by a gold rivet, faint purple aura. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_red_emblems",
+      "out": "assets/icons/relic_red_emblems.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a polished gold medallion split in two halves showing a crimson heart and a sapphire diamond, joined by a gold rivet, faint warm aura. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
       "id": "ace_portrait",
       "out": "assets/characters/ace_portrait.png",
       "size": "1024x1024",

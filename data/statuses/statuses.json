@@ -5,13 +5,13 @@
       "id": "weak",
       "name": "Weak",
       "stack_mode": "duration",
-      "description": "Deals 25% less damage (rounded down, minimum 1)."
+      "description": "Deals 25% less damage (rounded half-up, minimum 1)."
     },
     {
       "id": "vulnerable",
       "name": "Vulnerable",
       "stack_mode": "duration",
-      "description": "Takes 50% more damage."
+      "description": "Takes 25% more damage."
     },
     {
       "id": "taunt",
@@ -36,6 +36,12 @@
       "name": "Stun",
       "stack_mode": "duration",
       "description": "Skips the next intended action."
+    },
+    {
+      "id": "mark",
+      "name": "Mark",
+      "stack_mode": "intensity",
+      "description": "Marked by Ace. Cash In removes a Mark to deal 10 bonus damage. Marks persist until cashed in."
     }
   ]
 }

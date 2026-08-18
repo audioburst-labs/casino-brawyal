@@ -58,6 +58,7 @@ func set_title(text: String) -> void:
 func add_continue_button(text := "Continue", callback := Callable()) -> Button:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	content.add_child(row)
 	var button := Button.new()
 	button.text = text
@@ -74,6 +75,8 @@ func add_info_label(text: String, size := 24) -> Label:
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(720, 0)
+	label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("font_size", size)
 	content.add_child(label)
 	return label

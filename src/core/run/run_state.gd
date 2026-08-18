@@ -14,6 +14,7 @@ var seed_value := 0
 var history: Array[StringName] = []   # encounter type per completed choice
 var seen_events: Array[StringName] = []
 var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
+var shop_offers := 0                           # shop options shown so far (>= 2 guaranteed)
 
 
 ## 1-based number of the encounter the player is about to choose/play.
@@ -56,6 +57,7 @@ func to_dict() -> Dictionary:
 		"seen_events": seen_events.map(func(s: StringName) -> String: return String(s)),
 		"history": history.map(func(s: StringName) -> String: return String(s)),
 		"reels": reels,
+		"shop_offers": shop_offers,
 	}
 
 
@@ -76,6 +78,7 @@ static func from_dict(data: Dictionary) -> RunState:
 		run.seen_events.append(StringName(str(id)))
 	for type in data.get("history", []):
 		run.history.append(StringName(str(type)))
+	run.shop_offers = int(data.get("shop_offers", 0))
 	var reels: Array = data.get("reels", [])
 	while run.machine.reels.size() < reels.size():
 		run.machine.add_reel()

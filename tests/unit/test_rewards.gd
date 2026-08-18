@@ -15,17 +15,16 @@ func _rng(seed_value: int = 5) -> RandomNumberGenerator:
 	return rng
 
 
-func test_coin_roll_stays_in_encounter_scaled_range() -> void:
+func test_coin_roll_stays_in_lineup_gold_range() -> void:
 	var rng := _rng()
-	for encounter in range(1, 11):
-		for i in 30:
-			var coins := Rewards.roll_coins(encounter, rng)
-			assert_between(coins, encounter * 8, encounter * 12)
+	for i in 30:
+		assert_between(Rewards.roll_coins(17, 23, rng), 17, 23)
+	assert_eq(Rewards.roll_coins(0, 0, rng), 0, "boss lineup pays no combat gold")
 
 
 func test_ability_choices_are_distinct_and_unowned() -> void:
 	var run := RunState.new()
-	run.ability_ids = [&"card_flick", &"dagger_throw", &"card_guard"]
+	run.ability_ids = [&"card_sling", &"quick_maneuvers", &"color_up"]
 	var rng := _rng()
 	for i in 20:
 		var choices := Rewards.ability_choices(_db, run, rng)

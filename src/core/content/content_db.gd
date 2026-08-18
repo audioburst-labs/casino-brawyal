@@ -12,8 +12,13 @@ const KNOWN_OPS: Array[String] = [
 	"damage", "apply_status", "gain_block", "heal_pct", "add_chips",
 	"convert_chips", "respin_reel", "gain_coins", "grant_relic",
 	"lose_hp", "lose_coins", "gain_max_hp",
+	"cash_in", "damage_missing_pct", "block_per_enemy",
+	"mark_random_unmarked", "block_per_chip",
 ]
-const BOSS_STAGE := 99
+const KNOWN_CONDITIONS: Array[String] = [
+	"no_enemy_marked", "solo_ability_this_round", "spin_has_triple",
+]
+const BOSS_STAGE := 6
 const KNOWN_TRIGGERS: Array[StringName] = [
 	&"combat_started", &"round_started", &"spin_resolved", &"chips_generated",
 	&"ability_activated", &"damage_dealt", &"damage_taken", &"enemy_killed",
@@ -29,6 +34,7 @@ var _statuses: Dictionary = {}
 var _relics: Dictionary = {}
 var _lineups: Array[Dictionary] = []
 var _story_events: Dictionary = {}
+var _keywords: Dictionary = {}
 
 
 func load_all(root: String) -> bool:
@@ -40,15 +46,20 @@ func load_all(root: String) -> bool:
 	_relics.clear()
 	_lineups.clear()
 	_story_events.clear()
+	_keywords.clear()
 
 	var docs: Array[Dictionary] = []
 	_scan_dir(root, docs)
 
-	# Statuses first: abilities and enemies reference them.
+	# Statuses and keywords first: abilities and enemies reference them.
 	for doc in docs:
-		if doc.get("type") == "statuses":
-			for item: Dictionary in doc.get("items", []):
-				_parse_status(item)
+		match doc.get("type"):
+			"statuses":
+				for item: Dictionary in doc.get("items", []):
+					_parse_status(item)
+			"keywords":
+				for item: Dictionary in doc.get("items", []):
+					_parse_keyword(item)
 	for doc in docs:
 		match doc.get("type"):
 			"abilities":
@@ -72,6 +83,7 @@ func load_all(root: String) -> bool:
 				for item: Dictionary in doc.get("items", []):
 					_parse_story_event(item)
 
+	_validate_summons()
 	return errors.is_empty()
 
 
@@ -89,6 +101,10 @@ func get_hero(id: StringName) -> Defs.HeroDef:
 
 func get_status(id: StringName) -> Defs.StatusDef:
 	return _statuses.get(id)
+
+
+func get_keyword(id: StringName) -> Defs.KeywordDef:
+	return _keywords.get(id)
 
 
 func get_relic(id: StringName) -> Defs.RelicDef:
@@ -136,6 +152,17 @@ func _scan_dir(path: String, docs: Array[Dictionary]) -> void:
 	dir.list_dir_end()
 
 
+func _parse_keyword(item: Dictionary) -> void:
+	var keyword := Defs.KeywordDef.new()
+	keyword.id = StringName(item.get("id", ""))
+	if keyword.id == &"":
+		errors.append("keyword with missing id")
+		return
+	keyword.name = item.get("name", "")
+	keyword.text = item.get("text", "")
+	_keywords[keyword.id] = keyword
+
+
 func _parse_status(item: Dictionary) -> void:
 	var status := Defs.StatusDef.new()
 	status.id = StringName(item.get("id", ""))
@@ -175,11 +202,20 @@ func _parse_ability(item: Dictionary) -> void:
 
 	ability.bonus_suit = StringName(str(item.get("bonus_suit", "")))
 	ability.bonus_condition = item.get("bonus_condition", "")
+	ability.bonus_mode = item.get("bonus_mode", "extra")
 	if ability.bonus_suit != &"" and not SUITS.has(ability.bonus_suit):
 		errors.append("ability %s: unknown bonus_suit '%s'" % [ability.id, ability.bonus_suit])
 	for effect: Dictionary in item.get("bonus_effects", []):
 		_validate_effect(effect, "ability %s (bonus)" % ability.id)
 		ability.bonus_effects.append(effect)
+
+	ability.per_turn = int(item.get("per_turn", 0))
+	ability.passive = bool(item.get("passive", false))
+	for keyword_id in item.get("keywords", []):
+		var id := StringName(str(keyword_id))
+		if not _keywords.has(id):
+			errors.append("ability %s: unknown keyword '%s'" % [ability.id, id])
+		ability.keywords.append(id)
 
 	_abilities[ability.id] = ability
 
@@ -190,6 +226,8 @@ func _validate_effect(effect: Dictionary, context: String) -> void:
 		errors.append("%s: unknown effect op '%s'" % [context, op])
 	if op == "apply_status" and not _statuses.has(StringName(str(effect.get("status", "")))):
 		errors.append("%s: unknown status '%s'" % [context, effect.get("status", "")])
+	if effect.has("condition") and not KNOWN_CONDITIONS.has(str(effect.condition)):
+		errors.append("%s: unknown condition '%s'" % [context, effect.condition])
 
 
 func _parse_relic(item: Dictionary) -> void:
@@ -201,14 +239,16 @@ func _parse_relic(item: Dictionary) -> void:
 	relic.name = item.get("name", "")
 	relic.description = item.get("description", "")
 	relic.rarity = item.get("rarity", "common")
+	relic.price_min = int(item.get("price_min", 20))
+	relic.price_max = int(item.get("price_max", 30))
 	relic.trigger = StringName(str(item.get("trigger", "")))
 	if not KNOWN_TRIGGERS.has(relic.trigger):
 		errors.append("relic %s: unknown trigger '%s'" % [relic.id, relic.trigger])
 	for effect: Dictionary in item.get("effects", []):
 		_validate_effect(effect, "relic %s" % relic.id)
 		relic.effects.append(effect)
-	if relic.effects.is_empty():
-		errors.append("relic %s: no effects" % relic.id)
+	# Empty effects are allowed: some relics (High Stakes, Emblems, Lucky Foot)
+	# are implemented directly in CombatSim rather than as ops.
 	_relics[relic.id] = relic
 
 
@@ -219,13 +259,13 @@ func _parse_enemy(item: Dictionary) -> void:
 		errors.append("enemy with missing id")
 		return
 	enemy.name = item.get("name", "")
-	enemy.hp = int(item.get("hp", 0))
-	enemy.stage = int(item.get("stage", 1))
+	enemy.hp_min = int(item.get("hp_min", item.get("hp", 0)))
+	enemy.hp_max = int(item.get("hp_max", item.get("hp", 0)))
 	enemy.brain = item.get("brain", {})
 	enemy.moves = item.get("moves", {})
 
-	if enemy.hp <= 0:
-		errors.append("enemy %s: hp must be positive" % enemy.id)
+	if enemy.hp_min <= 0 or enemy.hp_max < enemy.hp_min:
+		errors.append("enemy %s: invalid hp range" % enemy.id)
 	if enemy.moves.is_empty():
 		errors.append("enemy %s: no moves" % enemy.id)
 	for move_id: String in enemy.moves:
@@ -240,12 +280,36 @@ func _parse_enemy(item: Dictionary) -> void:
 			if not _statuses.has(status):
 				errors.append("enemy %s move %s: unknown self status '%s'" % [enemy.id, move_id, status])
 
-	var brain_steps: Array = enemy.brain.get("steps", [])
-	for step in brain_steps:
-		if not enemy.moves.has(str(step)):
-			errors.append("enemy %s: brain step '%s' is not a move" % [enemy.id, step])
+	match enemy.brain.get("type", ""):
+		"sequence":
+			for step in enemy.brain.get("steps", []):
+				if not enemy.moves.has(str(step)):
+					errors.append("enemy %s: brain step '%s' is not a move" % [enemy.id, step])
+		"graph":
+			var edges: Dictionary = enemy.brain.get("edges", {})
+			var start := str(enemy.brain.get("start", ""))
+			if not enemy.moves.has(start):
+				errors.append("enemy %s: graph start '%s' is not a move" % [enemy.id, start])
+			for from_move: String in edges:
+				if not enemy.moves.has(from_move):
+					errors.append("enemy %s: graph node '%s' is not a move" % [enemy.id, from_move])
+				for to_move in edges[from_move]:
+					if not enemy.moves.has(str(to_move)):
+						errors.append("enemy %s: graph edge target '%s' is not a move" % [enemy.id, to_move])
 
 	_enemies[enemy.id] = enemy
+
+
+## Summons reference other enemies, so this runs after all enemies are parsed.
+func _validate_summons() -> void:
+	for enemy_id: StringName in _enemies:
+		var enemy: Defs.EnemyDef = _enemies[enemy_id]
+		for move_id: String in enemy.moves:
+			var summon: Dictionary = enemy.moves[move_id].get("intent", {}).get("summon", {})
+			if not summon.is_empty():
+				var target := StringName(str(summon.get("enemy", "")))
+				if not _enemies.has(target):
+					errors.append("enemy %s move %s: unknown summon '%s'" % [enemy_id, move_id, target])
 
 
 func _parse_lineup(item: Dictionary) -> void:
@@ -261,6 +325,8 @@ func _parse_lineup(item: Dictionary) -> void:
 		"id": StringName(str(item.get("id", ""))),
 		"stage": int(item.get("stage", 1)),
 		"enemies": enemies,
+		"gold_min": int(item.get("gold_min", 0)),
+		"gold_max": int(item.get("gold_max", 0)),
 	})
 
 

@@ -6,10 +6,13 @@ extends Node
 const ACE_INTRO_VIDEO := "res://assets/video/ace_intro.ogv"
 const BOSS_INTRO_VIDEO := "res://assets/video/moneyman_boss_intro.ogv"
 
+const HARD_COMBAT_HEAL_PCT := 0.15
+
 var run: RunState
 var rng: GameRng
 
 var _screen_root: Node = null
+var _combat_gold := Vector2i.ZERO   # gold range of the lineup being fought
 
 
 func register_screen_root(root: Node) -> void:
@@ -93,9 +96,16 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 		RunSave.clear()
 		goto_screen("res://scenes/screens/victory_screen.tscn")
 	else:
+		var hard := run.last_visited() == &"hard_combat"
+		var healed := 0
+		if hard:
+			healed = mini(int(ceil(run.max_hp * HARD_COMBAT_HEAL_PCT)), run.max_hp - run.hp)
+			run.hp += healed
 		goto_screen("res://scenes/screens/reward_screen.tscn", {
-			"encounter": run.history.size(),
-			"hard": run.last_visited() == &"hard_combat",
+			"gold_min": _combat_gold.x,
+			"gold_max": _combat_gold.y,
+			"hard": hard,
+			"healed": healed,
 		})
 
 
@@ -104,6 +114,7 @@ func _start_combat(option: Dictionary) -> void:
 		rng.stream(&"map"), option)
 	config["seed"] = rng.stream(&"combat_seeds").randi()
 	config["run_mode"] = true
+	_combat_gold = Vector2i(int(config.gold_min), int(config.gold_max))
 	var start := func() -> void:
 		goto_screen("res://scenes/screens/combat_screen.tscn", config)
 	if option.type == &"boss":

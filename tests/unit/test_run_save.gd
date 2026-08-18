@@ -38,7 +38,7 @@ func test_roundtrip_preserves_everything() -> void:
 	assert_eq(restored.sticker_inventory, run.sticker_inventory)
 	assert_eq(restored.seen_events, run.seen_events)
 	assert_eq(restored.history, run.history)
-	assert_eq(restored.machine.reels.size(), 4)
+	assert_eq(restored.machine.reels.size(), SlotMachine.START_REELS + 1)
 	assert_eq(restored.machine.reels[1].symbols[2], &"spade")
 
 

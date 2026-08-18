@@ -11,7 +11,11 @@ class AbilityDef:
 	var effects: Array[Dictionary] = []       # effect ops, run by EffectInterpreter
 	var bonus_suit: StringName = &""          # suit that unlocks the bonus, if any
 	var bonus_condition: String = ""          # e.g. "all_slots_bonus_suit"
+	var bonus_mode: String = "extra"          # "extra" adds bonus_effects; "replace" swaps them in
 	var bonus_effects: Array[Dictionary] = []
+	var per_turn: int = 0                     # max activations per round; 0 = unlimited
+	var passive: bool = false                 # once fired, effects recur at every round start
+	var keywords: Array[StringName] = []      # keyword ids shown as hover bubbles
 	var description: String
 	var rarity: String = "common"
 	var pool: String = "reward"               # "starter" | "reward" | "shop_only"
@@ -20,10 +24,16 @@ class AbilityDef:
 class EnemyDef:
 	var id: StringName
 	var name: String
-	var hp: int
-	var stage: int = 1                        # 1..3 (act progression), boss uses 99
-	var brain: Dictionary = {}                # {type: sequence|weighted|phased, ...}
-	var moves: Dictionary = {}                # move id -> {intent: {...}, effects: [...]}
+	var hp_min: int
+	var hp_max: int
+	var brain: Dictionary = {}                # {type: sequence|weighted|graph|phased, ...}
+	var moves: Dictionary = {}                # move id -> {intent: {...}}
+
+
+class KeywordDef:
+	var id: StringName
+	var name: String
+	var text: String
 
 
 class HeroDef:
@@ -37,7 +47,9 @@ class RelicDef:
 	var id: StringName
 	var name: String
 	var trigger: StringName                   # hook name, see ContentDB.KNOWN_TRIGGERS
-	var effects: Array[Dictionary] = []
+	var effects: Array[Dictionary] = []       # may be empty for code-implemented relics
+	var price_min: int = 20
+	var price_max: int = 30
 	var description: String
 	var rarity: String = "common"
 

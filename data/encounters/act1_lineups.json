@@ -1,18 +1,15 @@
 {
   "type": "lineups",
   "items": [
-    {"id": "goon_solo", "stage": 1, "enemies": ["security_goon"]},
-    {"id": "shark_solo", "stage": 1, "enemies": ["card_shark"]},
-    {"id": "gremlin_pair", "stage": 1, "enemies": ["slot_gremlin", "slot_gremlin"]},
-    {"id": "gremlin_and_shark", "stage": 1, "enemies": ["slot_gremlin", "card_shark"]},
-    {"id": "goon_and_shark", "stage": 2, "enemies": ["security_goon", "card_shark"]},
-    {"id": "the_door_team", "stage": 2, "enemies": ["bouncer", "slot_gremlin"]},
-    {"id": "table_service", "stage": 2, "enemies": ["croupier", "tipsy_patron"]},
-    {"id": "last_call", "stage": 2, "enemies": ["tipsy_patron", "tipsy_patron"]},
-    {"id": "collection_day", "stage": 3, "enemies": ["loan_shark", "security_goon"]},
-    {"id": "floor_management", "stage": 3, "enemies": ["pit_boss", "croupier", "slot_gremlin"]},
-    {"id": "the_vault_guard", "stage": 3, "enemies": ["chip_golem"]},
-    {"id": "full_house", "stage": 3, "enemies": ["bouncer", "pit_boss"]},
-    {"id": "the_boss", "stage": 99, "enemies": ["mr_moneyman"]}
+    {"id": "door_duty", "stage": 1, "enemies": ["bouncer"], "gold_min": 17, "gold_max": 23},
+    {"id": "cocktail_hour", "stage": 2, "enemies": ["bouncer", "server", "server"], "gold_min": 22, "gold_max": 28},
+    {"id": "double_door", "stage": 2, "enemies": ["bouncer", "bouncer"], "gold_min": 27, "gold_max": 33},
+    {"id": "card_table", "stage": 3, "enemies": ["dealer", "dealer", "dealer"], "gold_min": 32, "gold_max": 38},
+    {"id": "high_table", "stage": 3, "enemies": ["dealer", "dealer", "dealer"], "gold_min": 37, "gold_max": 43},
+    {"id": "floor_check", "stage": 4, "enemies": ["bouncer", "manager"], "gold_min": 42, "gold_max": 48},
+    {"id": "full_service", "stage": 4, "enemies": ["bouncer", "server", "server", "dealer"], "gold_min": 47, "gold_max": 53},
+    {"id": "staff_meeting", "stage": 5, "enemies": ["server", "server", "manager", "server"], "gold_min": 52, "gold_max": 58},
+    {"id": "the_pit", "stage": 5, "enemies": ["dealer", "dealer", "dealer", "dealer", "dealer"], "gold_min": 57, "gold_max": 63},
+    {"id": "the_boss", "stage": 6, "enemies": ["mr_moneyman"], "gold_min": 0, "gold_max": 0}
   ]
 }

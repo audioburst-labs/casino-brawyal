@@ -2,76 +2,106 @@
   "type": "relics",
   "items": [
     {
-      "id": "lucky_rabbit_foot",
-      "name": "Lucky Rabbit's Foot",
-      "trigger": "combat_started",
-      "effects": [{"op": "gain_block", "amount": 5}],
-      "description": "Start each combat with 5 Block."
-    },
-    {
-      "id": "gold_tooth",
-      "name": "Gold Tooth",
+      "id": "gamblers_pass",
+      "name": "Gambler's Pass",
       "trigger": "combat_won",
-      "effects": [{"op": "gain_coins", "min": 5, "max": 10}],
-      "description": "Winning a combat pays out 5-10 extra coins."
+      "price_min": 17,
+      "price_max": 23,
+      "effects": [
+        {"op": "lose_coins", "amount": 10},
+        {"op": "gain_coins", "min": 20, "max": 30}
+      ],
+      "description": "At the end of each fight, lose 10 gold to collect a better payout."
     },
     {
-      "id": "brass_knuckles",
-      "name": "Brass Knuckles",
-      "trigger": "combat_started",
-      "effects": [{"op": "apply_status", "status": "strength", "stacks": 1, "target": "self"}],
-      "description": "Start each combat with 1 Strength."
-    },
-    {
-      "id": "spade_charm",
-      "name": "Spade Charm",
-      "trigger": "spin_resolved",
-      "effects": [{"op": "convert_chips", "to_suit": "spade", "count": 1}],
-      "description": "After each spin, one chip turns into a Spade."
-    },
-    {
-      "id": "velvet_rope",
-      "name": "Velvet Rope",
-      "trigger": "combat_won",
-      "effects": [{"op": "heal_pct", "pct": 0.05}],
-      "description": "Heal 5% of max HP after winning a combat."
-    },
-    {
-      "id": "house_chip",
-      "name": "House Chip",
-      "trigger": "spin_resolved",
-      "effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
-      "description": "Every spin mints one bonus Diamond chip."
-    },
-    {
-      "id": "marked_deck",
-      "name": "Marked Deck",
-      "rarity": "uncommon",
-      "trigger": "round_started",
-      "effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 1, "target": "enemy"}],
-      "description": "Each round, your target starts 1 Vulnerable."
-    },
-    {
-      "id": "loaded_die",
-      "name": "Loaded Die",
-      "rarity": "uncommon",
-      "trigger": "combat_started",
-      "effects": [{"op": "add_chips", "suit": "spade", "count": 2}],
-      "description": "Start every combat holding 2 Spade chips."
-    },
-    {
-      "id": "iron_ledger",
-      "name": "Iron Ledger",
-      "trigger": "combat_won",
-      "effects": [{"op": "gain_coins", "min": 8, "max": 12}],
-      "description": "Winning a combat collects an extra 8-12 coins in dues."
-    },
-    {
-      "id": "vault_key",
-      "name": "Vault Key",
+      "id": "bounty_list",
+      "name": "Bounty List",
       "trigger": "enemy_killed",
-      "effects": [{"op": "gain_coins", "min": 2, "max": 4}],
-      "description": "Every enemy you finish drops 2-4 bonus coins."
+      "price_min": 17,
+      "price_max": 23,
+      "effects": [{"op": "gain_coins", "amount": 5}],
+      "description": "At the end of each fight, gain 5 gold for each enemy killed."
+    },
+    {
+      "id": "spade_protection",
+      "name": "Spade's Protection",
+      "trigger": "spin_resolved",
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [{"op": "block_per_chip", "suit": "spade", "amount": 2}],
+      "description": "When you get a Spade gem, gain 2 Block."
+    },
+    {
+      "id": "heart_protection",
+      "name": "Heart's Protection",
+      "trigger": "spin_resolved",
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [{"op": "block_per_chip", "suit": "heart", "amount": 2}],
+      "description": "When you get a Heart gem, gain 2 Block."
+    },
+    {
+      "id": "club_protection",
+      "name": "Club's Protection",
+      "trigger": "spin_resolved",
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [{"op": "block_per_chip", "suit": "club", "amount": 2}],
+      "description": "When you get a Club gem, gain 2 Block."
+    },
+    {
+      "id": "diamond_protection",
+      "name": "Diamond's Protection",
+      "trigger": "spin_resolved",
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [{"op": "block_per_chip", "suit": "diamond", "amount": 2}],
+      "description": "When you get a Diamond gem, gain 2 Block."
+    },
+    {
+      "id": "high_stakes",
+      "name": "High Stakes",
+      "trigger": "combat_started",
+      "price_min": 17,
+      "price_max": 23,
+      "effects": [],
+      "description": "Weak and Vulnerable values are increased to 50%."
+    },
+    {
+      "id": "high_roller",
+      "name": "High Roller",
+      "trigger": "spin_resolved",
+      "price_min": 27,
+      "price_max": 33,
+      "effects": [{"op": "respin_reel", "condition": "spin_has_triple"}],
+      "description": "When you roll 3 of the same type, go again."
+    },
+    {
+      "id": "dark_emblem",
+      "name": "Dark Emblem",
+      "trigger": "combat_started",
+      "price_min": 32,
+      "price_max": 38,
+      "effects": [],
+      "description": "Attacks that require a Spade or a Club deal 30% more damage."
+    },
+    {
+      "id": "red_emblems",
+      "name": "Red Emblems",
+      "trigger": "combat_started",
+      "price_min": 32,
+      "price_max": 38,
+      "effects": [],
+      "description": "Attacks that require a Heart or a Diamond deal 30% more damage."
+    },
+    {
+      "id": "lucky_foot",
+      "name": "Lucky Foot",
+      "trigger": "combat_started",
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [],
+      "description": "When attacked, there's a 10% chance the damage is reduced to 0."
     }
   ]
 }

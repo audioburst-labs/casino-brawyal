@@ -17,7 +17,7 @@ func _init() -> void:
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var seed_value := int(args[0]) if args.size() > 0 else 1
-	var enemy_ids: Array = args.slice(1) if args.size() > 1 else ["security_goon", "card_shark"]
+	var enemy_ids: Array = args.slice(1) if args.size() > 1 else ["bouncer", "server"]
 
 	var db := ContentDB.new()
 	if not db.load_all("res://data"):
@@ -27,7 +27,7 @@ func _run() -> void:
 
 	var sim := CombatSim.new(db, {
 		"hero": "ace",
-		"abilities": ["card_flick", "dagger_throw", "card_guard"],
+		"abilities": ["card_sling", "quick_maneuvers", "color_up", "double_down"],
 		"enemies": enemy_ids,
 		"seed": seed_value,
 	})
@@ -35,7 +35,7 @@ func _run() -> void:
 
 	while sim.phase != CombatSim.Phase.ENDED and sim.round_number < MAX_ROUNDS:
 		sim.begin_round()
-		_greedy_assign(sim)
+		GreedyBot.assign_greedily(sim)
 		if sim.phase == CombatSim.Phase.ASSIGNMENT:
 			sim.end_assignment()
 		_print_events(sim.drain_events(), sim)
@@ -49,25 +49,6 @@ func _run() -> void:
 func _finish(code: int) -> void:
 	await process_frame
 	quit(code)
-
-
-func _greedy_assign(sim: CombatSim) -> void:
-	var progress := true
-	while progress and sim.phase == CombatSim.Phase.ASSIGNMENT:
-		progress = false
-		for suit: StringName in ContentDB.SUITS:
-			if sim.tray.count(suit) == 0:
-				continue
-			for ability_index in sim.abilities.size():
-				var ability := sim.abilities[ability_index]
-				for slot in ability.filled.size():
-					if ability.can_accept(slot, suit) and sim.assign_chip(suit, ability_index, slot):
-						progress = true
-						break
-				if progress:
-					break
-			if progress:
-				break
 
 
 func _print_events(events: Array[CombatEvent], sim: CombatSim) -> void:

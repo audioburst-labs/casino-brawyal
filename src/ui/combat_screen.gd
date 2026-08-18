@@ -27,8 +27,8 @@ func _ready() -> void:
 		# Standalone debug launch: a fixed fight with everything unlocked.
 		setup({
 			"hero": "ace",
-			"abilities": ["card_flick", "dagger_throw", "card_guard", "shuffle"],
-			"enemies": ["security_goon", "card_shark"],
+			"abilities": ["card_sling", "quick_maneuvers", "color_up", "double_down"],
+			"enemies": ["bouncer", "server"],
 			"seed": randi(),
 		})
 

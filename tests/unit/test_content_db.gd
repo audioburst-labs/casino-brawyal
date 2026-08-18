@@ -18,11 +18,12 @@ func test_loads_shipped_data_without_errors() -> void:
 
 func test_ability_lookup_parses_cost_and_effects() -> void:
 	var db := _loaded_db()
-	var ability := db.get_ability(&"card_flick")
+	var ability := db.get_ability(&"card_sling")
 	assert_not_null(ability)
-	assert_eq(ability.name, "Card Flick")
+	assert_eq(ability.name, "Card Sling")
 	assert_gt(ability.cost.size(), 0)
 	assert_gt(ability.effects.size(), 0)
+	assert_has(ability.keywords, &"mark")
 
 
 func test_hero_starting_abilities_exist() -> void:
@@ -37,9 +38,10 @@ func test_hero_starting_abilities_exist() -> void:
 
 func test_enemy_lookup_parses_brain_and_moves() -> void:
 	var db := _loaded_db()
-	var enemy := db.get_enemy(&"security_goon")
+	var enemy := db.get_enemy(&"bouncer")
 	assert_not_null(enemy)
-	assert_gt(enemy.hp, 0)
+	assert_gt(enemy.hp_min, 0)
+	assert_gte(enemy.hp_max, enemy.hp_min)
 	assert_gt(enemy.moves.size(), 0)
 
 

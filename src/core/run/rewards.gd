@@ -4,8 +4,11 @@ extends RefCounted
 ## ability/relic draws always come from the unowned pool.
 
 
-static func roll_coins(encounter_number: int, rng: RandomNumberGenerator) -> int:
-	return rng.randi_range(encounter_number * 8, encounter_number * 12)
+## Combat gold comes from the fought lineup's range (capabilities sheet).
+static func roll_coins(gold_min: int, gold_max: int, rng: RandomNumberGenerator) -> int:
+	if gold_max <= 0:
+		return 0
+	return rng.randi_range(gold_min, gold_max)
 
 
 ## Up to `count` distinct unowned abilities (fewer when the pool runs dry).
