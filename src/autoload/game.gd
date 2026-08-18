@@ -82,33 +82,11 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 
 
 func _start_combat(option: Dictionary) -> void:
-	var encounter := run.history.size()
-	var stage := clampi(((encounter - 1) / 3) + 1, 1, 3)
-	var lineup_stage := stage
-	var hp_mult := 1.0
-	var dmg_mult := 1.0
-	if option.type == &"boss":
-		lineup_stage = ContentDB.BOSS_STAGE
-	elif option.type == &"hard_combat":
-		if str(option.get("variant", "buffed")) == "advanced":
-			lineup_stage = mini(stage + 1, 3)
-		else:
-			hp_mult = 1.25
-			dmg_mult = 1.25
-	var lineups := Db.content.lineups_for_stage(lineup_stage)
-	var lineup: Dictionary = lineups[rng.stream(&"map").randi_range(0, lineups.size() - 1)]
-	goto_screen("res://scenes/screens/combat_screen.tscn", {
-		"hero": run.hero_id,
-		"hero_hp": run.hp,
-		"abilities": run.ability_ids,
-		"machine": run.machine,
-		"enemies": lineup.enemies,
-		"seed": rng.stream(&"combat_seeds").randi(),
-		"hp_mult": hp_mult,
-		"dmg_mult": dmg_mult,
-		"relics": run.relic_ids,
-		"run_mode": true,
-	})
+	var config := EncounterFactory.combat_config(Db.content, run,
+		rng.stream(&"map"), option)
+	config["seed"] = rng.stream(&"combat_seeds").randi()
+	config["run_mode"] = true
+	goto_screen("res://scenes/screens/combat_screen.tscn", config)
 
 
 func _pick_story_event() -> StringName:

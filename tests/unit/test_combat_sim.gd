@@ -45,8 +45,8 @@ func test_full_ability_auto_fires_with_suit_bonus() -> void:
 	sim.tray.add(&"spade", 1)
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
-	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_flick: 3 dmg, spade bonus +2
-	assert_eq(enemy.hp, hp_before - 5)
+	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_flick: 4 dmg, spade bonus +2
+	assert_eq(enemy.hp, hp_before - 6)
 	assert_has(_types(sim.drain_events()), &"ability_fired")
 
 
@@ -57,7 +57,7 @@ func test_off_suit_chip_skips_the_bonus() -> void:
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
 	sim.assign_chip(&"heart", 0, 0)  # card_flick without spade bonus
-	assert_eq(enemy.hp, hp_before - 3)
+	assert_eq(enemy.hp, hp_before - 4)
 
 
 func test_assign_requires_matching_suit_and_available_chip() -> void:
@@ -120,7 +120,7 @@ func test_killing_all_enemies_wins_the_combat() -> void:
 	sim.begin_round()
 	sim.enemies[0].hp = 4
 	sim.tray.add(&"spade", 1)
-	sim.assign_chip(&"spade", 0, 0)  # 5 damage kills
+	sim.assign_chip(&"spade", 0, 0)  # 6 damage kills
 	var types := _types(sim.drain_events())
 	assert_has(types, &"actor_died")
 	assert_has(types, &"combat_won")
@@ -143,7 +143,7 @@ func test_ability_hits_the_selected_target() -> void:
 	sim.set_target(&"enemy_0")
 	sim.tray.add(&"spade", 1)
 	sim.assign_chip(&"spade", 0, 0)
-	assert_eq(sim.enemies[0].hp, 22 - 5)
+	assert_eq(sim.enemies[0].hp, 22 - 6)
 	assert_eq(sim.enemies[1].hp, 16)
 
 
