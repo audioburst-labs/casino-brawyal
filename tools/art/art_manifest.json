@@ -483,6 +483,20 @@
       "prompt": "A cartoon story illustration: the casino security office, a wall of glowing monitors showing casino floor feeds, a big chair turned away from the desk with only a gold-ringed hand visible tapping a spade-topped cane, confiscated lucky charms in a glass case, one monitor showing a wanted-poster silhouette of a card-slinging rogue. Ominous discovered-too-much mood, rich colors. No text."
     },
     {
+      "id": "ace_portrait",
+      "out": "assets/characters/ace_portrait.png",
+      "size": "1024x1024",
+      "transparent": false,
+      "prompt": "A head-and-shoulders portrait of Ace for a talking-avatar system: a dashing debonair swashbuckler gambler rogue in his early 30s, slim face, confident smirk, slicked-back dark hair, small chin stubble, maroon vest over a cream shirt, golden-spade bolo tie. Face fully visible, looking straight at the camera, neutral relaxed expression, mouth closed, even soft studio lighting, plain dark maroon backdrop. Realistic-leaning stylized rendering with clear facial features suitable for face detection."
+    },
+    {
+      "id": "moneyman_portrait",
+      "out": "assets/characters/moneyman_portrait.png",
+      "size": "1024x1024",
+      "transparent": false,
+      "prompt": "A head-and-shoulders portrait of Mr. Moneyman for a talking-avatar system: a rotund imposing casino tycoon in his 60s, fleshy stern face, cold gleaming eyes, monocle over the left eye, huge waxed grey mustache, black top hat with a gold band and small spade emblem, gold-trimmed maroon tailcoat and cream cravat. Face fully visible, looking straight at the camera, smug closed-mouth expression, even soft studio lighting, plain dark green backdrop. Realistic-leaning stylized rendering with clear facial features suitable for face detection."
+    },
+    {
       "id": "ui_sold_stamp",
       "out": "assets/icons/ui_sold_stamp.png",
       "size": "1024x1024",

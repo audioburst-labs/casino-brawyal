@@ -3,6 +3,9 @@ extends Node
 ## Encounter #1 auto-starts as combat; #10 is the boss; everything else goes
 ## through the map choice screen.
 
+const ACE_INTRO_VIDEO := "res://assets/video/ace_intro.ogv"
+const BOSS_INTRO_VIDEO := "res://assets/video/moneyman_boss_intro.ogv"
+
 var run: RunState
 var rng: GameRng
 
@@ -35,7 +38,8 @@ func new_run(seed_value: int = -1) -> void:
 	run.max_hp = hero.max_hp
 	run.hp = hero.max_hp
 	run.ability_ids = hero.starting_abilities.duplicate()
-	choose_encounter({"type": &"combat"})
+	play_cinematic(ACE_INTRO_VIDEO,
+		func() -> void: choose_encounter({"type": &"combat"}))
 
 
 func show_map() -> void:
@@ -100,7 +104,48 @@ func _start_combat(option: Dictionary) -> void:
 		rng.stream(&"map"), option)
 	config["seed"] = rng.stream(&"combat_seeds").randi()
 	config["run_mode"] = true
-	goto_screen("res://scenes/screens/combat_screen.tscn", config)
+	var start := func() -> void:
+		goto_screen("res://scenes/screens/combat_screen.tscn", config)
+	if option.type == &"boss":
+		play_cinematic(BOSS_INTRO_VIDEO, start)
+	else:
+		start.call()
+
+
+## Fullscreen skippable video overlay. Calls on_done immediately when the
+## clip is missing (HeyGen videos are optional polish).
+func play_cinematic(path: String, on_done: Callable) -> void:
+	if not ResourceLoader.exists(path):
+		on_done.call()
+		return
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	var backdrop := ColorRect.new()
+	backdrop.color = Color.BLACK
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(backdrop)
+	var player := VideoStreamPlayer.new()
+	player.stream = load(path)
+	player.expand = true
+	player.autoplay = true
+	player.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(player)
+	var hint := Label.new()
+	hint.text = "click to skip"
+	hint.anchor_left = 0.85
+	hint.anchor_top = 0.94
+	hint.anchor_right = 0.99
+	hint.anchor_bottom = 0.99
+	layer.add_child(hint)
+	var finish := func() -> void:
+		if is_instance_valid(layer):
+			layer.queue_free()
+			on_done.call()
+	player.finished.connect(finish)
+	backdrop.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			finish.call())
+	get_tree().root.add_child(layer)
 
 
 func _pick_story_event() -> StringName:
