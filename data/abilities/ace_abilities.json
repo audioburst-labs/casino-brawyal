@@ -36,6 +36,58 @@
       "bonus_condition": "all_slots_bonus_suit",
       "bonus_effects": [{"op": "gain_block", "amount": 2}],
       "description": "Fan cards into a guard for 5 Block. Club: +2 Block."
+    },
+    {
+      "id": "fan_of_blades",
+      "name": "Fan of Blades",
+      "rarity": "uncommon",
+      "cost": [{"suit": "spade"}, {"suit": "spade"}, {"suit": "any"}],
+      "effects": [{"op": "damage", "amount": 3, "times": 3}],
+      "bonus_suit": "spade",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "damage", "amount": 3, "times": 1}],
+      "description": "Deal 3 damage 3 times. All Spades: one extra hit."
+    },
+    {
+      "id": "shuffle",
+      "name": "Shuffle",
+      "rarity": "common",
+      "cost": [{"suit": "any"}],
+      "effects": [{"op": "convert_chips", "to_suit": "spade", "count": 2}],
+      "description": "Convert 2 chips in the tray into Spades."
+    },
+    {
+      "id": "mark_the_sucker",
+      "name": "Mark the Sucker",
+      "rarity": "common",
+      "cost": [{"suit": "heart"}, {"suit": "any"}],
+      "effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 2, "target": "enemy"}],
+      "bonus_suit": "heart",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 1, "target": "enemy"}],
+      "description": "Inflict 2 Vulnerable. All Hearts: +1 Vulnerable."
+    },
+    {
+      "id": "low_blow",
+      "name": "Low Blow",
+      "rarity": "common",
+      "cost": [{"suit": "club"}, {"suit": "spade"}],
+      "effects": [
+        {"op": "damage", "amount": 5, "times": 1},
+        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "enemy"}
+      ],
+      "description": "Deal 5 damage and inflict 1 Weak."
+    },
+    {
+      "id": "ace_up_the_sleeve",
+      "name": "Ace Up the Sleeve",
+      "rarity": "rare",
+      "cost": [{"suit": "diamond"}, {"suit": "diamond"}],
+      "effects": [{"op": "respin_reel"}],
+      "bonus_suit": "diamond",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
+      "description": "Spin the machine again this round. All Diamonds: +1 Diamond chip."
     }
   ]
 }

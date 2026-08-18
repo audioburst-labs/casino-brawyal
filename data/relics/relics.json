@@ -1,0 +1,47 @@
+{
+  "type": "relics",
+  "items": [
+    {
+      "id": "lucky_rabbit_foot",
+      "name": "Lucky Rabbit's Foot",
+      "trigger": "combat_started",
+      "effects": [{"op": "gain_block", "amount": 5}],
+      "description": "Start each combat with 5 Block."
+    },
+    {
+      "id": "gold_tooth",
+      "name": "Gold Tooth",
+      "trigger": "combat_won",
+      "effects": [{"op": "gain_coins", "min": 5, "max": 10}],
+      "description": "Winning a combat pays out 5-10 extra coins."
+    },
+    {
+      "id": "brass_knuckles",
+      "name": "Brass Knuckles",
+      "trigger": "combat_started",
+      "effects": [{"op": "apply_status", "status": "strength", "stacks": 1, "target": "self"}],
+      "description": "Start each combat with 1 Strength."
+    },
+    {
+      "id": "spade_charm",
+      "name": "Spade Charm",
+      "trigger": "spin_resolved",
+      "effects": [{"op": "convert_chips", "to_suit": "spade", "count": 1}],
+      "description": "After each spin, one chip turns into a Spade."
+    },
+    {
+      "id": "velvet_rope",
+      "name": "Velvet Rope",
+      "trigger": "combat_won",
+      "effects": [{"op": "heal_pct", "pct": 0.05}],
+      "description": "Heal 5% of max HP after winning a combat."
+    },
+    {
+      "id": "house_chip",
+      "name": "House Chip",
+      "trigger": "spin_resolved",
+      "effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
+      "description": "Every spin mints one bonus Diamond chip."
+    }
+  ]
+}

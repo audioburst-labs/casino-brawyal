@@ -33,6 +33,15 @@ class HeroDef:
 	var starting_abilities: Array[StringName] = []
 
 
+class RelicDef:
+	var id: StringName
+	var name: String
+	var trigger: StringName                   # hook name, see ContentDB.KNOWN_TRIGGERS
+	var effects: Array[Dictionary] = []
+	var description: String
+	var rarity: String = "common"
+
+
 class StatusDef:
 	var id: StringName
 	var name: String

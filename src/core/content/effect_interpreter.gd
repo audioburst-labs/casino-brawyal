@@ -21,6 +21,11 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				var amount := int(ceil(source.max_hp * float(effect.get("pct", 0.0))))
 				source.heal(amount)
 				sim.emit_event(&"healed", {"actor": source.id, "amount": amount})
+			"add_chips":
+				var suit := StringName(str(effect.get("suit", "")))
+				var count := int(effect.get("count", 1))
+				sim.tray.add(suit, count)
+				sim.emit_event(&"chips_generated", {"suit": suit, "count": count})
 			"convert_chips":
 				_op_convert_chips(effect, sim)
 			"respin_reel":

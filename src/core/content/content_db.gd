@@ -9,8 +9,13 @@ extends RefCounted
 const SUITS: Array[StringName] = [&"spade", &"club", &"heart", &"diamond"]
 const COST_SUITS: Array[StringName] = [&"spade", &"club", &"heart", &"diamond", &"any"]
 const KNOWN_OPS: Array[String] = [
-	"damage", "apply_status", "gain_block", "heal_pct",
+	"damage", "apply_status", "gain_block", "heal_pct", "add_chips",
 	"convert_chips", "respin_reel", "gain_coins", "grant_relic",
+]
+const KNOWN_TRIGGERS: Array[StringName] = [
+	&"combat_started", &"round_started", &"spin_resolved", &"chips_generated",
+	&"ability_activated", &"damage_dealt", &"damage_taken", &"enemy_killed",
+	&"round_ended", &"combat_won", &"coins_gained", &"shop_entered", &"rest_taken",
 ]
 
 var errors: Array[String] = []
@@ -19,6 +24,7 @@ var _abilities: Dictionary = {}
 var _enemies: Dictionary = {}
 var _heroes: Dictionary = {}
 var _statuses: Dictionary = {}
+var _relics: Dictionary = {}
 
 
 func load_all(root: String) -> bool:
@@ -27,6 +33,7 @@ func load_all(root: String) -> bool:
 	_enemies.clear()
 	_heroes.clear()
 	_statuses.clear()
+	_relics.clear()
 
 	var docs: Array[Dictionary] = []
 	_scan_dir(root, docs)
@@ -44,6 +51,9 @@ func load_all(root: String) -> bool:
 			"enemies":
 				for item: Dictionary in doc.get("items", []):
 					_parse_enemy(item)
+			"relics":
+				for item: Dictionary in doc.get("items", []):
+					_parse_relic(item)
 	for doc in docs:
 		if doc.get("type") == "heroes":
 			for item: Dictionary in doc.get("items", []):
@@ -68,8 +78,16 @@ func get_status(id: StringName) -> Defs.StatusDef:
 	return _statuses.get(id)
 
 
+func get_relic(id: StringName) -> Defs.RelicDef:
+	return _relics.get(id)
+
+
 func all_ability_ids() -> Array:
 	return _abilities.keys()
+
+
+func all_relic_ids() -> Array:
+	return _relics.keys()
 
 
 func _scan_dir(path: String, docs: Array[Dictionary]) -> void:
@@ -147,6 +165,26 @@ func _validate_effect(effect: Dictionary, context: String) -> void:
 		errors.append("%s: unknown effect op '%s'" % [context, op])
 	if op == "apply_status" and not _statuses.has(StringName(str(effect.get("status", "")))):
 		errors.append("%s: unknown status '%s'" % [context, effect.get("status", "")])
+
+
+func _parse_relic(item: Dictionary) -> void:
+	var relic := Defs.RelicDef.new()
+	relic.id = StringName(item.get("id", ""))
+	if relic.id == &"":
+		errors.append("relic with missing id")
+		return
+	relic.name = item.get("name", "")
+	relic.description = item.get("description", "")
+	relic.rarity = item.get("rarity", "common")
+	relic.trigger = StringName(str(item.get("trigger", "")))
+	if not KNOWN_TRIGGERS.has(relic.trigger):
+		errors.append("relic %s: unknown trigger '%s'" % [relic.id, relic.trigger])
+	for effect: Dictionary in item.get("effects", []):
+		_validate_effect(effect, "relic %s" % relic.id)
+		relic.effects.append(effect)
+	if relic.effects.is_empty():
+		errors.append("relic %s: no effects" % relic.id)
+	_relics[relic.id] = relic
 
 
 func _parse_enemy(item: Dictionary) -> void:
