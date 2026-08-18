@@ -1,0 +1,39 @@
+{
+  "type": "enemies",
+  "items": [
+    {
+      "id": "security_goon",
+      "name": "Security Goon",
+      "hp": 22,
+      "stage": 1,
+      "brain": {"type": "sequence", "loop": true, "steps": ["jab", "jab", "haymaker"]},
+      "moves": {
+        "jab": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
+        "haymaker": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 8,
+            "debuffs": [{"status": "weak", "stacks": 1}]
+          }
+        }
+      }
+    },
+    {
+      "id": "card_shark",
+      "name": "Card Shark",
+      "hp": 16,
+      "stage": 1,
+      "brain": {"type": "weighted", "weights": {"card_toss": 2, "sharp_deal": 1}, "no_repeat": "sharp_deal"},
+      "moves": {
+        "card_toss": {"intent": {"instances": 3, "per_hit": 2, "debuffs": []}},
+        "sharp_deal": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 5,
+            "debuffs": [{"status": "vulnerable", "stacks": 2}]
+          }
+        }
+      }
+    }
+  ]
+}

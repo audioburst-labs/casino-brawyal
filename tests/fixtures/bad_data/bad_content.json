@@ -1,0 +1,12 @@
+{
+  "type": "abilities",
+  "items": [
+    {
+      "id": "glitter_bomb",
+      "name": "Glitter Bomb",
+      "cost": [{"suit": "sparkle"}],
+      "effects": [{"op": "apply_status", "status": "poison", "stacks": 2}],
+      "description": "Invalid on purpose: unknown suit and unknown status."
+    }
+  ]
+}

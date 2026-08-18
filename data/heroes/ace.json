@@ -1,0 +1,11 @@
+{
+  "type": "heroes",
+  "items": [
+    {
+      "id": "ace",
+      "name": "Ace",
+      "max_hp": 70,
+      "starting_abilities": ["card_flick", "dagger_throw", "card_guard"]
+    }
+  ]
+}

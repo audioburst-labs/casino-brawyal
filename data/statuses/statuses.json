@@ -1,0 +1,41 @@
+{
+  "type": "statuses",
+  "items": [
+    {
+      "id": "weak",
+      "name": "Weak",
+      "stack_mode": "duration",
+      "description": "Deals 25% less damage (rounded down, minimum 1)."
+    },
+    {
+      "id": "vulnerable",
+      "name": "Vulnerable",
+      "stack_mode": "duration",
+      "description": "Takes 50% more damage."
+    },
+    {
+      "id": "taunt",
+      "name": "Taunt",
+      "stack_mode": "duration",
+      "description": "Forces the player to target this enemy."
+    },
+    {
+      "id": "block",
+      "name": "Block",
+      "stack_mode": "intensity",
+      "description": "Absorbs incoming damage. Expires at the owner's next round start."
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "stack_mode": "intensity",
+      "description": "Adds bonus damage to every hit."
+    },
+    {
+      "id": "stun",
+      "name": "Stun",
+      "stack_mode": "duration",
+      "description": "Skips the next intended action."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "type": "abilities",
+  "items": [
+    {
+      "id": "card_flick",
+      "name": "Card Flick",
+      "pool": "starter",
+      "rarity": "starter",
+      "cost": [{"suit": "any"}],
+      "effects": [{"op": "damage", "amount": 3, "times": 1}],
+      "bonus_suit": "spade",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "damage", "amount": 2, "times": 1}],
+      "description": "Flick a razor card for 3 damage. Spade: +2 damage."
+    },
+    {
+      "id": "dagger_throw",
+      "name": "Dagger Throw",
+      "pool": "starter",
+      "rarity": "starter",
+      "cost": [{"suit": "spade"}, {"suit": "any"}],
+      "effects": [{"op": "damage", "amount": 7, "times": 1}],
+      "bonus_suit": "spade",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "apply_status", "status": "weak", "stacks": 1, "target": "enemy"}],
+      "description": "Hurl a dagger for 7 damage. All Spades: inflict 1 Weak."
+    },
+    {
+      "id": "card_guard",
+      "name": "Card Guard",
+      "pool": "starter",
+      "rarity": "starter",
+      "cost": [{"suit": "club"}],
+      "effects": [{"op": "gain_block", "amount": 5}],
+      "bonus_suit": "club",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "gain_block", "amount": 2}],
+      "description": "Fan cards into a guard for 5 Block. Club: +2 Block."
+    }
+  ]
+}
