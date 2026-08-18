@@ -12,6 +12,14 @@ func _ready() -> void:
 		add_child(art)
 		move_child(art, 1)  # above the ColorRect, below the menu column
 	$CenterContainer/VBox/Title.theme_type_variation = &"TitleLabel"
+	if RunSave.has_save():
+		var continue_button := Button.new()
+		continue_button.text = "Continue"
+		continue_button.add_theme_font_size_override("font_size", 40)
+		continue_button.pressed.connect(func() -> void: Game.continue_run())
+		var vbox := $CenterContainer/VBox
+		vbox.add_child(continue_button)
+		vbox.move_child(continue_button, 1)  # right under the title
 
 
 func _on_play_pressed() -> void:

@@ -39,7 +39,19 @@ func new_run(seed_value: int = -1) -> void:
 
 
 func show_map() -> void:
+	RunSave.save_run(run)
 	goto_screen("res://scenes/screens/map_screen.tscn")
+
+
+func continue_run() -> bool:
+	var loaded := RunSave.load_run()
+	if loaded == null:
+		return false
+	run = loaded
+	# Salt the RNG with progress so a reloaded run doesn't replay identical draws.
+	rng = GameRng.new(run.seed_value + run.history.size() * 7919)
+	goto_screen("res://scenes/screens/map_screen.tscn")
+	return true
 
 
 func map_options() -> Array[Dictionary]:
@@ -68,11 +80,13 @@ func encounter_finished() -> void:
 
 func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 	if not won:
+		RunSave.clear()
 		goto_screen("res://scenes/screens/game_over_screen.tscn")
 		return
 	run.hp = maxi(1, hero_hp)
 	RunEffects.apply(pending_rewards, Db.content, run, rng.stream(&"rewards"))
 	if run.last_visited() == &"boss":
+		RunSave.clear()
 		goto_screen("res://scenes/screens/victory_screen.tscn")
 	else:
 		goto_screen("res://scenes/screens/reward_screen.tscn", {
