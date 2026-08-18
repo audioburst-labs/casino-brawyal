@@ -27,6 +27,15 @@ func set_reel_count(count: int) -> void:
 	for i in count:
 		var frame := PanelContainer.new()
 		frame.custom_minimum_size = Vector2(110, 130)
+		# Cream slot window (like the cabinet art) so dark suits stay readable.
+		var window := StyleBoxFlat.new()
+		window.bg_color = Color(0.96, 0.93, 0.85)
+		window.border_color = Color(0.83, 0.69, 0.22)
+		window.set_border_width_all(3)
+		window.set_corner_radius_all(12)
+		window.shadow_color = Color(0, 0, 0, 0.3)
+		window.shadow_size = 3
+		frame.add_theme_stylebox_override("panel", window)
 		var face := TextureRect.new()
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

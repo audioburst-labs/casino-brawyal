@@ -16,7 +16,7 @@ static func suit_color(suit: StringName) -> Color:
 
 
 static func suit_texture(suit: StringName) -> Texture2D:
-	return _load("res://assets/icons/suit_%s.png" % suit)
+	return _load("res://assets/icons/suit_%s.png" % suit)  # incl. suit_any.png for &"any"
 
 
 static func chip_texture(suit: StringName) -> Texture2D:

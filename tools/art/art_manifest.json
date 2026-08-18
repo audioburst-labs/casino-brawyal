@@ -483,6 +483,14 @@
       "prompt": "A cartoon story illustration: the casino security office, a wall of glowing monitors showing casino floor feeds, a big chair turned away from the desk with only a gold-ringed hand visible tapping a spade-topped cane, confiscated lucky charms in a glass case, one monitor showing a wanted-poster silhouette of a card-slinging rogue. Ominous discovered-too-much mood, rich colors. No text."
     },
     {
+      "id": "suit_any",
+      "out": "assets/icons/suit_any.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single game icon meaning 'any card suit', centered on a fully transparent background: a rounded four-pointed compass-rose arrangement of the four playing card suit symbols — small spade (midnight blue) on top, heart (crimson) on the right, club (emerald) on the bottom, diamond (sapphire) on the left — tightly clustered around a small gold star in the center. Thick dark outlines, chunky cartoon shapes, reads clearly at small sizes, fills most of the frame. Nothing else."
+    },
+    {
       "id": "ace_portrait",
       "out": "assets/characters/ace_portrait.png",
       "size": "1024x1024",

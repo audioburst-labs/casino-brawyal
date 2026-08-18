@@ -10,6 +10,8 @@ var ability_index := -1
 
 var _state: AbilityState
 var _sockets: Array[Button] = []
+var _socket_faces: Array[TextureRect] = []
+var _socket_labels: Array[Label] = []
 var _highlight_suit: StringName = &""
 
 
@@ -44,12 +46,39 @@ func setup(state: AbilityState, index: int) -> void:
 	socket_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	socket_row.add_theme_constant_override("separation", 8)
 	box.add_child(socket_row)
+	var socket_style := StyleBoxFlat.new()
+	socket_style.bg_color = Color(0.94, 0.9, 0.8)
+	socket_style.border_color = Color(0.83, 0.69, 0.22)
+	socket_style.set_border_width_all(2)
+	socket_style.set_corner_radius_all(10)
 	for slot in _state.def.cost.size():
 		var socket := Button.new()
-		socket.custom_minimum_size = Vector2(52, 52)
+		socket.custom_minimum_size = Vector2(56, 56)
+		for style_name in ["normal", "hover", "pressed", "disabled"]:
+			socket.add_theme_stylebox_override(style_name, socket_style)
 		socket.pressed.connect(_on_socket_pressed.bind(slot))
 		socket_row.add_child(socket)
 		_sockets.append(socket)
+		var face := TextureRect.new()
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.set_anchors_preset(Control.PRESET_FULL_RECT)
+		face.offset_left = 7
+		face.offset_top = 7
+		face.offset_right = -7
+		face.offset_bottom = -7
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		socket.add_child(face)
+		_socket_faces.append(face)
+		var fallback := Label.new()
+		fallback.set_anchors_preset(Control.PRESET_FULL_RECT)
+		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		fallback.add_theme_color_override("font_color", Color(0.35, 0.25, 0.2))
+		fallback.add_theme_font_size_override("font_size", 24)
+		fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		socket.add_child(fallback)
+		_socket_labels.append(fallback)
 	refresh()
 
 
@@ -57,26 +86,30 @@ func refresh(highlight_suit: StringName = &"") -> void:
 	_highlight_suit = highlight_suit
 	for slot in _sockets.size():
 		var socket := _sockets[slot]
+		var face := _socket_faces[slot]
+		var fallback := _socket_labels[slot]
 		var filled := _state.filled[slot]
 		var required := _state.def.cost[slot]
 		if filled != &"":
 			var chip := SuitAssets.chip_texture(filled)
-			socket.icon = chip
-			socket.expand_icon = true
-			socket.text = "" if chip != null else String(filled).left(1).to_upper()
+			face.texture = chip
+			face.modulate = Color.WHITE
+			fallback.text = "" if chip != null else String(filled).left(1).to_upper()
 			socket.modulate = Color.WHITE
 			socket.tooltip_text = "%s chip socketed (click to return)" % filled
 		else:
-			var ghost := SuitAssets.suit_texture(required) if required != &"any" else null
-			socket.icon = ghost
-			socket.expand_icon = ghost != null
-			socket.text = "?" if required == &"any" else ("" if ghost != null else String(required).left(1).to_upper())
-			socket.tooltip_text = "needs: %s" % required
+			var ghost := SuitAssets.suit_texture(required)
+			face.texture = ghost
+			face.modulate = Color(1, 1, 1, 0.45)  # dimmed = waiting for a chip
+			fallback.text = "" if ghost != null else \
+				("?" if required == &"any" else String(required).left(1).to_upper())
+			socket.tooltip_text = "needs: any suit" if required == &"any" else "needs: %s" % required
 			var eligible := _highlight_suit != &"" and _state.can_accept(slot, _highlight_suit)
-			socket.modulate = Color(1.4, 1.3, 0.7) if eligible else Color(0.75, 0.72, 0.68, 0.9)
-	var bonus_ready := _state.def.bonus_suit != &""
-	if bonus_ready:
-		tooltip_text = "%s\n%s" % [_state.def.name, _state.def.description]
+			if eligible:
+				socket.modulate = Color(1.25, 1.2, 0.75)
+				face.modulate = Color(1, 1, 1, 0.85)
+			else:
+				socket.modulate = Color.WHITE
 
 
 func flash_fire() -> void:
