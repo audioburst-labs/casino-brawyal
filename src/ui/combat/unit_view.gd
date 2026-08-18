@@ -8,6 +8,8 @@ signal clicked(actor_id: StringName)
 var actor: CombatActor
 var sprite_height := 420.0
 
+var _intent_row: HBoxContainer
+var _intent_icon: TextureRect
 var _intent_label: Label
 var _sprite: TextureRect
 var _fallback: ColorRect
@@ -31,12 +33,23 @@ func setup(combat_actor: CombatActor) -> void:
 	_target_marker.visible = false
 	add_child(_target_marker)
 
+	_intent_row = HBoxContainer.new()
+	_intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_intent_row.add_theme_constant_override("separation", 6)
+	add_child(_intent_row)
+	_intent_icon = TextureRect.new()
+	_intent_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_intent_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_intent_icon.custom_minimum_size = Vector2(38, 38)
+	_intent_icon.visible = false
+	if ResourceLoader.exists("res://assets/icons/intent_attack.png"):
+		_intent_icon.texture = load("res://assets/icons/intent_attack.png")
+	_intent_row.add_child(_intent_icon)
 	_intent_label = Label.new()
-	_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_intent_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
 	_intent_label.add_theme_font_size_override("font_size", 26)
 	_intent_label.text = ""
-	add_child(_intent_label)
+	_intent_row.add_child(_intent_label)
 
 	var sprite_holder := CenterContainer.new()
 	sprite_holder.custom_minimum_size = Vector2(0, sprite_height)
@@ -123,17 +136,21 @@ func show_intent(move: Dictionary) -> void:
 	var parts: Array[String] = []
 	for debuff: Dictionary in intent.get("debuffs", []):
 		parts.append("%s %d" % [debuff.get("status", "?"), int(debuff.get("stacks", 1))])
+	for buff: Dictionary in intent.get("self_status", []):
+		parts.append("+%s %d" % [buff.get("status", "?"), int(buff.get("stacks", 1))])
 	var instances := int(intent.get("instances", 0))
 	var per_hit := int(intent.get("per_hit", 0))
 	if instances > 1:
-		parts.append("⚔ %dx%d" % [instances, per_hit])
+		parts.append("%dx%d" % [instances, per_hit])
 	elif instances == 1:
-		parts.append("⚔ %d" % per_hit)
+		parts.append("%d" % per_hit)
+	_intent_icon.visible = instances > 0 and _intent_icon.texture != null
 	_intent_label.text = "  ".join(parts)
 
 
 func clear_intent() -> void:
 	_intent_label.text = ""
+	_intent_icon.visible = false
 
 
 func set_targeted(targeted: bool) -> void:

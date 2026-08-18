@@ -52,19 +52,35 @@ func deselect() -> void:
 
 func _build_stack(suit: StringName, count: int) -> Control:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(96, 96)
+	button.custom_minimum_size = Vector2(104, 104)
 	button.tooltip_text = "%s chips: %d" % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)
 	if texture != null:
-		button.icon = texture
-		button.expand_icon = true
-		button.text = " x%d" % count
+		var chip := TextureRect.new()
+		chip.texture = texture
+		chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		chip.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		chip.set_anchors_preset(Control.PRESET_FULL_RECT)
+		chip.offset_left = 8
+		chip.offset_top = 8
+		chip.offset_right = -8
+		chip.offset_bottom = -8
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(chip)
+		var badge := Label.new()
+		badge.text = "x%d" % count
+		badge.theme_type_variation = &"SubtitleLabel"
+		badge.add_theme_font_size_override("font_size", 22)
+		badge.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		badge.offset_left = -44
+		badge.offset_top = -30
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(badge)
 	else:
 		button.text = "%s x%d" % [String(suit).left(1).to_upper(), count]
 		button.add_theme_color_override("font_color", SuitAssets.suit_color(suit).lightened(0.5))
 	if selected_suit == suit:
 		button.modulate = Color(1.25, 1.2, 0.9)
-		button.position.y -= 6
 	button.pressed.connect(func() -> void:
 		selected_suit = suit if selected_suit != suit else &""
 		refresh()
