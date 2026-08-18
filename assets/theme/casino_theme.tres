@@ -1,3 +1,179 @@
-[gd_resource type="Theme" format=3]
+[gd_resource type="Theme" load_steps=13 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/Nunito-Variable.ttf" id="1_body"]
+[ext_resource type="FontFile" path="res://assets/fonts/AlfaSlabOne-Regular.ttf" id="2_display"]
+
+[sub_resource type="StyleBoxFlat" id="btn_normal"]
+content_margin_left = 24.0
+content_margin_top = 10.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+bg_color = Color(0.239216, 0.0784314, 0.12549, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 5
+border_color = Color(0.831373, 0.686275, 0.215686, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 4
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="btn_hover"]
+content_margin_left = 24.0
+content_margin_top = 10.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+bg_color = Color(0.333333, 0.113725, 0.180392, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 5
+border_color = Color(0.941176, 0.811765, 0.364706, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 5
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="btn_pressed"]
+content_margin_left = 24.0
+content_margin_top = 12.0
+content_margin_right = 24.0
+content_margin_bottom = 10.0
+bg_color = Color(0.164706, 0.054902, 0.0862745, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.639216, 0.52549, 0.164706, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="btn_disabled"]
+content_margin_left = 24.0
+content_margin_top = 10.0
+content_margin_right = 24.0
+content_margin_bottom = 12.0
+bg_color = Color(0.2, 0.17, 0.18, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 5
+border_color = Color(0.4, 0.38, 0.34, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="panel_dark"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.117647, 0.0431373, 0.0705882, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.831373, 0.686275, 0.215686, 0.8)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 6
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="panel_felt"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.0862745, 0.278431, 0.176471, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.831373, 0.686275, 0.215686, 0.8)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="progress_bg"]
+bg_color = Color(0.08, 0.04, 0.05, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.15, 0.1, 0.08, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="progress_fill"]
+bg_color = Color(0.803922, 0.223529, 0.25098, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="tooltip_panel"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.08, 0.03, 0.05, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.831373, 0.686275, 0.215686, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="empty_style"]
 
 [resource]
+default_font = ExtResource("1_body")
+default_font_size = 22
+Button/colors/font_color = Color(0.960784, 0.941176, 0.882353, 1)
+Button/colors/font_hover_color = Color(1, 0.980392, 0.921569, 1)
+Button/colors/font_pressed_color = Color(0.831373, 0.686275, 0.215686, 1)
+Button/colors/font_disabled_color = Color(0.6, 0.58, 0.55, 1)
+Button/font_sizes/font_size = 26
+Button/styles/normal = SubResource("btn_normal")
+Button/styles/hover = SubResource("btn_hover")
+Button/styles/pressed = SubResource("btn_pressed")
+Button/styles/disabled = SubResource("btn_disabled")
+Button/styles/focus = SubResource("empty_style")
+Label/colors/font_color = Color(0.960784, 0.941176, 0.882353, 1)
+PanelContainer/styles/panel = SubResource("panel_dark")
+Panel/styles/panel = SubResource("panel_dark")
+ProgressBar/styles/background = SubResource("progress_bg")
+ProgressBar/styles/fill = SubResource("progress_fill")
+TooltipPanel/styles/panel = SubResource("tooltip_panel")
+TooltipLabel/colors/font_color = Color(0.960784, 0.941176, 0.882353, 1)
+TitleLabel/base_type = &"Label"
+TitleLabel/colors/font_color = Color(0.941176, 0.811765, 0.364706, 1)
+TitleLabel/colors/font_outline_color = Color(0.117647, 0.0431373, 0.0705882, 1)
+TitleLabel/constants/outline_size = 8
+TitleLabel/fonts/font = ExtResource("2_display")
+TitleLabel/font_sizes/font_size = 64
+SubtitleLabel/base_type = &"Label"
+SubtitleLabel/colors/font_color = Color(0.941176, 0.811765, 0.364706, 1)
+SubtitleLabel/fonts/font = ExtResource("2_display")
+SubtitleLabel/font_sizes/font_size = 30
+FeltPanel/base_type = &"PanelContainer"
+FeltPanel/styles/panel = SubResource("panel_felt")

@@ -30,6 +30,465 @@
       "size": "1536x1024",
       "transparent": false,
       "prompt": "A wide cartoon casino interior background for a 2D battle scene, painted in rich saturated colors. Empty casino floor at night: deep green felt-textured carpet in the foreground (an open flat area where characters will stand), rows of glowing slot machines and card tables receding in the blurred background, maroon curtains with gold tassels framing the left and right edges, warm hanging chandelier light pooling in the center, subtle haze. Moody but inviting. Composition keeps the lower third mostly clear and uncluttered for gameplay characters. No people, no text."
+    },
+    {
+      "id": "chip_club",
+      "out": "assets/icons/chip_club.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single casino poker chip game icon on a fully transparent background, straight-on top view, perfectly circular and centered. Deep emerald green chip with a cream dashed edge ring and gold trim. In the center, a bold cream club (clover) suit symbol embossed with a slight glossy highlight. Chunky cartoon proportions, thick outline, crisp vector-like finish. The chip fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "chip_heart",
+      "out": "assets/icons/chip_heart.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single casino poker chip game icon on a fully transparent background, straight-on top view, perfectly circular and centered. Rich crimson red chip with a cream dashed edge ring and gold trim. In the center, a bold cream heart suit symbol embossed with a slight glossy highlight. Chunky cartoon proportions, thick outline, crisp vector-like finish. The chip fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "chip_diamond",
+      "out": "assets/icons/chip_diamond.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single casino poker chip game icon on a fully transparent background, straight-on top view, perfectly circular and centered. Royal sapphire blue chip with a cream dashed edge ring and gold trim. In the center, a bold cream diamond (lozenge) suit symbol embossed with a slight glossy highlight. Chunky cartoon proportions, thick outline, crisp vector-like finish. The chip fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "suit_spade",
+      "out": "assets/icons/suit_spade.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single flat playing-card spade suit symbol as a game icon, centered on a fully transparent background. Near-black midnight blue spade with a thick dark outline, one simple glossy highlight, slight gold rim light on the left edge. Chunky rounded cartoon shape, reads clearly at small sizes. Fills most of the frame. Nothing else in the image."
+    },
+    {
+      "id": "suit_club",
+      "out": "assets/icons/suit_club.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single flat playing-card club (clover) suit symbol as a game icon, centered on a fully transparent background. Deep emerald green club with a thick dark outline, one simple glossy highlight, slight gold rim light on the left edge. Chunky rounded cartoon shape, reads clearly at small sizes. Fills most of the frame. Nothing else in the image."
+    },
+    {
+      "id": "suit_heart",
+      "out": "assets/icons/suit_heart.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single flat playing-card heart suit symbol as a game icon, centered on a fully transparent background. Rich crimson red heart with a thick dark outline, one simple glossy highlight, slight gold rim light on the left edge. Chunky rounded cartoon shape, reads clearly at small sizes. Fills most of the frame. Nothing else in the image."
+    },
+    {
+      "id": "suit_diamond",
+      "out": "assets/icons/suit_diamond.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single flat playing-card diamond (lozenge) suit symbol as a game icon, centered on a fully transparent background. Royal sapphire blue diamond with a thick dark outline, one simple glossy highlight, slight gold rim light on the left edge. Chunky rounded cartoon shape, reads clearly at small sizes. Fills most of the frame. Nothing else in the image."
+    },
+    {
+      "id": "coin",
+      "out": "assets/icons/coin.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A single shiny gold coin game icon, straight-on view, centered on a fully transparent background. Warm gold coin with an embossed spade symbol in the center, beveled rim with small notches, two simple glossy highlights. Chunky cartoon proportions, thick outline. Fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "icon_attack",
+      "out": "assets/icons/intent_attack.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game intent icon on a fully transparent background: a single downward-slashing cartoon dagger with a warm gold handle and bright steel blade, small red motion streak behind it. Thick dark outline, chunky readable shape that works at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_weak",
+      "out": "assets/icons/status_weak.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a cartoon flexed bicep arm colored dull grey-purple with a bold red downward arrow in front of it. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_vulnerable",
+      "out": "assets/icons/status_vulnerable.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a cartoon cracked maroon shield with a jagged golden crack down the middle and a small burst of light where it splits. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_taunt",
+      "out": "assets/icons/status_taunt.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a bold red and gold bullseye target with a small angry cartoon exclamation spark above it. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_block",
+      "out": "assets/icons/status_block.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a sturdy cartoon shield in deep emerald green with a gold border and a cream spade emblem in the center, one glossy highlight. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_strength",
+      "out": "assets/icons/status_strength.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a cartoon flexed golden bicep arm with a bold upward red arrow behind it and two small power sparks. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_stun",
+      "out": "assets/icons/status_stun.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: three small cartoon gold stars circling a dizzy spiral, suggesting a stunned daze. Thick dark outlines, chunky readable shapes at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "ability_card_flick",
+      "out": "assets/icons/ability_card_flick.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a single playing card (blank face with a gold spade back) flying forward edge-first with a sharp white motion streak, as if flicked like a blade. Dynamic diagonal composition, thick dark outlines, rich maroon and gold colors, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_dagger_throw",
+      "out": "assets/icons/ability_dagger_throw.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a slim elegant dagger with a gold spade-shaped pommel hurled point-first, trailing a curved silver motion arc. Dynamic diagonal composition, thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_card_guard",
+      "out": "assets/icons/ability_card_guard.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: four playing cards fanned tightly into a protective shield shape, glowing softly gold at the edges, a small emerald shield aura behind them. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_fan_of_blades",
+      "out": "assets/icons/ability_fan_of_blades.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: three razor-edged playing cards flying in a spread fan formation with crossing white motion streaks. Dynamic composition, thick dark outlines, maroon gold and steel palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_shuffle",
+      "out": "assets/icons/ability_shuffle.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: two casino chips mid-transformation — a red chip swirling into a midnight-blue spade chip along a golden spiral arrow. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_mark_the_sucker",
+      "out": "assets/icons/ability_mark_the_sucker.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a glowing red bullseye mark hovering over a cartoon playing card with a bent corner, small gold sparkle at the center of the target. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_low_blow",
+      "out": "assets/icons/ability_low_blow.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a sneaky low sweeping dagger slash shown as a curved steel arc close to the ground with small dust puffs, a grey-purple weakness wisp rising from it. Thick dark outlines, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_ace_up_the_sleeve",
+      "out": "assets/icons/ability_ace_up_the_sleeve.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a cream shirt cuff with a gold cufflink, a glowing playing card sliding out of the sleeve trailing golden sparkles. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_loaded_dice",
+      "out": "assets/icons/ability_loaded_dice.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: two cartoon dice mid-tumble with golden motion arcs, one die subtly weighted with a gold core glowing through its pips. Thick dark outlines, cream and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_sleight_of_hand",
+      "out": "assets/icons/ability_sleight_of_hand.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a gloved cartoon hand snapping its fingers with a small gold spark, a faint playing card ghost-image blinking from one position to another. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_all_in",
+      "out": "assets/icons/ability_all_in.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a tall triumphant stack of casino chips in all four suit colors being pushed forward, small gold coins spilling around the base, a bold golden glow behind the stack. Thick dark outlines, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_bleed_them_dry",
+      "out": "assets/icons/ability_bleed_them_dry.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a dagger piercing a cartoon money bag, gold coins leaking out of the cut in a glittering trickle. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "enemy_security_goon",
+      "out": "assets/characters/enemy_security_goon.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a hulking casino security guard. Huge square torso in a tight black suit with a maroon tie and gold earpiece coil, tiny sunglasses on a big square head, massive fists in fingerless gloves, small legs. Standing menacing with fists ready, facing slightly left (three-quarter view). Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_card_shark",
+      "out": "assets/characters/enemy_card_shark.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: an anthropomorphic shark card dealer standing upright. Sleek grey shark head with a toothy grin, wearing a cream dealer vest with a maroon bowtie and gold armbands, fanning razor-sharp playing cards in one fin. Lean and slippery posture, facing slightly left. Exaggerated cartoon proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_slot_gremlin",
+      "out": "assets/characters/enemy_slot_gremlin.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a small mischievous gremlin made of slot machine parts. Round maroon metal body with a tiny reel window in its belly showing mismatched suit symbols, one big yellow marquee-light eye, coin-slot mouth grin, spindly brass arms clutching stolen gold coins, a bent lever sticking from its back like a tail. Facing slightly left, sneaky crouched pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_bouncer",
+      "out": "assets/characters/enemy_bouncer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a towering nightclub bouncer built like a vault door. Extremely wide shoulders in a maroon doorman coat with gold braid and epaulettes, a velvet rope wrapped across his chest like a bandolier, stern jaw, arms crossed. Facing slightly left, immovable stance. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_croupier",
+      "out": "assets/characters/enemy_croupier.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: an elegant sinister croupier. Tall and thin in a crisp white shirt, green dealer visor casting a shadow over glinting eyes, black waistcoat with gold buttons, long gloved fingers spinning a small roulette ball, a croupier rake held like a spear. Facing slightly left. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_pit_boss",
+      "out": "assets/characters/enemy_pit_boss.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a stocky intimidating casino pit boss. Barrel-chested in a pinstripe maroon suit with a gold pocket-watch chain, slicked hair, chewed toothpick, one hand raised snapping fingers to command underlings, gold rings on every finger. Facing slightly left. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_tipsy_patron",
+      "out": "assets/characters/enemy_tipsy_patron.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a wobbly tipsy casino patron spoiling for a fight. Rumpled cream suit with a loosened maroon tie and one untucked shirt tail, flushed cheeks, one eye squinted, swinging a cocktail glass sloshing green liquid, fists half-raised in a comically unsteady boxing stance leaning at an angle. Facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_loan_shark",
+      "out": "assets/characters/enemy_loan_shark.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a predatory loan shark enforcer. Long maroon trench coat over a gold waistcoat, wide-brimmed hat shadowing a hungry grin with one gold tooth, a heavy ledger book chained to his wrist, the other hand cracking knuckles. Lean, coiled, dangerous posture, facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "enemy_chip_golem",
+      "out": "assets/characters/enemy_chip_golem.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a hulking golem built entirely from stacked casino chips. Massive body of tottering chip columns in maroon, green, blue and cream, two burning gold coin eyes in a chip-stack head, fists like chip pillars, loose chips orbiting and crumbling from its shoulders. Facing slightly left, heavy stomping pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "boss_mr_moneyman",
+      "out": "assets/characters/boss_mr_moneyman.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon boss sprite on a fully transparent background: Mr. Moneyman, the corrupt casino owner. A rotund imposing tycoon in a lavish gold-trimmed maroon tailcoat, cream waistcoat straining over his belly, a towering black top hat with a gold dollar-free band and a spade emblem, monocle over a cold gleaming eye, huge waxed mustache, one hand leaning on a diamond-topped cane, the other clutching a fat money bag. Smug, powerful stance, facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "boss_mr_moneyman_enraged",
+      "out": "assets/characters/boss_mr_moneyman_enraged.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon boss sprite on a fully transparent background: Mr. Moneyman, a rotund casino tycoon in a gold-trimmed maroon tailcoat and black top hat with a spade emblem, now ENRAGED: face flushed red, monocle cracked, top hat tilted, mustache bristling, swinging his diamond-topped cane overhead while gold coins explode from his burst money bag around him. Dynamic furious pose, facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "shopkeeper",
+      "out": "assets/characters/shopkeeper.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body cartoon character sprite on a fully transparent background: a friendly shady pawn-shop keeper inside a casino. An older raccoon-like character in a cream apron over a maroon shirt with sleeve garters, small round glasses, welcoming open-palm gesture presenting wares, a toolbelt of stickers, gears and slot machine parts. Warm smile, facing slightly right. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "treasure_chest",
+      "out": "assets/props/treasure_chest.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A cartoon casino treasure chest game prop on a fully transparent background: a maroon lacquered chest with gold banding and a spade-shaped gold lock, lid slightly open spilling golden light, casino chips and gold coins. Chunky proportions, thick outlines, centered, fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "relic_lucky_rabbit_foot",
+      "out": "assets/icons/relic_lucky_rabbit_foot.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a plush white rabbit's foot charm on a gold chain clasp, small green four-leaf clover tucked into the binding, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_gold_tooth",
+      "out": "assets/icons/relic_gold_tooth.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a single oversized shiny gold molar tooth with a bright sparkle glint and tiny coins reflected in its surface. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_brass_knuckles",
+      "out": "assets/icons/relic_brass_knuckles.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: polished brass knuckles with a tiny spade engraved on each knuckle ring, warm gold shine. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_spade_charm",
+      "out": "assets/icons/relic_spade_charm.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a midnight-blue spade-shaped pendant on a gold cord, glowing with a soft blue aura, one bright sparkle. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_velvet_rope",
+      "out": "assets/icons/relic_velvet_rope.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a coiled maroon velvet rope with polished gold end clasps, arranged in a neat loop with a soft sheen. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_house_chip",
+      "out": "assets/icons/relic_house_chip.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: an oversized ornate casino chip in black and gold with a diamond gem embedded in its center, radiating a faint golden aura. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_marked_deck",
+      "out": "assets/icons/relic_marked_deck.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a worn deck of playing cards with subtle glowing red marks on the card backs, top card slightly fanned to reveal the cheat marks. Thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_loaded_die",
+      "out": "assets/icons/relic_loaded_die.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a single cream die with gold pips, sliced open in cutaway view to reveal a glowing gold weight inside. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_iron_ledger",
+      "out": "assets/icons/relic_iron_ledger.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: a heavy iron-bound ledger book with a gold clasp shaped like a dollar coin and a maroon leather spine, faint golden glow from between the pages. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "relic_vault_key",
+      "out": "assets/icons/relic_vault_key.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game relic icon on a fully transparent background: an ornate oversized gold vault key with a spade-shaped bow and glowing teeth, small sparkle at the tip. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "bg_main_menu",
+      "out": "assets/backgrounds/bg_main_menu.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A dramatic cartoon key-art background for a casino roguelike main menu. Night exterior of a grand corrupt casino: towering art-deco facade in maroon and gold with glowing marquee lights and a giant golden spade sign (no text), red carpet steps leading up to golden doors, moody purple night sky, soft rain sheen on the pavement reflecting neon. Rich saturated colors, cinematic composition with the lower half slightly darker for menu buttons. No people, no text."
+    },
+    {
+      "id": "bg_map",
+      "out": "assets/backgrounds/bg_map.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon casino interior background for an encounter-choice screen: a long opulent hallway inside a casino splitting into two grand archway doors ahead, one glowing warm gold and one glowing cool green, maroon carpet with gold trim leading to both, velvet ropes and brass stanchions along the sides, chandeliers above, subtle mysterious haze. The center of the frame stays uncluttered for UI cards. Rich saturated colors. No people, no text."
+    },
+    {
+      "id": "bg_shop",
+      "out": "assets/backgrounds/bg_shop.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon casino pawn-shop interior background: a cozy cluttered backroom shop with shelves of slot machine parts, jars of casino chips, hanging lucky charms, a maroon counter with a brass cash register in the lower third, warm lamp light, gold dust motes. The counter area stays clear for UI item cards. Rich saturated colors. No people, no text."
+    },
+    {
+      "id": "bg_rest",
+      "out": "assets/backgrounds/bg_rest.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon casino lounge background for a rest screen: a quiet plush VIP lounge corner with a deep maroon velvet sofa, a small gold side table with a steaming drink, a crackling ornate fireplace with green marble trim, dim warm lighting, soft haze, a window showing the casino floor glowing far below. Calm and inviting. Rich saturated colors. No people, no text."
+    },
+    {
+      "id": "story_high_roller",
+      "out": "assets/story/story_high_roller.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a private high-roller table in a casino back room, a mysterious elegant figure in shadow gesturing to an empty velvet chair across a green felt table stacked with towering chip piles, a single golden card face-down in the center, cigar smoke curling through a cone of lamplight. Rich saturated maroon and gold palette, moody and tempting. No text."
+    },
+    {
+      "id": "story_broken_machine",
+      "out": "assets/story/story_broken_machine.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a sparking broken slot machine in a dim casino service corridor, its front panel hanging open revealing glowing golden innards and a jackpot of coins jammed inside, warning sparks and little smoke puffs, a red toolbox abandoned nearby. Tempting risk-versus-reward mood, rich saturated colors. No people, no text."
+    },
+    {
+      "id": "story_lounge_singer",
+      "out": "assets/story/story_lounge_singer.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a smoky casino lounge stage where an elegant fox-like singer in a shimmering emerald gown performs under a single warm spotlight at a golden microphone, silhouetted audience at small round tables with candle lamps, maroon curtains behind. Melancholy beautiful mood, rich saturated colors. No text."
+    },
+    {
+      "id": "story_dice_alley",
+      "out": "assets/story/story_dice_alley.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a back-alley dice game behind the casino at night, three shady cartoon figures crouched around glowing dice on a crate under a flickering neon spade sign, scattered coins and chips, cool blue night shadows cut by warm gold lamplight from a doorway. Risky underworld mood, rich saturated colors. No text."
+    },
+    {
+      "id": "story_security_office",
+      "out": "assets/story/story_security_office.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: the casino security office, a wall of glowing monitors showing casino floor feeds, a big chair turned away from the desk with only a gold-ringed hand visible tapping a spade-topped cane, confiscated lucky charms in a glass case, one monitor showing a wanted-poster silhouette of a card-slinging rogue. Ominous discovered-too-much mood, rich colors. No text."
+    },
+    {
+      "id": "ui_sold_stamp",
+      "out": "assets/icons/ui_sold_stamp.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game UI element on a fully transparent background: a bold red circular rubber-stamp mark with a thick grungy double ring and a big cross through the middle, slightly rotated, distressed ink texture. No letters or words — just the ring and cross shape. Centered, fills most of the frame. Nothing else."
     }
   ]
 }
