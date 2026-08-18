@@ -113,9 +113,10 @@ func _start_combat(option: Dictionary) -> void:
 
 
 ## Fullscreen skippable video overlay. Calls on_done immediately when the
-## clip is missing (HeyGen videos are optional polish).
+## clip is missing (HeyGen videos are optional polish) or when running
+## headless (tests/CI can't play video).
 func play_cinematic(path: String, on_done: Callable) -> void:
-	if not ResourceLoader.exists(path):
+	if not ResourceLoader.exists(path) or DisplayServer.get_name() == "headless":
 		on_done.call()
 		return
 	var layer := CanvasLayer.new()
