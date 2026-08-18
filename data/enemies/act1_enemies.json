@@ -19,6 +19,36 @@
       }
     },
     {
+      "id": "mr_moneyman",
+      "name": "Mr. Moneyman",
+      "hp": 110,
+      "stage": 99,
+      "brain": {
+        "type": "phased",
+        "phases": [
+          {"hp_below": 1.0, "brain": {"type": "sequence", "loop": true, "steps": ["money_toss", "money_toss", "big_bet"]}},
+          {"hp_below": 0.5, "brain": {"type": "sequence", "loop": true, "steps": ["jackpot", "money_toss"]}}
+        ]
+      },
+      "moves": {
+        "money_toss": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}},
+        "big_bet": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 9,
+            "debuffs": [{"status": "vulnerable", "stacks": 1}]
+          }
+        },
+        "jackpot": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 13,
+            "debuffs": [{"status": "weak", "stacks": 2}]
+          }
+        }
+      }
+    },
+    {
       "id": "card_shark",
       "name": "Card Shark",
       "hp": 16,

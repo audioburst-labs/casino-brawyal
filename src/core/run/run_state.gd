@@ -12,6 +12,8 @@ var ability_ids: Array[StringName] = []
 var relic_ids: Array[StringName] = []
 var seed_value := 0
 var history: Array[StringName] = []   # encounter type per completed choice
+var seen_events: Array[StringName] = []
+var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
 
 
 ## 1-based number of the encounter the player is about to choose/play.

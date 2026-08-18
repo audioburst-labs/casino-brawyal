@@ -1,0 +1,13 @@
+{
+  "type": "lineups",
+  "items": [
+    {"id": "goon_solo", "stage": 1, "enemies": ["security_goon"]},
+    {"id": "shark_solo", "stage": 1, "enemies": ["card_shark"]},
+    {"id": "double_shark", "stage": 1, "enemies": ["card_shark", "card_shark"]},
+    {"id": "goon_and_shark", "stage": 2, "enemies": ["security_goon", "card_shark"]},
+    {"id": "goon_pair", "stage": 2, "enemies": ["security_goon", "security_goon"]},
+    {"id": "the_crew", "stage": 3, "enemies": ["security_goon", "card_shark", "card_shark"]},
+    {"id": "wall_of_muscle", "stage": 3, "enemies": ["security_goon", "security_goon", "card_shark"]},
+    {"id": "the_boss", "stage": 99, "enemies": ["mr_moneyman"]}
+  ]
+}

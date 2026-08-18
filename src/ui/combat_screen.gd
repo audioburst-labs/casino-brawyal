@@ -5,6 +5,7 @@ extends Control
 const ENEMY_GAP := 24
 
 var sim: CombatSim
+var run_mode := false   # true when launched by Game flow (reports results back)
 
 var _background: TextureRect
 var _round_label: Label
@@ -33,6 +34,7 @@ func _ready() -> void:
 
 
 func setup(config: Dictionary) -> void:
+	run_mode = config.get("run_mode", false)
 	sim = CombatSim.new(Db.content, config)
 	_spawn_units()
 	_spawn_abilities()
@@ -279,8 +281,14 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_tray_view.refresh()
 			&"combat_won":
 				_show_banner("VICTORY!")
+				if run_mode:
+					await get_tree().create_timer(1.3).timeout
+					Game.combat_finished(true, sim.hero.hp, sim.pending_rewards)
 			&"combat_lost":
 				_show_banner("DEFEAT")
+				if run_mode:
+					await get_tree().create_timer(1.6).timeout
+					Game.combat_finished(false, 0, [])
 			&"round_ended":
 				_hero_view.refresh()
 				for view: UnitView in _enemy_views.values():

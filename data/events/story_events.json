@@ -1,0 +1,105 @@
+{
+  "type": "events",
+  "items": [
+    {
+      "id": "high_roller",
+      "title": "The High Roller",
+      "image": "res://assets/story/story_high_roller.png",
+      "description": "A private back room. A figure in shadow slides a towering stack of chips across green felt and gestures at the empty chair. \"One hand. Your nerve against my money.\" You can't see their eyes — only the gold card in the center of the table.",
+      "choices": [
+        {
+          "label": "Take the bet",
+          "summary": "Gain 40-60 coins, lose 8 HP",
+          "effects": [{"op": "gain_coins", "min": 40, "max": 60}, {"op": "lose_hp", "amount": 8}]
+        },
+        {
+          "label": "Walk away",
+          "summary": "Leave with your dignity",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "broken_machine",
+      "title": "The Broken Machine",
+      "image": "res://assets/story/story_broken_machine.png",
+      "description": "A service corridor. One slot machine hangs open, sparking — its guts glowing with a jammed jackpot no one has claimed. A red toolbox sits abandoned beside it.",
+      "choices": [
+        {
+          "label": "Reach in and grab it",
+          "summary": "Gain 30-50 coins, lose 6 HP",
+          "effects": [{"op": "gain_coins", "min": 30, "max": 50}, {"op": "lose_hp", "amount": 6}]
+        },
+        {
+          "label": "Repair it properly",
+          "summary": "Gain a random relic",
+          "effects": [{"op": "grant_relic"}]
+        },
+        {
+          "label": "Keep moving",
+          "summary": "No risk, no reward",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "lounge_singer",
+      "title": "The Lounge Singer",
+      "image": "res://assets/story/story_lounge_singer.png",
+      "description": "In the smoky lounge, a singer in an emerald gown holds the room still with one long note. For a moment, the casino's cruelty feels very far away.",
+      "choices": [
+        {
+          "label": "Tip generously",
+          "summary": "Lose 25 coins, gain 5 max HP",
+          "effects": [{"op": "lose_coins", "amount": 25}, {"op": "gain_max_hp", "amount": 5}]
+        },
+        {
+          "label": "Just listen",
+          "summary": "Heal 10% of max HP",
+          "effects": [{"op": "heal_pct", "pct": 0.1}]
+        }
+      ]
+    },
+    {
+      "id": "dice_alley",
+      "title": "Dice in the Alley",
+      "image": "res://assets/story/story_dice_alley.png",
+      "description": "Behind the casino, three hustlers crouch around glowing dice under a flickering neon spade. They look up. \"Room for one more — if your coin's good.\"",
+      "choices": [
+        {
+          "label": "Play a few rounds",
+          "summary": "Gain 20-70 coins, lose 5 HP",
+          "effects": [{"op": "gain_coins", "min": 20, "max": 70}, {"op": "lose_hp", "amount": 5}]
+        },
+        {
+          "label": "Snatch the pot and run",
+          "summary": "Gain 60-90 coins, lose 12 HP",
+          "effects": [{"op": "gain_coins", "min": 60, "max": 90}, {"op": "lose_hp", "amount": 12}]
+        },
+        {
+          "label": "Not your game",
+          "summary": "Walk on by",
+          "effects": []
+        }
+      ]
+    },
+    {
+      "id": "security_office",
+      "title": "The Security Office",
+      "image": "res://assets/story/story_security_office.png",
+      "description": "A door left ajar: a wall of monitors, confiscated lucky charms in a glass case — and on one screen, your own face circled in gold ink. Somebody upstairs is watching you.",
+      "choices": [
+        {
+          "label": "Break into the case",
+          "summary": "Gain a random relic, lose 10 HP",
+          "effects": [{"op": "grant_relic"}, {"op": "lose_hp", "amount": 10}]
+        },
+        {
+          "label": "Slip away quietly",
+          "summary": "Gain 10-20 coins from a dropped wallet",
+          "effects": [{"op": "gain_coins", "min": 10, "max": 20}]
+        }
+      ]
+    }
+  ]
+}

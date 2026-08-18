@@ -42,6 +42,14 @@ class RelicDef:
 	var rarity: String = "common"
 
 
+class StoryEventDef:
+	var id: StringName
+	var title: String
+	var description: String
+	var image: String                         # res:// path to the illustration
+	var choices: Array[Dictionary] = []       # {label, summary, effects: [...]}
+
+
 class StatusDef:
 	var id: StringName
 	var name: String

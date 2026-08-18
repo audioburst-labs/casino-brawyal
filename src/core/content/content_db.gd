@@ -11,7 +11,9 @@ const COST_SUITS: Array[StringName] = [&"spade", &"club", &"heart", &"diamond", 
 const KNOWN_OPS: Array[String] = [
 	"damage", "apply_status", "gain_block", "heal_pct", "add_chips",
 	"convert_chips", "respin_reel", "gain_coins", "grant_relic",
+	"lose_hp", "lose_coins", "gain_max_hp",
 ]
+const BOSS_STAGE := 99
 const KNOWN_TRIGGERS: Array[StringName] = [
 	&"combat_started", &"round_started", &"spin_resolved", &"chips_generated",
 	&"ability_activated", &"damage_dealt", &"damage_taken", &"enemy_killed",
@@ -25,6 +27,8 @@ var _enemies: Dictionary = {}
 var _heroes: Dictionary = {}
 var _statuses: Dictionary = {}
 var _relics: Dictionary = {}
+var _lineups: Array[Dictionary] = []
+var _story_events: Dictionary = {}
 
 
 func load_all(root: String) -> bool:
@@ -34,6 +38,8 @@ func load_all(root: String) -> bool:
 	_heroes.clear()
 	_statuses.clear()
 	_relics.clear()
+	_lineups.clear()
+	_story_events.clear()
 
 	var docs: Array[Dictionary] = []
 	_scan_dir(root, docs)
@@ -55,9 +61,16 @@ func load_all(root: String) -> bool:
 				for item: Dictionary in doc.get("items", []):
 					_parse_relic(item)
 	for doc in docs:
-		if doc.get("type") == "heroes":
-			for item: Dictionary in doc.get("items", []):
-				_parse_hero(item)
+		match doc.get("type"):
+			"heroes":
+				for item: Dictionary in doc.get("items", []):
+					_parse_hero(item)
+			"lineups":
+				for item: Dictionary in doc.get("items", []):
+					_parse_lineup(item)
+			"events":
+				for item: Dictionary in doc.get("items", []):
+					_parse_story_event(item)
 
 	return errors.is_empty()
 
@@ -88,6 +101,18 @@ func all_ability_ids() -> Array:
 
 func all_relic_ids() -> Array:
 	return _relics.keys()
+
+
+func lineups_for_stage(stage: int) -> Array[Dictionary]:
+	return _lineups.filter(func(l: Dictionary) -> bool: return int(l.stage) == stage)
+
+
+func get_story_event(id: StringName) -> Defs.StoryEventDef:
+	return _story_events.get(id)
+
+
+func all_story_event_ids() -> Array:
+	return _story_events.keys()
 
 
 func _scan_dir(path: String, docs: Array[Dictionary]) -> void:
@@ -217,6 +242,42 @@ func _parse_enemy(item: Dictionary) -> void:
 			errors.append("enemy %s: brain step '%s' is not a move" % [enemy.id, step])
 
 	_enemies[enemy.id] = enemy
+
+
+func _parse_lineup(item: Dictionary) -> void:
+	var enemies: Array[StringName] = []
+	for enemy_id in item.get("enemies", []):
+		var id := StringName(str(enemy_id))
+		if not _enemies.has(id):
+			errors.append("lineup %s: unknown enemy '%s'" % [item.get("id", "?"), id])
+		enemies.append(id)
+	if enemies.is_empty():
+		errors.append("lineup %s: no enemies" % item.get("id", "?"))
+	_lineups.append({
+		"id": StringName(str(item.get("id", ""))),
+		"stage": int(item.get("stage", 1)),
+		"enemies": enemies,
+	})
+
+
+func _parse_story_event(item: Dictionary) -> void:
+	var event := Defs.StoryEventDef.new()
+	event.id = StringName(item.get("id", ""))
+	if event.id == &"":
+		errors.append("story event with missing id")
+		return
+	event.title = item.get("title", "")
+	event.description = item.get("description", "")
+	event.image = item.get("image", "")
+	for choice: Dictionary in item.get("choices", []):
+		if not choice.has("label"):
+			errors.append("event %s: choice missing label" % event.id)
+		for effect: Dictionary in choice.get("effects", []):
+			_validate_effect(effect, "event %s" % event.id)
+		event.choices.append(choice)
+	if event.choices.size() < 2 or event.choices.size() > 4:
+		errors.append("event %s: needs 2-4 choices" % event.id)
+	_story_events[event.id] = event
 
 
 func _parse_hero(item: Dictionary) -> void:

@@ -1,8 +1,10 @@
 extends Node
-## Autoload: scene flow and current run.
-## Owns the active RunState and swaps screens under Main's ScreenRoot.
+## Autoload: run flow. Owns the active RunState and routes between screens.
+## Encounter #1 auto-starts as combat; #10 is the boss; everything else goes
+## through the map choice screen.
 
-# TODO(M4): var run_state: RunState
+var run: RunState
+var rng: GameRng
 
 var _screen_root: Node = null
 
@@ -14,8 +16,108 @@ func register_screen_root(root: Node) -> void:
 func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 	assert(_screen_root != null, "Main scene must register its ScreenRoot before navigation.")
 	for child in _screen_root.get_children():
+		# Detach immediately so the incoming screen never collides with the
+		# outgoing one (same-name siblings get auto-renamed by Godot).
+		_screen_root.remove_child(child)
 		child.queue_free()
 	var screen: Node = load(scene_path).instantiate()
+	_screen_root.add_child(screen)
 	if not args.is_empty() and screen.has_method("setup"):
 		screen.setup(args)
-	_screen_root.add_child(screen)
+
+
+func new_run(seed_value: int = -1) -> void:
+	var run_seed := seed_value if seed_value >= 0 else (randi() % 1_000_000_000)
+	run = RunState.new()
+	run.seed_value = run_seed
+	rng = GameRng.new(run_seed)
+	var hero := Db.content.get_hero(run.hero_id)
+	run.max_hp = hero.max_hp
+	run.hp = hero.max_hp
+	run.ability_ids = hero.starting_abilities.duplicate()
+	choose_encounter({"type": &"combat"})
+
+
+func show_map() -> void:
+	goto_screen("res://scenes/screens/map_screen.tscn")
+
+
+func map_options() -> Array[Dictionary]:
+	return MapGenerator.next_options(run, rng.stream(&"map"))
+
+
+func choose_encounter(option: Dictionary) -> void:
+	run.record_visit(option.type)
+	match option.type:
+		&"combat", &"hard_combat", &"boss":
+			_start_combat(option)
+		&"story":
+			goto_screen("res://scenes/screens/story_screen.tscn", {"event": _pick_story_event()})
+		&"rest":
+			goto_screen("res://scenes/screens/rest_screen.tscn")
+		&"treasure":
+			goto_screen("res://scenes/screens/treasure_screen.tscn")
+		&"shop":
+			goto_screen("res://scenes/screens/shop_screen.tscn")
+
+
+## Called by non-combat encounter screens when the player is done.
+func encounter_finished() -> void:
+	show_map()
+
+
+func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
+	if not won:
+		goto_screen("res://scenes/screens/game_over_screen.tscn")
+		return
+	run.hp = maxi(1, hero_hp)
+	RunEffects.apply(pending_rewards, Db.content, run, rng.stream(&"rewards"))
+	if run.last_visited() == &"boss":
+		goto_screen("res://scenes/screens/victory_screen.tscn")
+	else:
+		goto_screen("res://scenes/screens/reward_screen.tscn", {
+			"encounter": run.history.size(),
+			"hard": run.last_visited() == &"hard_combat",
+		})
+
+
+func _start_combat(option: Dictionary) -> void:
+	var encounter := run.history.size()
+	var stage := clampi(((encounter - 1) / 3) + 1, 1, 3)
+	var lineup_stage := stage
+	var hp_mult := 1.0
+	var dmg_mult := 1.0
+	if option.type == &"boss":
+		lineup_stage = ContentDB.BOSS_STAGE
+	elif option.type == &"hard_combat":
+		if str(option.get("variant", "buffed")) == "advanced":
+			lineup_stage = mini(stage + 1, 3)
+		else:
+			hp_mult = 1.25
+			dmg_mult = 1.25
+	var lineups := Db.content.lineups_for_stage(lineup_stage)
+	var lineup: Dictionary = lineups[rng.stream(&"map").randi_range(0, lineups.size() - 1)]
+	goto_screen("res://scenes/screens/combat_screen.tscn", {
+		"hero": run.hero_id,
+		"hero_hp": run.hp,
+		"abilities": run.ability_ids,
+		"machine": run.machine,
+		"enemies": lineup.enemies,
+		"seed": rng.stream(&"combat_seeds").randi(),
+		"hp_mult": hp_mult,
+		"dmg_mult": dmg_mult,
+		"run_mode": true,
+	})
+
+
+func _pick_story_event() -> StringName:
+	var unseen: Array[StringName] = []
+	for id: StringName in Db.content.all_story_event_ids():
+		if not run.seen_events.has(id):
+			unseen.append(id)
+	if unseen.is_empty():
+		for id: StringName in Db.content.all_story_event_ids():
+			unseen.append(id)
+	var picked := unseen[rng.stream(&"map").randi_range(0, unseen.size() - 1)]
+	run.seen_events.append(picked)
+	return picked
