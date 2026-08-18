@@ -17,7 +17,10 @@ A slot-machine-based roguelike battler. Play as Ace, a charming dagger-and-card 
 
 - **Run the game:** `tools\godot\Godot_v4.5.2-stable_win64.exe --path .`
 - **Verify everything** (import + tests + smoke boot): `powershell -File tools/verify.ps1`
-- **Generate art:** `node tools/art/generate_art.mjs` (`--dry-run`, `--only <id>`, `--force`)
+- **Generate art:** `node tools/art/generate_art.mjs` (`--dry-run`, `--only <id>`, `--force`) — Azure gpt-image; transparent sprites are generated on magenta and keyed by `tools/art/chroma_key.gd`
+- **Seeded combat transcript:** `tools\godot\..._console.exe --headless --path . -s res://tools/sim_cli.gd -- <seed> [enemies...]`
+- **Screenshot a scene:** `... -s res://tools/screenshot.gd -- <scene.tscn> <frames> <out.png>` (no `--headless`)
+- **HeyGen cinematics:** `api.heygen.com` is blocked on the office network. Run `tools/art/heygen_pod.py` in the AKS cluster (context `voice-vikki-media`): `kubectl run heygen-worker --image=python:3.12-slim --restart=Never --command -- sleep 7200`, `kubectl cp` the script + portraits into `/work/`, exec it with `HYGEN_API_KEY`, `kubectl cp` the MP4s back, convert with `ffmpeg -i in.mp4 -c:v libtheora -q:v 7 -c:a libvorbis -q:a 4 assets/video/<id>.ogv`. From an unblocked network, `node tools/art/generate_videos.mjs` works directly.
 
 ## Layout
 
