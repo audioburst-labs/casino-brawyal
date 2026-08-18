@@ -59,6 +59,36 @@ func _build_layout() -> void:
 	_round_label.position = Vector2(40, 24)
 	add_child(_round_label)
 
+	if Game.run != null:
+		var hud := HBoxContainer.new()
+		hud.anchor_left = 0.55
+		hud.anchor_right = 0.99
+		hud.anchor_top = 0.0
+		hud.anchor_bottom = 0.05
+		hud.alignment = BoxContainer.ALIGNMENT_END
+		hud.add_theme_constant_override("separation", 10)
+		add_child(hud)
+		for relic_id in Game.run.relic_ids:
+			var relic := Db.content.get_relic(relic_id)
+			var icon_path := "res://assets/icons/relic_%s.png" % relic_id
+			if ResourceLoader.exists(icon_path):
+				var icon := TextureRect.new()
+				icon.texture = load(icon_path)
+				icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon.custom_minimum_size = Vector2(44, 44)
+				icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
+				hud.add_child(icon)
+			else:
+				var chip := Label.new()
+				chip.text = "[%s]" % relic.name
+				chip.tooltip_text = relic.description
+				hud.add_child(chip)
+		var coins := Label.new()
+		coins.theme_type_variation = &"SubtitleLabel"
+		coins.text = "  🪙 %d   Encounter %d/10" % [Game.run.coins, Game.run.history.size()]
+		hud.add_child(coins)
+
 	_enemies_row = HBoxContainer.new()
 	_enemies_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_enemies_row.add_theme_constant_override("separation", ENEMY_GAP)

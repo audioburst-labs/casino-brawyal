@@ -3,11 +3,16 @@
   "items": [
     {"id": "goon_solo", "stage": 1, "enemies": ["security_goon"]},
     {"id": "shark_solo", "stage": 1, "enemies": ["card_shark"]},
-    {"id": "double_shark", "stage": 1, "enemies": ["card_shark", "card_shark"]},
+    {"id": "gremlin_pair", "stage": 1, "enemies": ["slot_gremlin", "slot_gremlin"]},
+    {"id": "gremlin_and_shark", "stage": 1, "enemies": ["slot_gremlin", "card_shark"]},
     {"id": "goon_and_shark", "stage": 2, "enemies": ["security_goon", "card_shark"]},
-    {"id": "goon_pair", "stage": 2, "enemies": ["security_goon", "security_goon"]},
-    {"id": "the_crew", "stage": 3, "enemies": ["security_goon", "card_shark", "card_shark"]},
-    {"id": "wall_of_muscle", "stage": 3, "enemies": ["security_goon", "security_goon", "card_shark"]},
+    {"id": "the_door_team", "stage": 2, "enemies": ["bouncer", "slot_gremlin"]},
+    {"id": "table_service", "stage": 2, "enemies": ["croupier", "tipsy_patron"]},
+    {"id": "last_call", "stage": 2, "enemies": ["tipsy_patron", "tipsy_patron"]},
+    {"id": "collection_day", "stage": 3, "enemies": ["loan_shark", "security_goon"]},
+    {"id": "floor_management", "stage": 3, "enemies": ["pit_boss", "croupier", "slot_gremlin"]},
+    {"id": "the_vault_guard", "stage": 3, "enemies": ["chip_golem"]},
+    {"id": "full_house", "stage": 3, "enemies": ["bouncer", "pit_boss"]},
     {"id": "the_boss", "stage": 99, "enemies": ["mr_moneyman"]}
   ]
 }

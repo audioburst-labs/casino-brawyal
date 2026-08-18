@@ -6,6 +6,9 @@ export_presets.cfg
 # Local engine binaries
 tools/godot/
 
+# Export output
+build/
+
 # Secrets
 .env
 *.key

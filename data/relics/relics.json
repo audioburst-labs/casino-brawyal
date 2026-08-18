@@ -42,6 +42,36 @@
       "trigger": "spin_resolved",
       "effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
       "description": "Every spin mints one bonus Diamond chip."
+    },
+    {
+      "id": "marked_deck",
+      "name": "Marked Deck",
+      "rarity": "uncommon",
+      "trigger": "round_started",
+      "effects": [{"op": "apply_status", "status": "vulnerable", "stacks": 1, "target": "enemy"}],
+      "description": "Each round, your target starts 1 Vulnerable."
+    },
+    {
+      "id": "loaded_die",
+      "name": "Loaded Die",
+      "rarity": "uncommon",
+      "trigger": "combat_started",
+      "effects": [{"op": "add_chips", "suit": "spade", "count": 2}],
+      "description": "Start every combat holding 2 Spade chips."
+    },
+    {
+      "id": "iron_ledger",
+      "name": "Iron Ledger",
+      "trigger": "combat_won",
+      "effects": [{"op": "gain_coins", "min": 8, "max": 12}],
+      "description": "Winning a combat collects an extra 8-12 coins in dues."
+    },
+    {
+      "id": "vault_key",
+      "name": "Vault Key",
+      "trigger": "enemy_killed",
+      "effects": [{"op": "gain_coins", "min": 2, "max": 4}],
+      "description": "Every enemy you finish drops 2-4 bonus coins."
     }
   ]
 }

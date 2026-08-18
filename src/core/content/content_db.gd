@@ -235,6 +235,10 @@ func _parse_enemy(item: Dictionary) -> void:
 			var status := StringName(str(debuff.get("status", "")))
 			if not _statuses.has(status):
 				errors.append("enemy %s move %s: unknown status '%s'" % [enemy.id, move_id, status])
+		for buff: Dictionary in intent.get("self_status", []):
+			var status := StringName(str(buff.get("status", "")))
+			if not _statuses.has(status):
+				errors.append("enemy %s move %s: unknown self status '%s'" % [enemy.id, move_id, status])
 
 	var brain_steps: Array = enemy.brain.get("steps", [])
 	for step in brain_steps:

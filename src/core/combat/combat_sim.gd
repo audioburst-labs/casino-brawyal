@@ -221,6 +221,12 @@ func _run_enemy_phase() -> void:
 			hero.apply_status(status, stacks)
 			emit_event(&"status_applied",
 				{"actor": hero.id, "status": status, "stacks": stacks})
+		for buff: Dictionary in intent.get("self_status", []):
+			var status := StringName(str(buff.get("status", "")))
+			var stacks := int(buff.get("stacks", 1))
+			enemy.apply_status(status, stacks)
+			emit_event(&"status_applied",
+				{"actor": enemy.id, "status": status, "stacks": stacks})
 
 		if not hero.is_alive():
 			emit_event(&"combat_lost", {})

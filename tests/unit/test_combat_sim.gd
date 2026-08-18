@@ -147,6 +147,16 @@ func test_ability_hits_the_selected_target() -> void:
 	assert_eq(sim.enemies[1].hp, 16)
 
 
+func test_enemy_self_status_move_buffs_the_enemy() -> void:
+	# Bouncer's first move is Velvet Wall: no damage, gains Taunt on itself.
+	var sim := _sim(["bouncer"])
+	sim.begin_round()
+	sim.tray.discard_all()
+	sim.end_assignment()
+	assert_eq(sim.hero.hp, 70, "velvet wall deals no damage")
+	assert_true(sim.enemies[0].has_status(&"taunt"))
+
+
 func test_enemy_debuff_is_applied_to_hero() -> void:
 	var sim := _sim()
 	# Round 1 and 2 are jabs; round 3 is haymaker (1x8 + weak 1).

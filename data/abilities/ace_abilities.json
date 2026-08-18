@@ -88,6 +88,56 @@
       "bonus_condition": "all_slots_bonus_suit",
       "bonus_effects": [{"op": "add_chips", "suit": "diamond", "count": 1}],
       "description": "Spin the machine again this round. All Diamonds: +1 Diamond chip."
+    },
+    {
+      "id": "loaded_dice",
+      "name": "Loaded Dice",
+      "rarity": "uncommon",
+      "cost": [{"suit": "club"}, {"suit": "diamond"}],
+      "effects": [
+        {"op": "add_chips", "suit": "spade", "count": 1},
+        {"op": "add_chips", "suit": "diamond", "count": 1}
+      ],
+      "description": "Roll the weighted bones: gain a Spade chip and a Diamond chip."
+    },
+    {
+      "id": "sleight_of_hand",
+      "name": "Sleight of Hand",
+      "rarity": "common",
+      "cost": [{"suit": "heart"}, {"suit": "any"}],
+      "effects": [
+        {"op": "damage", "amount": 4, "times": 1},
+        {"op": "heal_pct", "pct": 0.03}
+      ],
+      "bonus_suit": "heart",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "heal_pct", "pct": 0.03}],
+      "description": "Deal 4 damage and palm 3% of your max HP back. All Hearts: heal double."
+    },
+    {
+      "id": "all_in",
+      "name": "All In",
+      "rarity": "rare",
+      "cost": [{"suit": "any"}, {"suit": "any"}, {"suit": "any"}, {"suit": "any"}],
+      "effects": [{"op": "damage", "amount": 4, "times": 4}],
+      "bonus_suit": "spade",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "damage", "amount": 4, "times": 2}],
+      "description": "Push the whole stack: deal 4 damage 4 times. All Spades: 2 extra hits."
+    },
+    {
+      "id": "bleed_them_dry",
+      "name": "Bleed Them Dry",
+      "rarity": "uncommon",
+      "cost": [{"suit": "diamond"}, {"suit": "any"}],
+      "effects": [
+        {"op": "damage", "amount": 6, "times": 1},
+        {"op": "gain_coins", "min": 3, "max": 6}
+      ],
+      "bonus_suit": "diamond",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "gain_coins", "min": 4, "max": 8}],
+      "description": "Deal 6 damage and shake loose 3-6 coins. All Diamonds: bonus coins."
     }
   ]
 }

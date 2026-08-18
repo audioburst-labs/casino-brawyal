@@ -19,6 +19,110 @@
       }
     },
     {
+      "id": "slot_gremlin",
+      "name": "Slot Gremlin",
+      "hp": 14,
+      "stage": 1,
+      "brain": {"type": "weighted", "weights": {"scratch": 2, "coin_bite": 1}},
+      "moves": {
+        "scratch": {"intent": {"instances": 2, "per_hit": 2, "debuffs": []}},
+        "coin_bite": {"intent": {"instances": 1, "per_hit": 5, "debuffs": []}}
+      }
+    },
+    {
+      "id": "bouncer",
+      "name": "Bouncer",
+      "hp": 30,
+      "stage": 2,
+      "brain": {"type": "sequence", "loop": true, "steps": ["velvet_wall", "shove", "shove"]},
+      "moves": {
+        "velvet_wall": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [{"status": "taunt", "stacks": 2}]
+          }
+        },
+        "shove": {"intent": {"instances": 1, "per_hit": 7, "debuffs": []}}
+      }
+    },
+    {
+      "id": "croupier",
+      "name": "Croupier",
+      "hp": 18,
+      "stage": 2,
+      "brain": {"type": "sequence", "loop": true, "steps": ["rake_sweep", "mark_bet"]},
+      "moves": {
+        "rake_sweep": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
+        "mark_bet": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 4,
+            "debuffs": [{"status": "vulnerable", "stacks": 1}]
+          }
+        }
+      }
+    },
+    {
+      "id": "pit_boss",
+      "name": "Pit Boss",
+      "hp": 26,
+      "stage": 3,
+      "brain": {"type": "weighted", "weights": {"cane_strike": 2, "raise_stakes": 1}, "no_repeat": "raise_stakes"},
+      "moves": {
+        "cane_strike": {"intent": {"instances": 1, "per_hit": 6, "debuffs": []}},
+        "raise_stakes": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [{"status": "strength", "stacks": 2}]
+          }
+        }
+      }
+    },
+    {
+      "id": "tipsy_patron",
+      "name": "Tipsy Patron",
+      "hp": 20,
+      "stage": 2,
+      "brain": {"type": "weighted", "weights": {"wild_swing": 2, "bottle_toss": 2, "stumble": 1}},
+      "moves": {
+        "wild_swing": {"intent": {"instances": 1, "per_hit": 8, "debuffs": []}},
+        "bottle_toss": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
+        "stumble": {"intent": {"instances": 0, "per_hit": 0, "debuffs": []}}
+      }
+    },
+    {
+      "id": "loan_shark",
+      "name": "Loan Shark",
+      "hp": 24,
+      "stage": 3,
+      "brain": {"type": "sequence", "loop": true, "steps": ["collect", "collect", "foreclose"]},
+      "moves": {
+        "collect": {"intent": {"instances": 1, "per_hit": 5, "debuffs": []}},
+        "foreclose": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 14,
+            "debuffs": [{"status": "weak", "stacks": 1}]
+          }
+        }
+      }
+    },
+    {
+      "id": "chip_golem",
+      "name": "Chip Golem",
+      "hp": 45,
+      "stage": 3,
+      "brain": {"type": "sequence", "loop": true, "steps": ["chip_spray", "slam"]},
+      "moves": {
+        "chip_spray": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}},
+        "slam": {"intent": {"instances": 1, "per_hit": 9, "debuffs": []}}
+      }
+    },
+    {
       "id": "mr_moneyman",
       "name": "Mr. Moneyman",
       "hp": 110,
