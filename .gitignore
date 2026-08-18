@@ -1,0 +1,21 @@
+# Godot
+.godot/
+*.translation
+export_presets.cfg
+
+# Local engine binaries
+tools/godot/
+
+# Secrets
+.env
+*.key
+
+# Node
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Art pipeline scratch
+tools/art/raw/

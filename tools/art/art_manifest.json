@@ -1,0 +1,35 @@
+{
+  "model": "gpt-image-1",
+  "quality": "high",
+  "style_prefix": "Stylized cartoon game art for a casino-themed roguelike video game. Bold confident shapes, thick clean outlines, expressive exaggerated proportions, saturated palette built around casino felt green (#1e5c3a), deep maroon (#3d1420), warm gold (#d4af37) and cream highlights. Soft top-left key light, subtle rim light. Crisp, high-detail, professional game asset quality, in the spirit of modern indie deckbuilders. Absolutely no text, no letters, no numbers, no watermarks anywhere in the image.",
+  "assets": [
+    {
+      "id": "ace_idle",
+      "out": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body game character sprite on a fully transparent background: Ace, a dashing debonair swashbuckler gambler rogue in his early 30s. Slim athletic build, confident smirk, slicked-back dark hair, small chin stubble. Wears a fitted maroon vest over a cream shirt with rolled-up sleeves, black slacks, a loosened golden-spade bolo tie. In his right hand he fans four playing cards (blank faces, just suit-colored backs), in his left he twirls a slim dagger. Relaxed idle pose, weight on one leg, facing slightly right (three-quarter view). Character fills the frame vertically. No ground shadow, no background elements."
+    },
+    {
+      "id": "chip_spade",
+      "out": "assets/icons/chip_spade.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "A single casino poker chip game icon on a fully transparent background, viewed straight-on from above, perfectly circular and centered. Midnight blue-black chip with a cream dashed edge ring and gold trim. In the center, a bold cream spade symbol embossed with a slight glossy highlight. Chunky cartoon proportions, thick outline, crisp vector-like finish. The chip fills most of the frame. No shadow, no background."
+    },
+    {
+      "id": "slot_cabinet",
+      "out": "assets/props/slot_cabinet.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "An ornate cartoon casino slot machine cabinet on a fully transparent background, front view, centered. Wide art-deco cabinet in deep maroon lacquered wood with gold trim and rivets, warm glowing marquee lights along the top arch (no text on the marquee, just lights and a golden spade emblem), a wide horizontal window in the middle housing three empty white reel slots, a big round red spin button and a chunky gold side lever with a red ball handle on the right. Slight worn charm, rich saturated colors. No background, no floor."
+    },
+    {
+      "id": "bg_casino_floor",
+      "out": "assets/backgrounds/bg_casino_floor.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A wide cartoon casino interior background for a 2D battle scene, painted in rich saturated colors. Empty casino floor at night: deep green felt-textured carpet in the foreground (an open flat area where characters will stand), rows of glowing slot machines and card tables receding in the blurred background, maroon curtains with gold tassels framing the left and right edges, warm hanging chandelier light pooling in the center, subtle haze. Moody but inviting. Composition keeps the lower third mostly clear and uncluttered for gameplay characters. No people, no text."
+    }
+  ]
+}
