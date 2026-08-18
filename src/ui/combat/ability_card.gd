@@ -1,10 +1,14 @@
 class_name AbilityCard
 extends PanelContainer
-## One ability on the bar: icon, name, cost sockets, and hover description.
-## Sockets glow when the currently selected chip suit could legally fill them;
-## clicking a socket asks the presenter to assign the chip.
+## One ability on the bar: icon, name, description text, and cost sockets.
+## All cards share one fixed size. Chips arrive by click (select chip, click
+## socket) or drag-and-drop. Hovering shows keyword bubbles above the card
+## immediately (patch 0.1).
 
 signal socket_clicked(ability_index: int, slot_index: int)
+signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
+
+const CARD_SIZE := Vector2(220, 290)
 
 var ability_index := -1
 
@@ -13,38 +17,72 @@ var _sockets: Array[Button] = []
 var _socket_faces: Array[TextureRect] = []
 var _socket_labels: Array[Label] = []
 var _highlight_suit: StringName = &""
+var _keyword_panel: PanelContainer = null
+
+
+class SocketButton:
+	extends Button
+	var card: AbilityCard
+	var slot := 0
+
+	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
+		return data is Dictionary and data.has("suit") \
+			and card.accepts_chip(slot, data.suit)
+
+	func _drop_data(_position: Vector2, data: Variant) -> void:
+		card.chip_dropped.emit(card.ability_index, slot, data.suit)
+
+
+func accepts_chip(slot: int, suit: StringName) -> bool:
+	return not _state.exhausted() and _state.can_accept(slot, suit)
 
 
 func setup(state: AbilityState, index: int) -> void:
 	_state = state
 	ability_index = index
-	custom_minimum_size = Vector2(190, 200)
-	tooltip_text = "%s\n%s" % [_state.def.name, _state.def.description]
+	custom_minimum_size = CARD_SIZE
+	size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mouse_entered.connect(_show_keywords)
+	mouse_exited.connect(_hide_keywords)
 
 	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	box.add_theme_constant_override("separation", 6)
 	add_child(box)
 
+	var icon_holder := CenterContainer.new()
+	icon_holder.custom_minimum_size = Vector2(0, 70)
+	box.add_child(icon_holder)
 	var icon_texture := SuitAssets.ability_texture(_state.def.id)
 	if icon_texture != null:
 		var icon := TextureRect.new()
 		icon.texture = icon_texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(72, 72)
-		box.add_child(icon)
+		icon.custom_minimum_size = Vector2(66, 66)
+		icon_holder.add_child(icon)
 
 	var name_label := Label.new()
 	name_label.text = _state.def.name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_font_size_override("font_size", 19)
 	box.add_child(name_label)
+
+	var description := Label.new()
+	description.text = _state.def.description
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.add_theme_font_size_override("font_size", 14)
+	description.add_theme_color_override("font_color", Color(0.9, 0.86, 0.78))
+	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	box.add_child(description)
 
 	var socket_row := HBoxContainer.new()
 	socket_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	socket_row.add_theme_constant_override("separation", 8)
+	socket_row.add_theme_constant_override("separation", 6)
 	box.add_child(socket_row)
 	var socket_style := StyleBoxFlat.new()
 	socket_style.bg_color = Color(0.94, 0.9, 0.8)
@@ -52,8 +90,10 @@ func setup(state: AbilityState, index: int) -> void:
 	socket_style.set_border_width_all(2)
 	socket_style.set_corner_radius_all(10)
 	for slot in _state.def.cost.size():
-		var socket := Button.new()
-		socket.custom_minimum_size = Vector2(56, 56)
+		var socket := SocketButton.new()
+		socket.card = self
+		socket.slot = slot
+		socket.custom_minimum_size = Vector2(48, 48)
 		for style_name in ["normal", "hover", "pressed", "disabled"]:
 			socket.add_theme_stylebox_override(style_name, socket_style)
 		socket.pressed.connect(_on_socket_pressed.bind(slot))
@@ -63,10 +103,10 @@ func setup(state: AbilityState, index: int) -> void:
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		face.set_anchors_preset(Control.PRESET_FULL_RECT)
-		face.offset_left = 7
-		face.offset_top = 7
-		face.offset_right = -7
-		face.offset_bottom = -7
+		face.offset_left = 6
+		face.offset_top = 6
+		face.offset_right = -6
+		face.offset_bottom = -6
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		socket.add_child(face)
 		_socket_faces.append(face)
@@ -75,7 +115,7 @@ func setup(state: AbilityState, index: int) -> void:
 		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		fallback.add_theme_color_override("font_color", Color(0.35, 0.25, 0.2))
-		fallback.add_theme_font_size_override("font_size", 24)
+		fallback.add_theme_font_size_override("font_size", 22)
 		fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		socket.add_child(fallback)
 		_socket_labels.append(fallback)
@@ -84,41 +124,96 @@ func setup(state: AbilityState, index: int) -> void:
 
 func refresh(highlight_suit: StringName = &"") -> void:
 	_highlight_suit = highlight_suit
+	modulate = Color(0.6, 0.58, 0.55) if _state.exhausted() else Color.WHITE
 	for slot in _sockets.size():
-		var socket := _sockets[slot]
-		var face := _socket_faces[slot]
-		var fallback := _socket_labels[slot]
-		var filled := _state.filled[slot]
-		var required := _state.def.cost[slot]
-		if filled != &"":
-			var chip := SuitAssets.chip_texture(filled)
-			face.texture = chip
-			face.modulate = Color.WHITE
-			fallback.text = "" if chip != null else String(filled).left(1).to_upper()
-			socket.modulate = Color.WHITE
-			socket.tooltip_text = "%s chip socketed (click to return)" % filled
+		_render_socket(slot, _state.filled[slot])
+
+
+## Immediately paints a chip into a socket, even if the sim already cleared
+## the ability (patch 0.1: the final chip must be visible before firing).
+func show_chip(slot: int, suit: StringName) -> void:
+	_render_socket(slot, suit)
+
+
+func _render_socket(slot: int, filled: StringName) -> void:
+	var socket := _sockets[slot]
+	var face := _socket_faces[slot]
+	var fallback := _socket_labels[slot]
+	var required := _state.def.cost[slot]
+	if filled != &"":
+		var chip := SuitAssets.chip_texture(filled)
+		face.texture = chip
+		face.modulate = Color.WHITE
+		fallback.text = "" if chip != null else String(filled).left(1).to_upper()
+		socket.modulate = Color.WHITE
+		socket.tooltip_text = "%s chip socketed (click to return)" % filled
+	else:
+		var ghost := SuitAssets.suit_texture(required)
+		face.texture = ghost
+		face.modulate = Color(1, 1, 1, 0.45)
+		fallback.text = "" if ghost != null else \
+			("?" if required == &"any" else String(required).left(1).to_upper())
+		socket.tooltip_text = "needs: any suit" if required == &"any" else "needs: %s" % required
+		var eligible := _highlight_suit != &"" and accepts_chip(slot, _highlight_suit)
+		if eligible:
+			socket.modulate = Color(1.25, 1.2, 0.75)
+			face.modulate = Color(1, 1, 1, 0.85)
 		else:
-			var ghost := SuitAssets.suit_texture(required)
-			face.texture = ghost
-			face.modulate = Color(1, 1, 1, 0.45)  # dimmed = waiting for a chip
-			fallback.text = "" if ghost != null else \
-				("?" if required == &"any" else String(required).left(1).to_upper())
-			socket.tooltip_text = "needs: any suit" if required == &"any" else "needs: %s" % required
-			var eligible := _highlight_suit != &"" and _state.can_accept(slot, _highlight_suit)
-			if eligible:
-				socket.modulate = Color(1.25, 1.2, 0.75)
-				face.modulate = Color(1, 1, 1, 0.85)
-			else:
-				socket.modulate = Color.WHITE
+			socket.modulate = Color.WHITE
 
 
 func flash_fire() -> void:
 	var tween := create_tween()
 	modulate = Color(1.8, 1.6, 1.0)
 	scale = Vector2(1.08, 1.08)
+	pivot_offset = size * 0.5
 	tween.tween_property(self, "modulate", Color.WHITE, 0.35)
 	tween.parallel().tween_property(self, "scale", Vector2.ONE, 0.35) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _show_keywords() -> void:
+	if _state.def.keywords.is_empty() or _keyword_panel != null:
+		return
+	_keyword_panel = PanelContainer.new()
+	_keyword_panel.top_level = true
+	_keyword_panel.z_index = 200
+	_keyword_panel.theme_type_variation = &"TooltipPanel"
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	_keyword_panel.add_child(box)
+	for keyword_id: StringName in _state.def.keywords:
+		var keyword := Db.content.get_keyword(keyword_id)
+		if keyword == null:
+			continue
+		var entry := PanelContainer.new()
+		var label := Label.new()
+		label.text = "%s — %s" % [keyword.name, keyword.text]
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.custom_minimum_size = Vector2(280, 0)
+		label.add_theme_font_size_override("font_size", 15)
+		entry.add_child(label)
+		box.add_child(entry)
+	add_child(_keyword_panel)
+	# Above the card, clamped to the screen.
+	await get_tree().process_frame
+	if _keyword_panel == null:
+		return
+	var panel_size := _keyword_panel.get_combined_minimum_size()
+	var pos := global_position + Vector2((size.x - panel_size.x) * 0.5, -panel_size.y - 8)
+	pos.x = clampf(pos.x, 8, get_viewport_rect().size.x - panel_size.x - 8)
+	pos.y = maxf(pos.y, 8)
+	_keyword_panel.global_position = pos
+
+
+func _hide_keywords() -> void:
+	if _keyword_panel != null:
+		_keyword_panel.queue_free()
+		_keyword_panel = null
+
+
+func _exit_tree() -> void:
+	_hide_keywords()
 
 
 func _on_socket_pressed(slot: int) -> void:

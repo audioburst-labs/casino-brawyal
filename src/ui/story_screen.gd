@@ -42,7 +42,11 @@ func _pick(choice: Dictionary) -> void:
 	var lines := RunEffects.apply(choice.get("effects", []),
 		Db.content, Game.run, Game.rng.stream(&"rewards"))
 	_choice_row.queue_free()
-	if lines.is_empty():
-		lines.append("You move on.")
-	add_info_label("\n".join(lines), 28)
+	# Patch 0.1: describe what happened with the chosen result, not just numbers.
+	var outcome := str(choice.get("outcome", ""))
+	if outcome == "" and lines.is_empty():
+		outcome = "You move on."
+	add_info_label(outcome, 24)
+	if not lines.is_empty():
+		add_info_label("\n".join(lines), 28)
 	add_continue_button()

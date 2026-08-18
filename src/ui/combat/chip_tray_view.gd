@@ -1,9 +1,27 @@
 class_name ChipTrayView
 extends PanelContainer
-## The chip tray: one stack per suit with a count badge. Clicking a stack
-## selects that suit for socketing; the selected stack lifts and glows.
+## The chip tray: one stack per suit with a count badge. Chips can be
+## drag-and-dropped onto ability sockets (patch 0.1), or click-selected
+## (stack glows, then click a socket).
 
 signal chip_selected(suit: StringName)
+
+
+class ChipButton:
+	extends Button
+	var suit: StringName = &""
+
+	func _get_drag_data(_position: Vector2) -> Variant:
+		var preview_texture := SuitAssets.chip_texture(suit)
+		if preview_texture != null:
+			var preview := TextureRect.new()
+			preview.texture = preview_texture
+			preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			preview.custom_minimum_size = Vector2(64, 64)
+			preview.modulate.a = 0.9
+			set_drag_preview(preview)
+		return {"suit": suit}
 
 var selected_suit: StringName = &""
 
@@ -51,7 +69,8 @@ func deselect() -> void:
 
 
 func _build_stack(suit: StringName, count: int) -> Control:
-	var button := Button.new()
+	var button := ChipButton.new()
+	button.suit = suit
 	button.custom_minimum_size = Vector2(104, 104)
 	button.tooltip_text = "%s chips: %d" % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)

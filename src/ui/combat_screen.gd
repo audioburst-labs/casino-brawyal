@@ -163,6 +163,7 @@ func _spawn_abilities() -> void:
 		_ability_row.add_child(card)
 		card.setup(sim.abilities[index], index)
 		card.socket_clicked.connect(_on_socket_clicked)
+		card.chip_dropped.connect(_on_chip_dropped)
 		_ability_cards.append(card)
 
 
@@ -188,11 +189,21 @@ func _on_socket_clicked(ability_index: int, slot_index: int) -> void:
 			sim.drain_events()
 			_refresh_all()
 		return
+	_assign(suit, ability_index, slot_index)
+
+
+func _on_chip_dropped(ability_index: int, slot_index: int, suit: StringName) -> void:
+	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
+		return
+	_assign(suit, ability_index, slot_index)
+
+
+func _assign(suit: StringName, ability_index: int, slot_index: int) -> void:
 	if sim.assign_chip(suit, ability_index, slot_index):
 		_busy = true
 		await _play_events(sim.drain_events())
 		_busy = false
-		if sim.tray.count(suit) == 0:
+		if sim.tray.count(_tray_view.selected_suit) == 0:
 			_tray_view.deselect()
 			_on_chip_selected(&"")
 		_refresh_all()
@@ -239,39 +250,89 @@ func _view_of(actor_id: StringName) -> UnitView:
 	return _enemy_views.get(actor_id)
 
 
+func _card_of(ability_id: StringName) -> AbilityCard:
+	for card in _ability_cards:
+		if card.ability_index >= 0 and sim.abilities[card.ability_index].def.id == ability_id:
+			return card
+	return null
+
+
+func _add_enemy_view(actor_id: StringName) -> void:
+	for enemy in sim.enemies:
+		if enemy.id == actor_id and not _enemy_views.has(actor_id):
+			var view := UnitView.new()
+			_enemies_row.add_child(view)
+			view.setup(enemy)
+			view.clicked.connect(_on_unit_clicked)
+			view.modulate.a = 0.0
+			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.4)
+			_enemy_views[actor_id] = view
+
+
 func _play_events(events: Array[CombatEvent]) -> void:
 	for event in events:
 		match event.type:
 			&"round_started":
 				_round_label.text = "Round %d" % event.data.round
 			&"intents_shown":
-				for intent: Dictionary in event.data.intents:
-					var view := _view_of(intent.actor)
+				for entry: Dictionary in event.data.intents:
+					var view := _view_of(entry.actor)
 					if view != null:
-						view.show_intent({"intent": intent.intent})
+						view.show_intent(entry)
 				await get_tree().create_timer(0.2).timeout
 			&"spin_resolved":
 				await _reel_strip.spin_to(event.data.symbols)
 				_tray_view.refresh()
 			&"chips_generated", &"chips_converted":
 				_tray_view.refresh()
-			&"chip_assigned", &"chip_unassigned":
+			&"chip_assigned":
+				# Paint the chip into its socket immediately so the final chip
+				# is visible before the ability fires (patch 0.1).
+				var assigned_card := _card_of(event.data.ability)
+				if assigned_card != null:
+					assigned_card.show_chip(event.data.slot, event.data.suit)
+				_tray_view.refresh()
+			&"chip_unassigned":
 				_tray_view.refresh()
 			&"ability_fired":
-				for card in _ability_cards:
-					if card.ability_index >= 0 \
-							and sim.abilities[card.ability_index].def.id == event.data.ability:
-						card.flash_fire()
+				await get_tree().create_timer(0.3).timeout  # let the last chip be seen
+				var fired_card := _card_of(event.data.ability)
+				if fired_card != null:
+					fired_card.flash_fire()
 				_hero_view.play_lunge()
 				await get_tree().create_timer(0.18).timeout
+			&"passive_gained":
+				var passive_card := _card_of(event.data.ability)
+				if passive_card != null:
+					passive_card.flash_fire()
+				await get_tree().create_timer(0.2).timeout
+			&"enemy_summoned":
+				_add_enemy_view(event.data.actor)
+				Fx.shake(8.0)
+				await get_tree().create_timer(0.35).timeout
+			&"encore":
+				var encore_view := _view_of(event.data.actor)
+				if encore_view != null:
+					Fx.spawn_number(encore_view.sprite_center(), "ENCORE!", Color(1.0, 0.85, 0.4))
+				await get_tree().create_timer(0.25).timeout
+			&"damage_negated":
+				Fx.spawn_number(_hero_view.sprite_center(), "MISS!", Color(0.7, 0.9, 1.0))
+				await get_tree().create_timer(0.2).timeout
+			&"mark_cashed":
+				var cashed_view := _view_of(event.data.actor)
+				if cashed_view != null:
+					Fx.spawn_number(cashed_view.sprite_center(), "CASH IN!", Color(0.5, 1.0, 0.8))
+				await get_tree().create_timer(0.15).timeout
 			&"damage_dealt":
+				# One hit, one number, one beat — instances stay in sync with
+				# their damage numbers (patch 0.1).
 				var target := _view_of(event.data.target)
 				if target != null:
 					target.play_hit()
 					target.refresh()
 					Fx.spawn_number(target.sprite_center(), str(event.data.amount))
-				Fx.shake(clampf(event.data.amount * 1.5, 4.0, 18.0))
-				await get_tree().create_timer(0.22).timeout
+				Fx.shake(clampf(event.data.amount * 1.2, 4.0, 18.0))
+				await get_tree().create_timer(0.3).timeout
 			&"block_gained":
 				var actor_view := _view_of(event.data.actor)
 				if actor_view != null:

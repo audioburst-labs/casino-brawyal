@@ -36,6 +36,9 @@ func setup(combat_actor: CombatActor) -> void:
 	_intent_row = HBoxContainer.new()
 	_intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_intent_row.add_theme_constant_override("separation", 6)
+	# Fixed height: clearing the intent must not reflow the sprite upward
+	# (patch 0.1: "opponent moves slightly up when first attacking").
+	_intent_row.custom_minimum_size = Vector2(0, 42)
 	add_child(_intent_row)
 	_intent_icon = TextureRect.new()
 	_intent_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -131,16 +134,26 @@ func refresh() -> void:
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
 
 
-func show_intent(move: Dictionary) -> void:
-	var intent: Dictionary = move.get("intent", {})
+## `entry` is the intents_shown payload: intent dict + display_per_hit /
+## display_instances (strength-buffed values) + optional blackjack fields.
+func show_intent(entry: Dictionary) -> void:
+	var intent: Dictionary = entry.get("intent", {})
 	var parts: Array[String] = []
 	for debuff: Dictionary in intent.get("debuffs", []):
 		parts.append("%s %d" % [debuff.get("status", "?"), int(debuff.get("stacks", 1))])
 	for buff: Dictionary in intent.get("self_status", []):
 		parts.append("+%s %d" % [buff.get("status", "?"), int(buff.get("stacks", 1))])
-	var instances := int(intent.get("instances", 0))
-	var per_hit := int(intent.get("per_hit", 0))
-	if instances > 1:
+	if not intent.get("summon", {}).is_empty():
+		parts.append("summon x%d" % int(intent.get("summon").get("count", 1)))
+	if intent.get("heal_allies", 0) > 0:
+		parts.append("heal allies")
+	if intent.get("ally_attack_again", false):
+		parts.append("encore")
+	var instances := int(entry.get("display_instances", intent.get("instances", 0)))
+	var per_hit := int(entry.get("display_per_hit", intent.get("per_hit", 0)))
+	if entry.get("bust", false):
+		parts.append("BUST!")
+	elif instances > 1:
 		parts.append("%dx%d" % [instances, per_hit])
 	elif instances == 1:
 		parts.append("%d" % per_hit)
@@ -174,11 +187,15 @@ func play_hit() -> void:
 
 
 func play_lunge() -> void:
+	# Animate a wrapper-independent offset via the sprite's pivot-safe
+	# position, always restoring the exact captured origin so container
+	# re-layouts can't leave the sprite drifted (patch 0.1 fix).
+	var origin := _sprite.position
 	var direction := 1.0 if actor.is_hero else -1.0
 	var tween := create_tween()
-	tween.tween_property(_sprite, "position:x", _sprite.position.x + 46.0 * direction, 0.1) \
+	tween.tween_property(_sprite, "position:x", origin.x + 46.0 * direction, 0.1) \
 		.set_ease(Tween.EASE_OUT)
-	tween.tween_property(_sprite, "position:x", _sprite.position.x, 0.22) \
+	tween.tween_property(_sprite, "position", origin, 0.22) \
 		.set_ease(Tween.EASE_IN_OUT)
 
 
