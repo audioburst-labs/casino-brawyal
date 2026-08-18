@@ -28,6 +28,7 @@ var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
 var _dmg_mult := 1.0
 var _events: Array[CombatEvent] = []
+var _relics: Array = []             # Defs.RelicDef, in acquisition order
 
 
 func _init(db: ContentDB, config: Dictionary) -> void:
@@ -44,6 +45,11 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 
 	for ability_id in config.get("abilities", []):
 		abilities.append(AbilityState.new(db.get_ability(StringName(str(ability_id)))))
+
+	for relic_id in config.get("relics", []):
+		var relic := db.get_relic(StringName(str(relic_id)))
+		if relic != null:
+			_relics.append(relic)
 
 	var index := 0
 	for enemy_id in config.get("enemies", []):
@@ -73,6 +79,9 @@ func begin_round() -> bool:
 	for enemy in enemies:
 		enemy.on_round_start()
 	emit_event(&"round_started", {"round": round_number})
+	if round_number == 1:
+		_fire_relics(&"combat_started")
+	_fire_relics(&"round_started")
 
 	_intents.clear()
 	var shown := []
@@ -89,6 +98,7 @@ func begin_round() -> bool:
 	var result := machine.spin(rng.stream(&"combat"))
 	tray.add_payout(result.payout)
 	emit_event(&"spin_resolved", {"symbols": result.symbols, "payout": result.payout})
+	_fire_relics(&"spin_resolved")
 
 	phase = Phase.ASSIGNMENT
 	return true
@@ -144,6 +154,7 @@ func end_assignment() -> bool:
 	for enemy in enemies:
 		enemy.tick_round_end()
 	emit_event(&"round_ended", {"round": round_number})
+	_fire_relics(&"round_ended")
 	phase = Phase.ROUND_START
 	return true
 
@@ -154,9 +165,20 @@ func check_death(actor: CombatActor) -> void:
 	emit_event(&"actor_died", {"actor": actor.id})
 	if targeting.manual_target_id == actor.id:
 		targeting.manual_target_id = &""
+	_fire_relics(&"enemy_killed")
 	if enemies.all(func(e: CombatActor) -> bool: return not e.is_alive()):
 		emit_event(&"combat_won", {})
 		phase = Phase.ENDED
+		_fire_relics(&"combat_won")
+
+
+func _fire_relics(trigger: StringName) -> void:
+	for relic: Defs.RelicDef in _relics:
+		if relic.trigger != trigger:
+			continue
+		emit_event(&"relic_triggered", {"relic": relic.id})
+		EffectInterpreter.execute(relic.effects, self, hero,
+			targeting.effective_target(enemies))
 
 
 func _fire_ability(ability: AbilityState) -> void:

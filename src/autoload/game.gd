@@ -106,6 +106,7 @@ func _start_combat(option: Dictionary) -> void:
 		"seed": rng.stream(&"combat_seeds").randi(),
 		"hp_mult": hp_mult,
 		"dmg_mult": dmg_mult,
+		"relics": run.relic_ids,
 		"run_mode": true,
 	})
 
