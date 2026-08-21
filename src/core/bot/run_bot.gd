@@ -12,7 +12,8 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 	run.seed_value = seed_value
 	run.max_hp = hero.max_hp
 	run.hp = hero.max_hp
-	run.ability_ids = hero.starting_abilities.duplicate()
+	for ability_id in hero.starting_abilities:
+		run.acquire_ability(ability_id)
 
 	var choice_rng := rng.stream(&"bot")
 	while run.encounter_number() <= 10:
@@ -31,6 +32,11 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 				var relic := Rewards.random_unowned_relic(db, run, rng.stream(&"rewards"))
 				if relic != &"":
 					run.relic_ids.append(relic)
+			&"casino":
+				while run.coins >= CasinoGame.SPIN_COST + 20:
+					var result := CasinoGame.spin(db, run, rng.stream(&"rewards"))
+					if result.is_empty() or not result.free_respin:
+						break
 			&"shop":
 				_play_shop(db, run, rng, choice_rng)
 	return _result(run, true)
@@ -48,6 +54,8 @@ static func _result(run: RunState, won: bool) -> Dictionary:
 
 static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 		option: Dictionary, choice_rng: RandomNumberGenerator) -> bool:
+	run.process_trash()
+	_equip_best(db, run)
 	var config := EncounterFactory.combat_config(db, run, rng.stream(&"map"), option)
 	config["seed"] = rng.stream(&"combat_seeds").randi()
 	var sim := CombatSim.new(db, config)
@@ -60,13 +68,24 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 			int(config.gold_min), int(config.gold_max), rng.stream(&"rewards"))
 		var choices := Rewards.ability_choices(db, run, rng.stream(&"rewards"))
 		if not choices.is_empty():
-			run.ability_ids.append(choices[choice_rng.randi_range(0, choices.size() - 1)])
+			run.acquire_ability(choices[choice_rng.randi_range(0, choices.size() - 1)])
 		if option.type == &"hard_combat":
 			var relic := Rewards.random_unowned_relic(db, run, rng.stream(&"rewards"))
 			if relic != &"":
 				run.relic_ids.append(relic)
 			run.hp = mini(run.max_hp, run.hp + int(ceil(run.max_hp * 0.15)))
 	return true
+
+
+## Equips the 6 highest-value owned abilities before each combat.
+static func _equip_best(db: ContentDB, run: RunState) -> void:
+	var owned := run.ability_ids.filter(
+		func(id: StringName) -> bool: return id != run.trash_id)
+	owned.sort_custom(func(a: StringName, b: StringName) -> bool:
+		return GreedyBot._score(db.get_ability(a), 2) > GreedyBot._score(db.get_ability(b), 2))
+	run.equipped_ids.clear()
+	for id: StringName in owned.slice(0, RunState.EQUIP_CAP):
+		run.equipped_ids.append(id)
 
 
 static func _play_story(db: ContentDB, run: RunState, rng: GameRng,
@@ -87,7 +106,7 @@ static func _play_shop(db: ContentDB, run: RunState, rng: GameRng,
 		run.machine.add_reel()
 	for offer: Dictionary in stock.abilities:
 		if run.spend(int(offer.price)):
-			run.ability_ids.append(offer.id)
+			run.acquire_ability(offer.id)
 	for offer: Dictionary in stock.relics:
 		if run.spend(int(offer.price)):
 			run.relic_ids.append(offer.id)

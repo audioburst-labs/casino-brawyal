@@ -36,7 +36,7 @@ static func combat_config(db: ContentDB, run: RunState,
 	return {
 		"hero": run.hero_id,
 		"hero_hp": run.hp,
-		"abilities": run.ability_ids,
+		"abilities": run.equipped_ids,
 		"machine": run.machine,
 		"enemies": lineup.enemies,
 		"hp_mult": hp_mult,

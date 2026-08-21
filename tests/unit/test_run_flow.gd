@@ -60,11 +60,15 @@ func test_non_combat_encounters_route_to_their_screens() -> void:
 		[{"type": &"story"}, "StoryScreen"],
 		[{"type": &"rest"}, "RestScreen"],
 		[{"type": &"treasure"}, "TreasureScreen"],
+		[{"type": &"casino"}, "CasinoScreen"],
 		[{"type": &"shop"}, "ShopScreen"],
 	]:
 		Game.choose_encounter(pair[0])
 		await wait_physics_frames(2)
 		assert_eq(_current_screen().name, pair[1])
+	Game.show_loadout()
+	await wait_physics_frames(2)
+	assert_eq(_current_screen().name, "LoadoutScreen")
 
 
 func test_boss_victory_leads_to_victory_screen() -> void:

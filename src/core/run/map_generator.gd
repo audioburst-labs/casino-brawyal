@@ -52,6 +52,12 @@ static func _treasure_allowed(run: RunState) -> bool:
 		and run.last_visited() != &"treasure"
 
 
+static func _casino_allowed(run: RunState) -> bool:
+	return run.encounter_number() > 1 \
+		and run.count_visited(&"casino") < 2 \
+		and run.last_visited() != &"casino"
+
+
 ## Rolls one weighted option whose type is not in `exclude`.
 static func _roll_option(run: RunState, rng: RandomNumberGenerator,
 		exclude: Array[StringName]) -> Dictionary:
@@ -64,6 +70,8 @@ static func _roll_option(run: RunState, rng: RandomNumberGenerator,
 		pool.append({"type": &"shop", "weight": 2})
 	if _treasure_allowed(run):
 		pool.append({"type": &"treasure", "weight": 2})
+	if _casino_allowed(run):
+		pool.append({"type": &"casino", "weight": 2})
 
 	var candidates := pool.filter(
 		func(entry: Dictionary) -> bool: return not exclude.has(entry.type))

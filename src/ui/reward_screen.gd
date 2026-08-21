@@ -44,5 +44,5 @@ func setup(args: Dictionary) -> void:
 
 
 func _pick_ability(ability_id: StringName) -> void:
-	Game.run.ability_ids.append(ability_id)
+	Game.run.acquire_ability(ability_id)
 	Game.encounter_finished()

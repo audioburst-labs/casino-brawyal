@@ -7,8 +7,9 @@ const TYPE_LABELS := {
 	&"story": "Story",
 	&"rest": "Rest",
 	&"treasure": "Treasure",
+	&"casino": "Casino",
 	&"shop": "Shop",
-	&"boss": "BOSS: Mr. Moneyman",
+	&"boss": "BOSS: Mr. Moneybags",
 }
 const TYPE_FLAVOR := {
 	&"combat": "The house always sends someone.",
@@ -16,6 +17,7 @@ const TYPE_FLAVOR := {
 	&"story": "Something is happening here...",
 	&"rest": "A quiet corner to catch your breath.",
 	&"treasure": "Something glitters in the dark.",
+	&"casino": "Try your luck at the tables.",
 	&"shop": "Spend your winnings.",
 	&"boss": "Time to settle the score.",
 }
@@ -46,3 +48,12 @@ func _ready() -> void:
 			func() -> void: Game.choose_encounter(option))
 		card.custom_minimum_size = Vector2(400, 190)
 		row.add_child(card)
+
+	var loadout_row := HBoxContainer.new()
+	loadout_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	loadout_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	content.add_child(loadout_row)
+	var loadout_button := Button.new()
+	loadout_button.text = "Abilities (%d equipped)" % Game.run.equipped_ids.size()
+	loadout_button.pressed.connect(Game.show_loadout)
+	loadout_row.add_child(loadout_button)

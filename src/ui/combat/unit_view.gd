@@ -11,6 +11,7 @@ var sprite_height := 420.0
 var _intent_row: HBoxContainer
 var _intent_icon: TextureRect
 var _intent_label: Label
+var _sprite_holder: CenterContainer
 var _sprite: TextureRect
 var _fallback: ColorRect
 var _hp_bar: ProgressBar
@@ -54,9 +55,10 @@ func setup(combat_actor: CombatActor) -> void:
 	_intent_label.text = ""
 	_intent_row.add_child(_intent_label)
 
-	var sprite_holder := CenterContainer.new()
-	sprite_holder.custom_minimum_size = Vector2(0, sprite_height)
-	add_child(sprite_holder)
+	_sprite_holder = CenterContainer.new()
+	_sprite_holder.custom_minimum_size = Vector2(0, sprite_height)
+	add_child(_sprite_holder)
+	var sprite_holder := _sprite_holder
 
 	var texture := SuitAssets.character_texture(actor.def_id, actor.is_hero)
 	_sprite = TextureRect.new()
@@ -168,6 +170,14 @@ func clear_intent() -> void:
 
 func set_targeted(targeted: bool) -> void:
 	_target_marker.visible = targeted
+
+
+## Shrinks/grows the sprite so crowded lineups still fit (patch 0.11).
+func apply_height(height: float) -> void:
+	sprite_height = height
+	_sprite_holder.custom_minimum_size = Vector2(0, height)
+	_sprite.custom_minimum_size = Vector2(height * 0.66, height)
+	custom_minimum_size.x = clampf(300.0 * height / 430.0, 180.0, 300.0)
 
 
 func sprite_center() -> Vector2:

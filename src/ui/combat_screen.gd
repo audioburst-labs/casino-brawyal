@@ -25,10 +25,15 @@ func _ready() -> void:
 	_build_layout()
 	if get_tree().current_scene == self:
 		# Standalone debug launch: a fixed fight with everything unlocked.
+		# CB_DEBUG_ENEMIES="dealer,dealer,..." overrides the lineup.
+		var enemies: Array = ["bouncer", "server"]
+		var override := OS.get_environment("CB_DEBUG_ENEMIES")
+		if override != "":
+			enemies = override.split(",")
 		setup({
 			"hero": "ace",
 			"abilities": ["card_sling", "quick_maneuvers", "color_up", "double_down"],
-			"enemies": ["bouncer", "server"],
+			"enemies": enemies,
 			"seed": randi(),
 		})
 
@@ -113,7 +118,6 @@ func _build_layout() -> void:
 	_reel_strip = ReelStrip.new()
 	machine_box.add_child(_reel_strip)
 	_tray_view = ChipTrayView.new()
-	_tray_view.chip_selected.connect(_on_chip_selected)
 	machine_box.add_child(_tray_view)
 
 	_ability_row = HBoxContainer.new()
@@ -122,13 +126,19 @@ func _build_layout() -> void:
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	var end_box := VBoxContainer.new()
-	end_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	bottom.add_child(end_box)
+	# End Turn lives in its own corner, off the ability line (patch 0.11).
 	_end_turn = Button.new()
 	_end_turn.text = "End Turn"
 	_end_turn.pressed.connect(_on_end_turn)
-	end_box.add_child(_end_turn)
+	_end_turn.anchor_left = 1.0
+	_end_turn.anchor_right = 1.0
+	_end_turn.anchor_top = 1.0
+	_end_turn.anchor_bottom = 1.0
+	_end_turn.offset_left = -220
+	_end_turn.offset_right = -24
+	_end_turn.offset_top = -84
+	_end_turn.offset_bottom = -20
+	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
 	_banner = Label.new()
@@ -150,11 +160,18 @@ func _spawn_units() -> void:
 
 	for enemy in sim.enemies:
 		var view := UnitView.new()
+		view.sprite_height = _unit_height()
 		_enemies_row.add_child(view)
 		view.setup(enemy)
+		view.apply_height(_unit_height())  # also shrinks the panel width
 		view.clicked.connect(_on_unit_clicked)
 		_enemy_views[enemy.id] = view
 	_update_target_markers()
+
+
+## Enemies shrink as the lineup grows so 4-5 fighters still fit (patch 0.11).
+func _unit_height() -> float:
+	return clampf(430.0 - 55.0 * maxf(0.0, sim.enemies.size() - 2), 240.0, 430.0)
 
 
 func _spawn_abilities() -> void:
@@ -175,37 +192,23 @@ func _next_round() -> void:
 	_refresh_all()
 
 
-func _on_chip_selected(suit: StringName) -> void:
-	for card in _ability_cards:
-		card.refresh(suit)
-
-
+## Chips arrive by drag-and-drop only (patch 0.11); clicking a filled socket
+## returns its chip to the tray.
 func _on_socket_clicked(ability_index: int, slot_index: int) -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
-	var suit := _tray_view.selected_suit
-	if suit == &"":
-		if sim.unassign_chip(ability_index, slot_index):
-			sim.drain_events()
-			_refresh_all()
-		return
-	_assign(suit, ability_index, slot_index)
+	if sim.unassign_chip(ability_index, slot_index):
+		sim.drain_events()
+		_refresh_all()
 
 
 func _on_chip_dropped(ability_index: int, slot_index: int, suit: StringName) -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
-	_assign(suit, ability_index, slot_index)
-
-
-func _assign(suit: StringName, ability_index: int, slot_index: int) -> void:
 	if sim.assign_chip(suit, ability_index, slot_index):
 		_busy = true
 		await _play_events(sim.drain_events())
 		_busy = false
-		if sim.tray.count(_tray_view.selected_suit) == 0:
-			_tray_view.deselect()
-			_on_chip_selected(&"")
 		_refresh_all()
 
 
@@ -233,7 +236,7 @@ func _refresh_all() -> void:
 		view.refresh()
 	_tray_view.refresh()
 	for card in _ability_cards:
-		card.refresh(_tray_view.selected_suit)
+		card.refresh()
 	_update_target_markers()
 	_end_turn.disabled = sim.phase != CombatSim.Phase.ASSIGNMENT
 
@@ -261,12 +264,16 @@ func _add_enemy_view(actor_id: StringName) -> void:
 	for enemy in sim.enemies:
 		if enemy.id == actor_id and not _enemy_views.has(actor_id):
 			var view := UnitView.new()
+			view.sprite_height = _unit_height()
 			_enemies_row.add_child(view)
 			view.setup(enemy)
 			view.clicked.connect(_on_unit_clicked)
 			view.modulate.a = 0.0
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.4)
 			_enemy_views[actor_id] = view
+	# Re-fit the whole row to the new crowd size.
+	for view: UnitView in _enemy_views.values():
+		view.apply_height(_unit_height())
 
 
 func _play_events(events: Array[CombatEvent]) -> void:

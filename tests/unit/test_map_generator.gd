@@ -59,6 +59,10 @@ func test_property_all_placement_rules_hold_across_many_runs() -> void:
 						assert_gt(encounter_number, 2, "treasure only after enc 2")
 						assert_lt(run.count_visited(&"treasure"), 2, "treasure cap is 2")
 						assert_ne(run.last_visited(), &"treasure", "no consecutive treasures")
+					&"casino":
+						assert_gt(encounter_number, 1, "casino only after enc 1")
+						assert_lt(run.count_visited(&"casino"), 2, "casino cap is 2")
+						assert_ne(run.last_visited(), &"casino", "no consecutive casinos")
 					&"hard_combat":
 						assert_gt(encounter_number, 3, "hard combat only after enc 3")
 

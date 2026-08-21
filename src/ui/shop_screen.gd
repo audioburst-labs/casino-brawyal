@@ -128,8 +128,11 @@ func _buy_reel() -> void:
 	_sold.erase("reel")
 
 
+## Doc v0.11: stickers are placed instantly upon acquisition — jump straight
+## into the Layout grid with the new sticker pre-selected.
 func _buy_sticker(suit: StringName) -> void:
 	Game.run.sticker_inventory.append(suit)
+	_selected_sticker = suit
 	_tabs.current_tab = 1
 
 
@@ -138,7 +141,7 @@ func _buy_relic(relic_id: StringName) -> void:
 
 
 func _buy_ability(ability_id: StringName) -> void:
-	Game.run.ability_ids.append(ability_id)
+	Game.run.acquire_ability(ability_id)
 
 
 func _refresh_layout() -> void:

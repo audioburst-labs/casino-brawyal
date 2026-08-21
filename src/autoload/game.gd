@@ -40,7 +40,8 @@ func new_run(seed_value: int = -1) -> void:
 	var hero := Db.content.get_hero(run.hero_id)
 	run.max_hp = hero.max_hp
 	run.hp = hero.max_hp
-	run.ability_ids = hero.starting_abilities.duplicate()
+	for ability_id in hero.starting_abilities:
+		run.acquire_ability(ability_id)
 	play_cinematic(ACE_INTRO_VIDEO,
 		func() -> void: choose_encounter({"type": &"combat"}))
 
@@ -69,6 +70,7 @@ func choose_encounter(option: Dictionary) -> void:
 	run.record_visit(option.type)
 	match option.type:
 		&"combat", &"hard_combat", &"boss":
+			run.process_trash()  # the trash slot empties when combat begins
 			_start_combat(option)
 		&"story":
 			goto_screen("res://scenes/screens/story_screen.tscn", {"event": _pick_story_event()})
@@ -76,13 +78,29 @@ func choose_encounter(option: Dictionary) -> void:
 			goto_screen("res://scenes/screens/rest_screen.tscn")
 		&"treasure":
 			goto_screen("res://scenes/screens/treasure_screen.tscn")
+		&"casino":
+			goto_screen("res://scenes/screens/casino_screen.tscn")
 		&"shop":
 			goto_screen("res://scenes/screens/shop_screen.tscn")
 
 
+func show_loadout() -> void:
+	goto_screen("res://scenes/screens/loadout_screen.tscn")
+
+
+## Called by non-combat encounter screens when the player is done; detours
+## through the loadout screen when a new acquisition overflowed Equipped.
+func _after_encounter() -> void:
+	if run.needs_loadout:
+		run.needs_loadout = false
+		show_loadout()
+	else:
+		show_map()
+
+
 ## Called by non-combat encounter screens when the player is done.
 func encounter_finished() -> void:
-	show_map()
+	_after_encounter()
 
 
 func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
@@ -142,13 +160,6 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 	player.autoplay = true
 	player.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(player)
-	var hint := Label.new()
-	hint.text = "click to skip"
-	hint.anchor_left = 0.85
-	hint.anchor_top = 0.94
-	hint.anchor_right = 0.99
-	hint.anchor_bottom = 0.99
-	layer.add_child(hint)
 	var finish := func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()
@@ -157,6 +168,29 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 	backdrop.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed:
 			finish.call())
+
+	# Explicit Skip and Mute controls (patch 0.11).
+	var controls := HBoxContainer.new()
+	controls.anchor_left = 0.8
+	controls.anchor_top = 0.9
+	controls.anchor_right = 0.98
+	controls.anchor_bottom = 0.98
+	controls.alignment = BoxContainer.ALIGNMENT_END
+	controls.add_theme_constant_override("separation", 12)
+	layer.add_child(controls)
+	var mute := Button.new()
+	mute.text = "🔊"
+	mute.tooltip_text = "Mute"
+	mute.pressed.connect(func() -> void:
+		var muted := player.volume_db > -70.0
+		player.volume_db = -80.0 if muted else 0.0
+		mute.text = "🔇" if muted else "🔊")
+	controls.add_child(mute)
+	var skip := Button.new()
+	skip.text = "Skip ▶"
+	skip.pressed.connect(finish)
+	controls.add_child(skip)
+
 	get_tree().root.add_child(layer)
 
 
