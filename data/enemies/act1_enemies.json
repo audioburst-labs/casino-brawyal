@@ -4,19 +4,22 @@
     {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp_min": 95,
-      "hp_max": 105,
+      "hp_min": 75,
+      "hp_max": 85,
       "brain": {
-        "type": "graph",
-        "start": "slam",
-        "edges": {
-          "slam": ["double_jab"],
-          "double_jab": ["slam", "pump_up"],
-          "pump_up": ["slam"]
-        }
+        "type": "pair_then",
+        "pair": ["door_check", "double_jab"],
+        "then": ["pump_up"]
       },
       "moves": {
-        "slam": {"intent": {"instances": 1, "per_hit": 10, "debuffs": []}},
+        "door_check": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 8,
+            "debuffs": [],
+            "self_status": [{"status": "taunt", "stacks": 2}]
+          }
+        },
         "double_jab": {"intent": {"instances": 2, "per_hit": 5, "debuffs": []}},
         "pump_up": {
           "intent": {
@@ -32,15 +35,21 @@
     {
       "id": "server",
       "name": "Server",
-      "hp_min": 45,
-      "hp_max": 55,
+      "hp_min": 35,
+      "hp_max": 45,
       "brain": {
         "type": "weighted",
-        "weights": {"tray_smash": 1, "spilled_drink": 1, "glass_barrage": 1},
+        "weights": {"hot_plate": 1, "spilled_drink": 1, "glass_barrage": 1},
         "no_repeat_last": true
       },
       "moves": {
-        "tray_smash": {"intent": {"instances": 1, "per_hit": 15, "debuffs": []}},
+        "hot_plate": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 6,
+            "debuffs": [{"status": "vulnerable", "stacks": 2}]
+          }
+        },
         "spilled_drink": {
           "intent": {
             "instances": 0,
@@ -48,14 +57,14 @@
             "debuffs": [{"status": "weak", "stacks": 2}]
           }
         },
-        "glass_barrage": {"intent": {"instances": 3, "per_hit": 8, "debuffs": []}}
+        "glass_barrage": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}}
       }
     },
     {
       "id": "dealer",
       "name": "Dealer",
-      "hp_min": 45,
-      "hp_max": 55,
+      "hp_min": 30,
+      "hp_max": 40,
       "brain": {"type": "sequence", "loop": true, "steps": ["deal_the_cards"]},
       "moves": {
         "deal_the_cards": {
@@ -66,16 +75,12 @@
     {
       "id": "manager",
       "name": "Manager",
-      "hp_min": 63,
-      "hp_max": 77,
+      "hp_min": 55,
+      "hp_max": 65,
       "brain": {
-        "type": "graph",
-        "start": "clipboard_strike",
-        "edges": {
-          "clipboard_strike": ["performance_review"],
-          "performance_review": ["clipboard_strike", "call_staff"],
-          "call_staff": ["clipboard_strike"]
-        }
+        "type": "pair_then",
+        "pair": ["clipboard_strike", "performance_review"],
+        "then": ["call_staff"]
       },
       "moves": {
         "clipboard_strike": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
@@ -92,26 +97,20 @@
       }
     },
     {
-      "id": "mr_moneyman",
-      "name": "Mr. Moneyman",
-      "hp_min": 190,
-      "hp_max": 210,
+      "id": "mr_moneybags",
+      "name": "Mr. Moneybags",
+      "hp_min": 140,
+      "hp_max": 160,
       "brain": {
-        "type": "graph",
-        "start": "call_servers",
-        "edges": {
-          "call_servers": ["money_barrage"],
-          "money_barrage": ["call_servers", "call_bouncer", "encore", "bonuses"],
-          "call_bouncer": ["money_barrage"],
-          "encore": ["money_barrage"],
-          "bonuses": ["money_barrage"]
-        }
+        "type": "pair_then",
+        "pair": ["call_servers", "money_barrage"],
+        "then": ["call_bouncer", "encore", "bonuses"]
       },
       "moves": {
         "call_servers": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 2}}
         },
-        "money_barrage": {"intent": {"instances": 3, "per_hit": 10, "debuffs": []}},
+        "money_barrage": {"intent": {"instances": 8, "per_hit": 3, "debuffs": []}},
         "call_bouncer": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 1}}
         },
@@ -119,7 +118,7 @@
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "ally_attack_again": true}
         },
         "bonuses": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 30}
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20}
         }
       }
     }

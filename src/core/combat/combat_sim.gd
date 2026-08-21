@@ -36,7 +36,8 @@ var last_payout: Dictionary = {}
 var _db: ContentDB
 var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
-var _blackjack: Dictionary = {}     # enemy id -> {total, bust}
+var _blackjack: Dictionary = {}     # enemy id -> {roll, bust} for this round
+var _bj_counters: Dictionary = {}   # enemy id -> cumulative damage count
 var _dmg_mult := 1.0
 var _hp_mult := 1.0
 var _events: Array[CombatEvent] = []
@@ -144,11 +145,12 @@ func begin_round() -> bool:
 		var intent: Dictionary = move.get("intent", {})
 		var entry := {"actor": enemy.id, "move": move_id, "intent": intent}
 		if intent.get("blackjack", false):
-			var raffle := _raffle_blackjack()
+			var raffle := _raffle_blackjack(enemy.id)
 			_blackjack[enemy.id] = raffle
-			entry["blackjack_total"] = raffle.total
+			entry["blackjack_total"] = raffle.roll
+			entry["blackjack_count"] = raffle.count
 			entry["bust"] = raffle.bust
-			entry["display_per_hit"] = 0 if raffle.bust else raffle.total
+			entry["display_per_hit"] = 0 if raffle.bust else raffle.roll
 			entry["display_instances"] = 0 if raffle.bust else 1
 		else:
 			entry["display_per_hit"] = StatusRules.attack_damage(
@@ -246,14 +248,18 @@ func _spin_machine() -> void:
 	_fire_relics(&"spin_resolved")
 
 
-func _raffle_blackjack() -> Dictionary:
-	# Draw three cards (1-10) and deal their total. Past 21 is a bust:
-	# the attack is negated and the dealer sits this round out.
-	var stream := rng.stream(&"combat")
-	var total := 0
-	for i in 3:
-		total += stream.randi_range(1, 10)
-	return {"total": total, "bust": total > 21}
+## Sheet v0.11: each attack deals a random 0-11 and a per-dealer damage count
+## accumulates across rounds. When the count would pass 21, that attack is
+## negated (the dealer sits the round out) and the count resets.
+func _raffle_blackjack(enemy_id: StringName) -> Dictionary:
+	var roll := rng.stream(&"combat").randi_range(0, 11)
+	var count: int = _bj_counters.get(enemy_id, 0)
+	var bust := count + roll > 21
+	if bust:
+		_bj_counters[enemy_id] = 0
+	else:
+		_bj_counters[enemy_id] = count + roll
+	return {"roll": roll, "count": _bj_counters[enemy_id], "bust": bust}
 
 
 func _spawn_enemy(def_id: StringName, announce := true) -> void:
@@ -324,12 +330,12 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 	var intent: Dictionary = move.get("intent", {})
 
 	if intent.get("blackjack", false):
-		var raffle: Dictionary = _blackjack.get(enemy.id, {"total": 0, "bust": true})
+		var raffle: Dictionary = _blackjack.get(enemy.id, {"roll": 0, "bust": true})
 		if raffle.bust:
 			emit_event(&"enemy_move", {"actor": enemy.id, "skipped": true, "bust": true})
 			return
 		emit_event(&"enemy_move", {"actor": enemy.id, "skipped": false})
-		_hit_hero(enemy, int(raffle.total))
+		_hit_hero(enemy, int(raffle.roll))
 		_check_hero_death()
 		return
 

@@ -69,8 +69,11 @@
       "rarity": "common",
       "cost": [{"suit": "any"}, {"suit": "any"}],
       "effects": [{"op": "damage", "amount": 20, "times": 1}],
-      "keywords": [],
-      "description": "Deal 20 damage."
+      "bonus_suit": "spade",
+      "bonus_condition": "all_slots_bonus_suit",
+      "bonus_effects": [{"op": "damage", "amount": 20, "times": 1}],
+      "keywords": ["repeat"],
+      "description": "Deal 20 damage. If both are Aces (Spades), Repeat 1."
     },
     {
       "id": "slow_playing",

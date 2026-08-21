@@ -88,8 +88,9 @@ func test_enemy_phase_executes_intent_on_hero() -> void:
 	var sim := _sim()
 	sim.begin_round()
 	sim.tray.discard_all()
-	sim.end_assignment()  # bouncer round 1: slam = 1x10
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 10)
+	sim.end_assignment()  # bouncer round 1: door check = 1x8 (+ self taunt)
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 8)
+	assert_true(sim.enemies[0].has_status(&"taunt"))
 
 
 func test_block_absorbs_damage() -> void:
@@ -97,8 +98,8 @@ func test_block_absorbs_damage() -> void:
 	sim.begin_round()
 	sim.hero.gain_block(6)
 	sim.tray.discard_all()
-	sim.end_assignment()  # slam 10 vs 6 block -> 4 hp lost
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 4)
+	sim.end_assignment()  # 8 vs 6 block -> 2 hp lost
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 2)
 
 
 func test_weak_enemy_deals_less() -> void:
@@ -106,8 +107,8 @@ func test_weak_enemy_deals_less() -> void:
 	sim.begin_round()
 	sim.enemies[0].apply_status(&"weak", 1)
 	sim.tray.discard_all()
-	sim.end_assignment()  # slam 10 * 0.75 = 7.5 -> 8 (half-up)
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 8)
+	sim.end_assignment()  # 8 * 0.75 = 6 (half-up)
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 6)
 
 
 func test_stunned_enemy_skips_its_move() -> void:

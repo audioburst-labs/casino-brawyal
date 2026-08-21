@@ -24,7 +24,7 @@ func test_lineups_carry_gold_ranges() -> void:
 func test_boss_lineup_exists() -> void:
 	var boss_lineups := _db.lineups_for_stage(ContentDB.BOSS_STAGE)
 	assert_eq(boss_lineups.size(), 1)
-	assert_has(boss_lineups[0].enemies, &"mr_moneyman")
+	assert_has(boss_lineups[0].enemies, &"mr_moneybags")
 
 
 func test_lineup_enemies_all_exist() -> void:

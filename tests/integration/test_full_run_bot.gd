@@ -55,4 +55,4 @@ func test_encounter_factory_builds_valid_combat_configs() -> void:
 	for i in 4:
 		run.record_visit(&"combat")
 	var boss := EncounterFactory.combat_config(_db, run, rng, {"type": &"boss"})
-	assert_has(boss.enemies, &"mr_moneyman")
+	assert_has(boss.enemies, &"mr_moneybags")

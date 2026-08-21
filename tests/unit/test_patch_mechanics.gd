@@ -34,24 +34,26 @@ func _fire(sim: CombatSim, ability_index: int, suits: Array) -> bool:
 func test_enemy_hp_rolls_within_range() -> void:
 	for seed_value in 20:
 		var sim := _sim(["bouncer"], ["card_sling"], seed_value)
-		assert_between(sim.enemies[0].hp, 95, 105)
+		assert_between(sim.enemies[0].hp, 75, 85)
 
 
-func test_graph_brain_follows_edges() -> void:
+func test_pair_then_brain_shuffles_pair_then_plays_tail_in_order() -> void:
+	# Designer ruling: "(1 then 2) or (2 then 1), afterwards 3" — looping,
+	# with the opening pair re-shuffled every cycle.
 	var brain := EnemyBrain.new({
-		"type": "graph",
-		"start": "a",
-		"edges": {"a": ["b"], "b": ["a", "c"], "c": ["a"]},
-	}, {"a": {}, "b": {}, "c": {}})
+		"type": "pair_then",
+		"pair": ["a", "b"],
+		"then": ["c", "d"],
+	}, {"a": {}, "b": {}, "c": {}, "d": {}})
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	var previous := brain.next_move(rng)
-	assert_eq(previous, "a", "graph starts at its start node")
-	var edges := {"a": ["b"], "b": ["a", "c"], "c": ["a"]}
-	for i in 30:
-		var next := brain.next_move(rng)
-		assert_has(edges[previous], next, "%s -> %s is not an edge" % [previous, next])
-		previous = next
+	for cycle in 10:
+		var first := brain.next_move(rng)
+		var second := brain.next_move(rng)
+		assert_true((first == "a" and second == "b") or (first == "b" and second == "a"),
+			"cycle opens with the pair in either order, got %s,%s" % [first, second])
+		assert_eq(brain.next_move(rng), "c", "tail plays in order")
+		assert_eq(brain.next_move(rng), "d", "tail plays in order")
 
 
 func test_weighted_no_repeat_last_never_repeats() -> void:
@@ -172,23 +174,68 @@ func test_summon_adds_a_new_enemy() -> void:
 	assert_eq(sim.enemies[1].def_id, &"server")
 
 
-func test_blackjack_dealer_intent_and_damage() -> void:
-	for seed_value in 12:
-		var sim := _sim(["dealer"], ["card_sling"], seed_value)
+func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
+	# Sheet v0.11: each attack deals random 0-11; the count accumulates across
+	# rounds; when it would pass 21 that attack is negated, the dealer is
+	# stunned for the round, and the count resets.
+	var sim := _sim(["dealer"], ["card_sling"], 4)
+	sim.hero.max_hp = 9999
+	sim.hero.hp = 9999
+	var counter := 0
+	var saw_bust := false
+	for round_index in 12:
 		sim.begin_round()
 		var shown: Dictionary = {}
 		for event in sim.drain_events():
 			if event.type == &"intents_shown":
 				shown = event.data.intents[0]
-		var total := int(shown.get("blackjack_total", -1))
-		assert_between(total, 3, 30, "dealer draws three cards of 1-10")
+		var roll := int(shown.get("blackjack_total", -1))
+		assert_between(roll, 0, 11, "each attack rolls 0-11")
 		var hp_before := sim.hero.hp
 		sim.tray.discard_all()
 		sim.end_assignment()
-		if total > 21:
+		if counter + roll > 21:
+			assert_true(bool(shown.get("bust", false)), "intent flags the bust")
 			assert_eq(sim.hero.hp, hp_before, "bust negates the attack")
+			counter = 0
+			saw_bust = true
 		else:
-			assert_eq(sim.hero.hp, hp_before - total, "hit for the raffled total")
+			assert_eq(sim.hero.hp, hp_before - roll, "hit for the rolled amount")
+			counter += roll
+	assert_true(saw_bust, "12 rounds of 0-11 rolls should bust at least once")
+
+
+func test_bouncer_self_taunt_forces_targeting() -> void:
+	# Bouncer's Door Check (one of its opening pair): Deal 8 + self Taunt 2.
+	var sim := _sim(["server", "bouncer"], ["card_sling"], 6)
+	sim.hero.max_hp = 9999
+	sim.hero.hp = 9999
+	sim.set_target(&"enemy_0")
+	for i in 2:  # the pair is shuffled; Door Check lands within two rounds
+		sim.begin_round()
+		sim.tray.discard_all()
+		sim.end_assignment()
+		if sim.enemies[1].has_status(&"taunt"):
+			break
+	sim.begin_round()
+	assert_true(sim.enemies[1].has_status(&"taunt"))
+	assert_eq(sim.targeting.effective_target(sim.enemies).id, &"enemy_1",
+		"taunt overrides the manual target")
+
+
+func test_pocket_rockets_repeats_when_both_chips_are_spades() -> void:
+	var sim := _sim(["bouncer"], ["pocket_rockets"], 7)
+	sim.begin_round()
+	var enemy := sim.enemies[0]
+	var hp_start := enemy.hp
+	assert_true(_fire(sim, 0, [&"spade", &"spade"]))
+	assert_eq(enemy.hp, hp_start - 40, "20 damage, repeated once for double spades")
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
+	var hp_mid := enemy.hp
+	_fire(sim, 0, [&"spade", &"heart"])
+	assert_eq(enemy.hp, hp_mid - 20, "mixed chips deal the base 20 only")
 
 
 func test_intent_display_includes_strength_buff() -> void:

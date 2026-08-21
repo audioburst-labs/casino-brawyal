@@ -4,8 +4,8 @@
     {
       "id": "ace",
       "name": "Ace",
-      "max_hp": 175,
-      "starting_abilities": ["card_sling", "quick_maneuvers", "color_up", "double_down"]
+      "max_hp": 80,
+      "starting_abilities": ["card_sling", "quick_maneuvers", "double_down"]
     }
   ]
 }

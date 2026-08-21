@@ -285,17 +285,12 @@ func _parse_enemy(item: Dictionary) -> void:
 			for step in enemy.brain.get("steps", []):
 				if not enemy.moves.has(str(step)):
 					errors.append("enemy %s: brain step '%s' is not a move" % [enemy.id, step])
-		"graph":
-			var edges: Dictionary = enemy.brain.get("edges", {})
-			var start := str(enemy.brain.get("start", ""))
-			if not enemy.moves.has(start):
-				errors.append("enemy %s: graph start '%s' is not a move" % [enemy.id, start])
-			for from_move: String in edges:
-				if not enemy.moves.has(from_move):
-					errors.append("enemy %s: graph node '%s' is not a move" % [enemy.id, from_move])
-				for to_move in edges[from_move]:
-					if not enemy.moves.has(str(to_move)):
-						errors.append("enemy %s: graph edge target '%s' is not a move" % [enemy.id, to_move])
+		"pair_then":
+			for move in (enemy.brain.get("pair", []) as Array) + (enemy.brain.get("then", []) as Array):
+				if not enemy.moves.has(str(move)):
+					errors.append("enemy %s: pair_then move '%s' is not a move" % [enemy.id, move])
+			if (enemy.brain.get("pair", []) as Array).size() != 2:
+				errors.append("enemy %s: pair_then needs exactly 2 pair moves" % enemy.id)
 
 	_enemies[enemy.id] = enemy
 

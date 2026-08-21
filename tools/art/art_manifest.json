@@ -491,6 +491,126 @@
       "prompt": "A single game icon meaning 'any card suit', centered on a fully transparent background: a rounded four-pointed compass-rose arrangement of the four playing card suit symbols — small spade (midnight blue) on top, heart (crimson) on the right, club (emerald) on the bottom, diamond (sapphire) on the left — tightly clustered around a small gold star in the center. Thick dark outlines, chunky cartoon shapes, reads clearly at small sizes, fills most of the frame. Nothing else."
     },
     {
+      "id": "ability_card_sling",
+      "out": "assets/icons/ability_card_sling.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a single playing card with a gold spade back thrown edge-first like a blade, sharp white motion streak behind it. Dynamic diagonal composition, thick dark outlines, maroon and gold palette, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_quick_maneuvers",
+      "out": "assets/icons/ability_quick_maneuvers.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: three ghosted afterimage silhouettes of a lean rogue side-stepping, with a small emerald shield glow where the hits miss. Motion-blur cartoon style, thick dark outlines, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_color_up",
+      "out": "assets/icons/ability_color_up.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a gloved hand snapping fingers as a midnight-blue spade casino chip materializes above it in a burst of gold sparkles. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_double_down",
+      "out": "assets/icons/ability_double_down.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: two crossed slim daggers with gold spade pommels striking together, a burning teal-and-purple spade symbol bursting between them. Thick dark outlines, dynamic composition, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_heartsteal",
+      "out": "assets/icons/ability_heartsteal.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a crimson heart cradled inside an emerald-green shield, with grey wisps of weakness draining away from it toward the edges. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_pocket_rockets",
+      "out": "assets/icons/ability_pocket_rockets.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: two playing cards fanned as a pair, both showing bold spade symbols, rocketing forward with small flame trails behind them. Thick dark outlines, dynamic cartoon style, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_slow_playing",
+      "out": "assets/icons/ability_slow_playing.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a hand of playing cards held close to a chest, face down, wrapped in a heavy emerald-green shield aura, patient and defensive. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_house_edge",
+      "out": "assets/icons/ability_house_edge.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a green felt table corner seen from above with a glowing spade curse-mark branding itself onto it, teal and purple flames around the mark. Thick dark outlines, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_bust",
+      "out": "assets/icons/ability_bust.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a cracked, shattering blackjack playing card splitting apart with a violent gold burst from the crack. Thick dark outlines, dramatic cartoon style, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_dazzling_personality",
+      "out": "assets/icons/ability_dazzling_personality.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a charming winking cartoon smile with a bright star glint on the teeth, radiating hypnotic teal-purple ripples outward. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_face_reader",
+      "out": "assets/icons/ability_face_reader.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a sharp watchful eye behind a gold monocle, with small playing-card reflections visible in the iris. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_bad_beat",
+      "out": "assets/icons/ability_bad_beat.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a cracked cream die landing on a losing face with a deflated grey puff, but a sturdy emerald shield rising behind it. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_on_a_roll",
+      "out": "assets/icons/ability_on_a_roll.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a pair of tumbling dice trailing a golden winning-streak ribbon, with a small blazing spade mark at the end of the trail. Thick dark outlines, dynamic cartoon style, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_pay_line",
+      "out": "assets/icons/ability_pay_line.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a horizontal slot-machine payline showing all four suit symbols lit up in a winning row, with a golden jackpot flash sweeping across them. Thick dark outlines, chunky cartoon shapes, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_flush",
+      "out": "assets/icons/ability_flush.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: five playing cards fanned wide, every card showing a midnight-blue spade, glowing with rising teal and purple flames — an unbeatable hand. Thick dark outlines, dramatic cartoon style, centered, fills the frame. Nothing else."
+    },
+    {
       "id": "enemy_server",
       "out": "assets/characters/enemy_server.png",
       "size": "1024x1536",

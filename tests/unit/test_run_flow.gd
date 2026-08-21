@@ -76,7 +76,7 @@ func test_boss_victory_leads_to_victory_screen() -> void:
 	await wait_physics_frames(2)
 	var screen := _current_screen()
 	assert_eq(screen.name, "CombatScreen")
-	assert_eq(screen.sim.enemies[0].def_id, &"mr_moneyman")
+	assert_eq(screen.sim.enemies[0].def_id, &"mr_moneybags")
 	Game.combat_finished(true, 30, [])
 	await wait_physics_frames(2)
 	assert_eq(_current_screen().name, "VictoryScreen")

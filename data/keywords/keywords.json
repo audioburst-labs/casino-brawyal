@@ -9,6 +9,7 @@
     {"id": "strength", "name": "Strength", "text": "Adds bonus damage to every hit."},
     {"id": "stun", "name": "Stun", "text": "Skips the next intended action."},
     {"id": "taunt", "name": "Taunt", "text": "You must target this enemy."},
-    {"id": "go_again", "text": "Spin the machine again for extra chips.", "name": "Go Again"}
+    {"id": "go_again", "text": "Spin the machine again for extra chips.", "name": "Go Again"},
+    {"id": "repeat", "name": "Repeat X", "text": "Repeat the previous text on the card X times."}
   ]
 }

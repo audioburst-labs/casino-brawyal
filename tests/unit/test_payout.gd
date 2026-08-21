@@ -1,6 +1,6 @@
 extends GutTest
-## Payout rules (patch 0.1 "Ori Fix" — no free chips on doubles or triples):
-## every landed symbol yields exactly 1 chip of its suit. Payout per suit = count.
+## Payout rules (doc v0.11): every landed symbol yields 1 chip of its suit;
+## a suit that lands 3 or more symbols gains 1 additional bonus chip.
 
 const S := &"spade"
 const C := &"club"
@@ -18,14 +18,20 @@ func test_pair_pays_exactly_two_chips_no_bonus() -> void:
 	assert_eq(payout, {S: 2, H: 1})
 
 
-func test_triple_pays_exactly_three_chips_no_bonus() -> void:
+func test_three_of_a_kind_gains_one_bonus_chip() -> void:
 	var payout := Payout.compute([D, D, D] as Array[StringName])
-	assert_eq(payout, {D: 3})
+	assert_eq(payout, {D: 4})
 
 
-func test_eight_reel_mixed_spin_counts_only() -> void:
+func test_four_of_a_kind_still_gains_only_one_bonus() -> void:
+	var payout := Payout.compute([C, C, C, C] as Array[StringName])
+	assert_eq(payout, {C: 5})
+
+
+func test_eight_reel_mixed_spin() -> void:
+	# 3x spade -> 4 (bonus), 2x heart -> 2, 1 club -> 1, 2x diamond -> 2
 	var payout := Payout.compute([S, H, C, S, D, H, S, D] as Array[StringName])
-	assert_eq(payout, {S: 3, H: 2, C: 1, D: 2})
+	assert_eq(payout, {S: 4, H: 2, C: 1, D: 2})
 
 
 func test_empty_spin_pays_nothing() -> void:
