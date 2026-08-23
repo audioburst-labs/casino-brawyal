@@ -4,6 +4,30 @@ extends Control
 
 const ENEMY_GAP := 24
 
+## Per-ability attack animations from the design doc's Animations table.
+## card_fling = a razor card flies at the target (flaming when it Marks),
+## dagger = Ace's dagger slash with a teal/purple afterslash,
+## cash_in = the Mark bursts, block = shield pulse on Ace,
+## chip = a minted chip flies to the tray, ultimate = Flush's all-out barrage.
+const ABILITY_ANIMS := {
+	&"card_sling": ["card_fling"],
+	&"quick_maneuvers": ["block"],
+	&"color_up": ["chip"],
+	&"double_down": ["dagger", "cash_in"],
+	&"heartsteal": ["block"],
+	&"pocket_rockets": ["card_fling", "card_fling"],
+	&"slow_playing": ["block"],
+	&"house_edge": [],
+	&"bust": ["dagger", "cash_in"],
+	&"dazzling_personality": ["mark_wave"],
+	&"face_reader": ["block"],
+	&"bad_beat": ["block"],
+	&"on_a_roll": ["dagger", "cash_in"],
+	&"pay_line": ["dagger", "go_again"],
+	&"flush": ["ultimate"],
+}
+const FLAME_TINT := Color(0.45, 1.1, 0.95)  # the green/teal/purple mark flame
+
 var sim: CombatSim
 var run_mode := false   # true when launched by Game flow (reports results back)
 
@@ -32,7 +56,8 @@ func _ready() -> void:
 			enemies = override.split(",")
 		setup({
 			"hero": "ace",
-			"abilities": ["card_sling", "quick_maneuvers", "color_up", "double_down"],
+			"abilities": ["card_sling", "quick_maneuvers", "color_up",
+				"double_down", "heartsteal", "flush"],
 			"enemies": enemies,
 			"seed": randi(),
 		})
@@ -99,14 +124,14 @@ func _build_layout() -> void:
 	_enemies_row.add_theme_constant_override("separation", ENEMY_GAP)
 	_enemies_row.anchor_left = 0.42
 	_enemies_row.anchor_right = 0.99
-	_enemies_row.anchor_top = 0.04
-	_enemies_row.anchor_bottom = 0.66
+	_enemies_row.anchor_top = 0.03
+	_enemies_row.anchor_bottom = 0.645
 	add_child(_enemies_row)
 
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
 	bottom.anchor_right = 0.99
-	bottom.anchor_top = 0.68
+	bottom.anchor_top = 0.70
 	bottom.anchor_bottom = 0.99
 	bottom.add_theme_constant_override("separation", 18)
 	add_child(bottom)
@@ -126,18 +151,14 @@ func _build_layout() -> void:
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	# End Turn lives in its own corner, off the ability line (patch 0.11).
+	# End Turn sits in its own strip ABOVE the skill line (patch 0.12).
 	_end_turn = Button.new()
-	_end_turn.text = "End Turn"
+	_end_turn.text = "End Turn ▶"
 	_end_turn.pressed.connect(_on_end_turn)
-	_end_turn.anchor_left = 1.0
-	_end_turn.anchor_right = 1.0
-	_end_turn.anchor_top = 1.0
-	_end_turn.anchor_bottom = 1.0
-	_end_turn.offset_left = -220
-	_end_turn.offset_right = -24
-	_end_turn.offset_top = -84
-	_end_turn.offset_bottom = -20
+	_end_turn.anchor_left = 0.85
+	_end_turn.anchor_right = 0.99
+	_end_turn.anchor_top = 0.662
+	_end_turn.anchor_bottom = 0.695
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
@@ -170,15 +191,17 @@ func _spawn_units() -> void:
 
 
 ## Enemies shrink as the lineup grows so 4-5 fighters still fit (patch 0.11).
+## Counts only living fighters — the fallen leave the field (patch 0.12).
 func _unit_height() -> float:
-	return clampf(430.0 - 55.0 * maxf(0.0, sim.enemies.size() - 2), 240.0, 430.0)
+	var living := sim.enemies.filter(func(e: CombatActor) -> bool: return e.is_alive()).size()
+	return clampf(430.0 - 55.0 * maxf(0.0, living - 2), 240.0, 430.0)
 
 
 func _spawn_abilities() -> void:
 	for index in sim.abilities.size():
 		var card := AbilityCard.new()
 		_ability_row.add_child(card)
-		card.setup(sim.abilities[index], index)
+		card.setup(sim.abilities[index], index, sim)
 		card.socket_clicked.connect(_on_socket_clicked)
 		card.chip_dropped.connect(_on_chip_dropped)
 		_ability_cards.append(card)
@@ -307,7 +330,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if fired_card != null:
 					fired_card.flash_fire()
 				_hero_view.play_lunge()
-				await get_tree().create_timer(0.18).timeout
+				await _play_ability_anims(event.data.ability, _view_of(event.data.target))
 			&"passive_gained":
 				var passive_card := _card_of(event.data.ability)
 				if passive_card != null:
@@ -335,6 +358,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# their damage numbers (patch 0.1).
 				var target := _view_of(event.data.target)
 				if target != null:
+					if event.data.target == sim.hero.id:
+						_impact(target.sprite_center())  # enemy strike swipe
 					target.play_hit()
 					target.refresh()
 					Fx.spawn_number(target.sprite_center(), str(event.data.amount))
@@ -367,7 +392,14 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					dead_view.play_death()
 					dead_view.clear_intent()
 				Fx.hitstop()
-				await get_tree().create_timer(0.35).timeout
+				await get_tree().create_timer(0.45).timeout
+				# Defeated enemies leave the field to make room for summons
+				# (patch 0.12).
+				if dead_view != null:
+					_enemy_views.erase(event.data.actor)
+					dead_view.queue_free()
+					for view: UnitView in _enemy_views.values():
+						view.apply_height(_unit_height())
 				_update_target_markers()
 			&"enemy_move":
 				var mover := _view_of(event.data.actor)
@@ -391,6 +423,150 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_hero_view.refresh()
 				for view: UnitView in _enemy_views.values():
 					view.refresh()
+
+
+## ---- attack animations (doc's Animations table) ----
+
+
+func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
+	var marks := _ability_marks(ability_id)
+	for anim: String in ABILITY_ANIMS.get(ability_id, []):
+		match anim:
+			"card_fling":
+				await _fly("res://assets/icons/ability_card_sling.png",
+					_hero_view.sprite_center(), _target_point(target_view), marks)
+			"dagger":
+				await _dagger_slash(_target_point(target_view))
+			"cash_in":
+				await _burst(_target_point(target_view),
+					"res://assets/icons/status_mark.png", FLAME_TINT)
+			"block":
+				await _burst(_hero_view.sprite_center(),
+					"res://assets/icons/status_block.png", Color(0.7, 1.0, 0.8))
+			"chip":
+				await _fly("res://assets/icons/chip_spade.png",
+					_hero_view.sprite_center(),
+					_tray_view.global_position + _tray_view.size * 0.5, false)
+			"mark_wave":
+				for view: UnitView in _enemy_views.values():
+					_burst(view.sprite_center(), "res://assets/icons/status_mark.png", FLAME_TINT)
+				await get_tree().create_timer(0.35).timeout
+			"go_again":
+				await _burst(_reel_strip.global_position + _reel_strip.size * 0.5,
+					"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
+			"ultimate":
+				Fx.shake(20.0)
+				for view: UnitView in _enemy_views.values():
+					await _dagger_slash(view.sprite_center())
+
+
+func _ability_marks(ability_id: StringName) -> bool:
+	var def := Db.content.get_ability(ability_id)
+	if def == null:
+		return false
+	for effect: Dictionary in def.effects + def.bonus_effects:
+		if str(effect.get("op", "")) == "apply_status" and str(effect.get("status", "")) == "mark":
+			return true
+	return false
+
+
+func _target_point(target_view: UnitView) -> Vector2:
+	if target_view != null:
+		return target_view.sprite_center()
+	return Vector2(get_viewport_rect().size.x * 0.7, get_viewport_rect().size.y * 0.35)
+
+
+## A projectile flying from -> to (Card Fling; flaming when the hit Marks).
+func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> void:
+	if not ResourceLoader.exists(texture_path):
+		return
+	var projectile := TextureRect.new()
+	projectile.texture = load(texture_path)
+	projectile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	projectile.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	projectile.size = Vector2(72, 72)
+	projectile.pivot_offset = Vector2(36, 36)
+	projectile.z_index = 90
+	if flaming:
+		projectile.modulate = FLAME_TINT
+	add_child(projectile)
+	projectile.global_position = from - Vector2(36, 36)
+	var tween := projectile.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(projectile, "global_position", to - Vector2(36, 36), 0.28) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(projectile, "rotation", TAU * 1.5, 0.28)
+	await tween.finished
+	projectile.queue_free()
+
+
+## Ace's dagger slash with the teal-and-purple afterslash (doc animation).
+func _dagger_slash(at: Vector2) -> void:
+	var streak := ColorRect.new()
+	streak.color = Color(0.5, 0.9, 1.0, 0.85)
+	streak.size = Vector2(10, 150)
+	streak.pivot_offset = Vector2(5, 75)
+	streak.rotation = -0.8
+	streak.z_index = 90
+	add_child(streak)
+	streak.global_position = at - Vector2(5, 75)
+	var after := ColorRect.new()
+	after.color = Color(0.7, 0.4, 1.0, 0.5)
+	after.size = Vector2(18, 150)
+	after.pivot_offset = Vector2(9, 75)
+	after.rotation = -0.8
+	after.z_index = 89
+	add_child(after)
+	after.global_position = at - Vector2(9, 75)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(streak, "rotation", 0.8, 0.14)
+	tween.tween_property(after, "rotation", 0.8, 0.2)
+	tween.chain().tween_property(streak, "modulate:a", 0.0, 0.12)
+	tween.parallel().tween_property(after, "modulate:a", 0.0, 0.25)
+	await tween.finished
+	streak.queue_free()
+	after.queue_free()
+
+
+## A symbol swelling and fading at a point (Cash In burst, Block gain...).
+func _burst(at: Vector2, texture_path: String, tint: Color) -> void:
+	if not ResourceLoader.exists(texture_path):
+		return
+	var symbol := TextureRect.new()
+	symbol.texture = load(texture_path)
+	symbol.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	symbol.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	symbol.size = Vector2(80, 80)
+	symbol.pivot_offset = Vector2(40, 40)
+	symbol.modulate = tint
+	symbol.scale = Vector2(0.4, 0.4)
+	symbol.z_index = 90
+	add_child(symbol)
+	symbol.global_position = at - Vector2(40, 40)
+	var tween := symbol.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(symbol, "scale", Vector2(1.7, 1.7), 0.32) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(symbol, "modulate:a", 0.0, 0.32).set_ease(Tween.EASE_IN)
+	await tween.finished
+	symbol.queue_free()
+
+
+## Enemy hits land with a visible strike swipe on Ace (patch 0.12).
+func _impact(at: Vector2) -> void:
+	var swipe := ColorRect.new()
+	swipe.color = Color(1.0, 0.35, 0.3, 0.8)
+	swipe.size = Vector2(8, 110)
+	swipe.pivot_offset = Vector2(4, 55)
+	swipe.rotation = 0.9
+	swipe.z_index = 90
+	add_child(swipe)
+	swipe.global_position = at - Vector2(4, 55)
+	var tween := swipe.create_tween()
+	tween.tween_property(swipe, "rotation", -0.9, 0.1)
+	tween.tween_property(swipe, "modulate:a", 0.0, 0.12)
+	tween.finished.connect(swipe.queue_free)
 
 
 func _show_banner(text: String) -> void:

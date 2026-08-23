@@ -8,14 +8,16 @@ extends PanelContainer
 signal socket_clicked(ability_index: int, slot_index: int)
 signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 
-const CARD_SIZE := Vector2(220, 290)
+const CARD_SIZE := Vector2(185, 265)
 
 var ability_index := -1
 
 var _state: AbilityState
+var _sim: CombatSim = null
 var _sockets: Array[Button] = []
 var _socket_faces: Array[TextureRect] = []
 var _socket_labels: Array[Label] = []
+var _description: Label
 var _highlight_suit: StringName = &""
 var _keyword_panel: PanelContainer = null
 
@@ -37,8 +39,9 @@ func accepts_chip(slot: int, suit: StringName) -> bool:
 	return not _state.exhausted() and _state.can_accept(slot, suit)
 
 
-func setup(state: AbilityState, index: int) -> void:
+func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	_state = state
+	_sim = sim
 	ability_index = index
 	custom_minimum_size = CARD_SIZE
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -70,19 +73,22 @@ func setup(state: AbilityState, index: int) -> void:
 	name_label.add_theme_font_size_override("font_size", 19)
 	box.add_child(name_label)
 
-	var description := Label.new()
-	description.text = _state.def.description
-	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	description.add_theme_font_size_override("font_size", 14)
-	description.add_theme_color_override("font_color", Color(0.9, 0.86, 0.78))
-	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	box.add_child(description)
+	_description = Label.new()
+	_description.text = _state.def.description
+	_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_description.add_theme_font_size_override("font_size", 13)
+	_description.add_theme_color_override("font_color", Color(0.9, 0.86, 0.78))
+	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	box.add_child(_description)
 
-	var socket_row := HBoxContainer.new()
-	socket_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	socket_row.add_theme_constant_override("separation", 6)
+	# Sockets wrap onto a second row for expensive abilities (patch 0.12).
+	var socket_row := GridContainer.new()
+	socket_row.columns = 3
+	socket_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	socket_row.add_theme_constant_override("h_separation", 5)
+	socket_row.add_theme_constant_override("v_separation", 5)
 	box.add_child(socket_row)
 	var socket_style := StyleBoxFlat.new()
 	socket_style.bg_color = Color(0.94, 0.9, 0.8)
@@ -93,7 +99,7 @@ func setup(state: AbilityState, index: int) -> void:
 		var socket := SocketButton.new()
 		socket.card = self
 		socket.slot = slot
-		socket.custom_minimum_size = Vector2(48, 48)
+		socket.custom_minimum_size = Vector2(38, 38)
 		for style_name in ["normal", "hover", "pressed", "disabled"]:
 			socket.add_theme_stylebox_override(style_name, socket_style)
 		socket.pressed.connect(_on_socket_pressed.bind(slot))
@@ -127,6 +133,22 @@ func refresh(highlight_suit: StringName = &"") -> void:
 	modulate = Color(0.6, 0.58, 0.55) if _state.exhausted() else Color.WHITE
 	for slot in _sockets.size():
 		_render_socket(slot, _state.filled[slot])
+	_refresh_description()
+
+
+## Live numbers (patch 0.12): damage figures in the card text reflect the
+## hero's current modifiers (Strength, Weak, emblem relics).
+func _refresh_description() -> void:
+	var text := _state.def.description
+	if _sim != null:
+		for effect: Dictionary in _state.def.effects:
+			if str(effect.get("op", "")) != "damage":
+				continue
+			var base := int(effect.get("amount", 0))
+			var modified := _sim.preview_damage(base, _state)
+			if modified != base:
+				text = text.replace(str(base), str(modified))
+	_description.text = text
 
 
 ## Immediately paints a chip into a socket, even if the sim already cleared

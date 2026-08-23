@@ -71,6 +71,16 @@ func test_non_combat_encounters_route_to_their_screens() -> void:
 	assert_eq(_current_screen().name, "LoadoutScreen")
 
 
+func test_map_options_are_cached_per_encounter() -> void:
+	Game.new_run(321)
+	await wait_physics_frames(2)
+	Game.combat_finished(true, 60, [])
+	await wait_physics_frames(2)
+	var first := Game.map_options()
+	var second := Game.map_options()  # e.g. after visiting the Abilities screen
+	assert_eq(first, second, "detours must not re-roll the offered pair")
+
+
 func test_boss_victory_leads_to_victory_screen() -> void:
 	Game.new_run(111)
 	await wait_physics_frames(2)

@@ -9,6 +9,8 @@ var _zones := {}   # zone id -> slot container
 class AbilityChit:
 	extends PanelContainer
 	var ability_id: StringName = &""
+	var zone: StringName = &""
+	var screen: Node = null
 
 	func _get_drag_data(_position: Vector2) -> Variant:
 		var preview := Label.new()
@@ -16,6 +18,14 @@ class AbilityChit:
 		preview.theme_type_variation = &"SubtitleLabel"
 		set_drag_preview(preview)
 		return {"ability": ability_id}
+
+	# Dropping anywhere in a zone works — including on top of another chit
+	# (patch 0.12): forward the drop to the zone this chit lives in.
+	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
+		return data is Dictionary and data.has("ability") and data.ability != ability_id
+
+	func _drop_data(_position: Vector2, data: Variant) -> void:
+		screen._on_dropped(zone, data.ability)
 
 
 class DropZone:
@@ -46,6 +56,9 @@ func _ready() -> void:
 		zone.zone = config[0]
 		zone.screen = self
 		zone.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		# The whole area square is a drop target (patch 0.12).
+		zone.custom_minimum_size = Vector2(170, 150) if config[0] == &"trash" \
+			else Vector2(840, 150)
 		var box := VBoxContainer.new()
 		zone.add_child(box)
 		var header := Label.new()
@@ -79,19 +92,23 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 	for child in slots.get_children():
 		child.queue_free()
 	for id: StringName in ids:
-		slots.add_child(_build_chit(id))
+		slots.add_child(_build_chit(id, zone))
 	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" \
 		else (RunState.STORAGE_CAP if zone == &"storage" else 1)
 	for i in capacity - ids.size():
 		var empty := Panel.new()
 		empty.custom_minimum_size = Vector2(120, 84)
 		empty.modulate.a = 0.35
+		# Let drops fall through to the DropZone panel behind (patch 0.12).
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slots.add_child(empty)
 
 
-func _build_chit(id: StringName) -> Control:
+func _build_chit(id: StringName, zone: StringName) -> Control:
 	var chit := AbilityChit.new()
 	chit.ability_id = id
+	chit.zone = zone
+	chit.screen = self
 	chit.custom_minimum_size = Vector2(120, 84)
 	var def := Db.content.get_ability(id)
 	chit.tooltip_text = "%s\n%s" % [def.name, def.description] if def else String(id)

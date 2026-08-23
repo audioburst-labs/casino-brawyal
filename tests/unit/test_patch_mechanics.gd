@@ -121,6 +121,21 @@ func test_solo_ability_condition() -> void:
 	assert_eq(crowded.hero.block, 0, "not the only ability -> no block")
 
 
+func test_slow_playing_locks_out_other_abilities_for_the_round() -> void:
+	var sim := _sim(["bouncer"], ["slow_playing", "card_sling"])
+	sim.begin_round()
+	assert_true(_fire(sim, 0, [&"heart", &"diamond"]))
+	assert_eq(sim.hero.block, 30)
+	sim.tray.add(&"spade", 1)
+	assert_false(sim.assign_chip(&"spade", 1, 0),
+		"other abilities are disabled after Slow Playing")
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
+	sim.tray.add(&"spade", 1)
+	assert_true(sim.assign_chip(&"spade", 1, 0), "lock lifts next round")
+
+
 func test_no_enemy_marked_condition() -> void:
 	var sim := _sim(["bouncer"], ["bad_beat"])
 	sim.begin_round()
@@ -190,7 +205,7 @@ func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
 			if event.type == &"intents_shown":
 				shown = event.data.intents[0]
 		var roll := int(shown.get("blackjack_total", -1))
-		assert_between(roll, 0, 11, "each attack rolls 0-11")
+		assert_between(roll, 1, 11, "each attack rolls 1-11 (patch 0.12)")
 		var hp_before := sim.hero.hp
 		sim.tray.discard_all()
 		sim.end_assignment()

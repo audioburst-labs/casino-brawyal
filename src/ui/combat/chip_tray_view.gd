@@ -31,6 +31,8 @@ class ChipButton:
 
 
 func _ready() -> void:
+	# Constant footprint whether the tray holds 0 or 4 suits (patch 0.12).
+	custom_minimum_size = Vector2(4 * 104 + 3 * 18 + 32, 120)
 	_row = HBoxContainer.new()
 	_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_row.add_theme_constant_override("separation", 18)
@@ -47,18 +49,10 @@ func refresh() -> void:
 		child.queue_free()
 	if _tray == null:
 		return
-	var any := false
 	for suit: StringName in ContentDB.SUITS:
 		var count := _tray.count(suit)
-		if count <= 0:
-			continue
-		any = true
-		_row.add_child(_build_stack(suit, count))
-	if not any:
-		var empty := Label.new()
-		empty.text = "no chips"
-		empty.add_theme_color_override("font_color", Color(0.7, 0.65, 0.6))
-		_row.add_child(empty)
+		if count > 0:
+			_row.add_child(_build_stack(suit, count))
 
 
 func _build_stack(suit: StringName, count: int) -> Control:

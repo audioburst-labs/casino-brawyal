@@ -13,8 +13,6 @@ func setup(args: Dictionary) -> void:
 		int(args.get("gold_min", 0)), int(args.get("gold_max", 0)), reward_rng)
 	Game.run.coins += coins
 	add_info_label("🪙 +%d coins" % coins, 30)
-	if int(args.get("healed", 0)) > 0:
-		add_info_label("❤ Hard combat won — recovered %d HP" % int(args.healed), 24)
 
 	if args.get("hard", false):
 		var relic := Rewards.random_unowned_relic(Db.content, Game.run, reward_rng)

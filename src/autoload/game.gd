@@ -6,8 +6,6 @@ extends Node
 const ACE_INTRO_VIDEO := "res://assets/video/ace_intro.ogv"
 const BOSS_INTRO_VIDEO := "res://assets/video/moneyman_boss_intro.ogv"
 
-const HARD_COMBAT_HEAL_PCT := 0.15
-
 var run: RunState
 var rng: GameRng
 
@@ -46,6 +44,10 @@ func new_run(seed_value: int = -1) -> void:
 		func() -> void: choose_encounter({"type": &"combat"}))
 
 
+var _cached_options: Array[Dictionary] = []
+var _cached_for_encounter := -1
+
+
 func show_map() -> void:
 	RunSave.save_run(run)
 	goto_screen("res://scenes/screens/map_screen.tscn")
@@ -62,8 +64,13 @@ func continue_run() -> bool:
 	return true
 
 
+## The offered pair is rolled once per encounter and cached, so detours
+## (e.g. the Abilities screen) don't re-roll the choice (patch 0.12).
 func map_options() -> Array[Dictionary]:
-	return MapGenerator.next_options(run, rng.stream(&"map"))
+	if _cached_for_encounter != run.encounter_number():
+		_cached_options = MapGenerator.next_options(run, rng.stream(&"map"))
+		_cached_for_encounter = run.encounter_number()
+	return _cached_options
 
 
 func choose_encounter(option: Dictionary) -> void:
@@ -114,16 +121,10 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 		RunSave.clear()
 		goto_screen("res://scenes/screens/victory_screen.tscn")
 	else:
-		var hard := run.last_visited() == &"hard_combat"
-		var healed := 0
-		if hard:
-			healed = mini(int(ceil(run.max_hp * HARD_COMBAT_HEAL_PCT)), run.max_hp - run.hp)
-			run.hp += healed
 		goto_screen("res://scenes/screens/reward_screen.tscn", {
 			"gold_min": _combat_gold.x,
 			"gold_max": _combat_gold.y,
-			"hard": hard,
-			"healed": healed,
+			"hard": run.last_visited() == &"hard_combat",
 		})
 
 

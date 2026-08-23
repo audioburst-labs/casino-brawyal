@@ -48,6 +48,7 @@ var _has_dark_emblem := false
 var _has_red_emblems := false
 var _has_lucky_foot := false
 var _active_ability: AbilityState = null
+var _exclusive_lock: AbilityState = null   # set when an exclusive ability fires
 var _summon_counter := 0
 
 
@@ -105,10 +106,10 @@ func vulnerable_pct() -> float:
 
 
 ## Emblem relics boost abilities whose cost names a matching suit.
-func active_ability_multiplier() -> float:
-	if _active_ability == null:
+func ability_multiplier(ability: AbilityState) -> float:
+	if ability == null:
 		return 1.0
-	var cost := _active_ability.def.cost
+	var cost := ability.def.cost
 	if _has_dark_emblem and (cost.has(&"spade") or cost.has(&"club")):
 		return EMBLEM_MULTIPLIER
 	if _has_red_emblems and (cost.has(&"heart") or cost.has(&"diamond")):
@@ -116,11 +117,23 @@ func active_ability_multiplier() -> float:
 	return 1.0
 
 
+func active_ability_multiplier() -> float:
+	return ability_multiplier(_active_ability)
+
+
+## What a damage op's base would deal right now (hero modifiers + emblems,
+## before the target's defenses). Used for live numbers on ability cards.
+func preview_damage(base: int, ability: AbilityState) -> int:
+	var damage := StatusRules.attack_damage(base, hero, _weak_pct)
+	return int(floor(damage * ability_multiplier(ability) + 0.5))
+
+
 func begin_round() -> bool:
 	if phase != Phase.ROUND_START:
 		return false
 	round_number += 1
 	abilities_fired_this_round = 0
+	_exclusive_lock = null
 	hero.on_round_start()
 	for enemy in enemies:
 		enemy.on_round_start()
@@ -176,6 +189,8 @@ func assign_chip(suit: StringName, ability_index: int, slot_index: int) -> bool:
 	var ability := abilities[ability_index]
 	if ability.exhausted():
 		return false
+	if _exclusive_lock != null and ability != _exclusive_lock:
+		return false  # e.g. Slow Playing locks the rest of the turn
 	if not ability.can_accept(slot_index, suit):
 		return false
 	if not tray.take(suit, 1):
@@ -248,11 +263,12 @@ func _spin_machine() -> void:
 	_fire_relics(&"spin_resolved")
 
 
-## Sheet v0.11: each attack deals a random 0-11 and a per-dealer damage count
-## accumulates across rounds. When the count would pass 21, that attack is
-## negated (the dealer sits the round out) and the count resets.
+## Each dealer attack deals a random 1-11 (patch 0.12: never a flat 0 outside
+## a bust) and a per-dealer damage count accumulates across rounds. When the
+## count would pass 21, that attack is negated (the dealer sits the round out)
+## and the count resets.
 func _raffle_blackjack(enemy_id: StringName) -> Dictionary:
-	var roll := rng.stream(&"combat").randi_range(0, 11)
+	var roll := rng.stream(&"combat").randi_range(1, 11)
 	var count: int = _bj_counters.get(enemy_id, 0)
 	var bust := count + roll > 21
 	if bust:
@@ -294,6 +310,8 @@ func _fire_passives() -> void:
 func _fire_ability(ability: AbilityState) -> void:
 	ability.uses_this_round += 1
 	abilities_fired_this_round += 1
+	if ability.def.exclusive:
+		_exclusive_lock = ability
 	var target := targeting.effective_target(enemies)
 	emit_event(&"ability_fired", {"ability": ability.def.id, "target": target.id if target else &""})
 	if ability.def.passive:

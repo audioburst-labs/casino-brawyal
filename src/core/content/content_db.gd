@@ -211,6 +211,7 @@ func _parse_ability(item: Dictionary) -> void:
 
 	ability.per_turn = int(item.get("per_turn", 0))
 	ability.passive = bool(item.get("passive", false))
+	ability.exclusive = bool(item.get("exclusive", false))
 	for keyword_id in item.get("keywords", []):
 		var id := StringName(str(keyword_id))
 		if not _keywords.has(id):

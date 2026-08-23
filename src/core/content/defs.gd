@@ -15,6 +15,7 @@ class AbilityDef:
 	var bonus_effects: Array[Dictionary] = []
 	var per_turn: int = 0                     # max activations per round; 0 = unlimited
 	var passive: bool = false                 # once fired, effects recur at every round start
+	var exclusive: bool = false               # firing this locks all other abilities this round
 	var keywords: Array[StringName] = []      # keyword ids shown as hover bubbles
 	var description: String
 	var rarity: String = "common"

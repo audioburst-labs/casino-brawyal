@@ -13,6 +13,8 @@ var _intent_icon: TextureRect
 var _intent_label: Label
 var _sprite_holder: CenterContainer
 var _sprite: TextureRect
+var _mark_icon: TextureRect
+var _mark_tween: Tween
 var _fallback: ColorRect
 var _hp_bar: ProgressBar
 var _hp_label: Label
@@ -68,6 +70,16 @@ func setup(combat_actor: CombatActor) -> void:
 	if texture != null:
 		_sprite.texture = texture
 	sprite_holder.add_child(_sprite)
+
+	# The Mark: a flaming spade hovering above the head while marked (doc anim).
+	if ResourceLoader.exists("res://assets/icons/status_mark.png"):
+		_mark_icon = TextureRect.new()
+		_mark_icon.texture = load("res://assets/icons/status_mark.png")
+		_mark_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_mark_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_mark_icon.size = Vector2(44, 44)
+		_mark_icon.visible = false
+		_sprite.add_child(_mark_icon)
 	if texture == null:
 		_fallback = ColorRect.new()
 		_fallback.color = Color(0.4, 0.2, 0.3)
@@ -134,6 +146,31 @@ func refresh() -> void:
 		stack_label.text = ("%s %d " % [status_id, stacks]) if icon == null else ("%d " % stacks)
 		_status_row.add_child(stack_label)
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
+	_refresh_mark()
+
+
+## Floating, bobbing flaming spade while the actor is marked (doc animation).
+func _refresh_mark() -> void:
+	if _mark_icon == null:
+		return
+	var marked := actor.has_status(&"mark") and actor.is_alive()
+	if marked and not _mark_icon.visible:
+		_mark_icon.visible = true
+		_mark_icon.position = Vector2(_sprite.size.x * 0.5 - 22, -52)
+		_mark_icon.scale = Vector2(0.2, 0.2)
+		_mark_icon.pivot_offset = Vector2(22, 22)
+		var pop := _mark_icon.create_tween()
+		pop.tween_property(_mark_icon, "scale", Vector2.ONE, 0.3) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_mark_tween = _mark_icon.create_tween().set_loops()
+		_mark_tween.tween_property(_mark_icon, "position:y", -60.0, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_icon, "position:y", -46.0, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	elif not marked and _mark_icon.visible:
+		if _mark_tween != null:
+			_mark_tween.kill()
+		_mark_icon.visible = false
 
 
 ## `entry` is the intents_shown payload: intent dict + display_per_hit /

@@ -73,7 +73,6 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 			var relic := Rewards.random_unowned_relic(db, run, rng.stream(&"rewards"))
 			if relic != &"":
 				run.relic_ids.append(relic)
-			run.hp = mini(run.max_hp, run.hp + int(ceil(run.max_hp * 0.15)))
 	return true
 
 
