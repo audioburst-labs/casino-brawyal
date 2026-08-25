@@ -9,7 +9,7 @@
     {"id": "floor_check", "stage": 4, "enemies": ["bouncer", "manager"], "gold_min": 42, "gold_max": 48},
     {"id": "full_service", "stage": 4, "enemies": ["bouncer", "server", "server", "dealer"], "gold_min": 47, "gold_max": 53},
     {"id": "staff_meeting", "stage": 5, "enemies": ["server", "server", "manager", "server"], "gold_min": 52, "gold_max": 58},
-    {"id": "the_pit", "stage": 5, "enemies": ["dealer", "dealer", "dealer", "dealer", "dealer"], "gold_min": 57, "gold_max": 63},
+    {"id": "the_pit", "stage": 5, "enemies": ["dealer", "dealer", "dealer", "dealer"], "gold_min": 57, "gold_max": 63},
     {"id": "final_fight", "stage": 6, "enemies": ["mr_moneybags"], "gold_min": 0, "gold_max": 0}
   ]
 }

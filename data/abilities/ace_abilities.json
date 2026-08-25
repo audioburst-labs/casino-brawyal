@@ -45,11 +45,11 @@
       "rarity": "common",
       "cost": [{"suit": "any"}, {"suit": "spade"}],
       "effects": [
-        {"op": "damage", "amount": 20, "times": 1},
+        {"op": "damage", "amount": 10, "times": 1},
         {"op": "cash_in"}
       ],
       "keywords": ["cash_in", "mark"],
-      "description": "Deal 20 damage. Cash In."
+      "description": "Deal 10 damage. Cash In."
     },
     {
       "id": "heartsteal",
@@ -58,10 +58,10 @@
       "cost": [{"suit": "any"}, {"suit": "heart"}],
       "effects": [
         {"op": "gain_block", "amount": 10},
-        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "all_enemies"}
+        {"op": "apply_status", "status": "weak", "stacks": 2, "target": "all_enemies"}
       ],
       "keywords": ["weak", "block"],
-      "description": "Gain 10 Block. Apply Weak 1 to all enemies."
+      "description": "Gain 10 Block. Apply Weak 2 to all enemies."
     },
     {
       "id": "pocket_rockets",

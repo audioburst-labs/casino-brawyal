@@ -12,7 +12,8 @@ extends RefCounted
 
 enum Phase { ROUND_START, ASSIGNMENT, ENDED }
 
-const CASH_IN_BONUS := 10
+const CASH_IN_BONUS := 20   # sheet v0.13
+const MAX_ENEMIES := 4      # patch 0.13: the field holds at most 4 fighters
 const EMBLEM_MULTIPLIER := 1.3
 const LUCKY_FOOT_CHANCE := 0.1
 const HIGH_STAKES_PCT := 0.5
@@ -36,6 +37,7 @@ var last_payout: Dictionary = {}
 var _db: ContentDB
 var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
+var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
 var _blackjack: Dictionary = {}     # enemy id -> {roll, bust} for this round
 var _bj_counters: Dictionary = {}   # enemy id -> cumulative damage count
 var _dmg_mult := 1.0
@@ -146,6 +148,7 @@ func begin_round() -> bool:
 	_fire_passives()
 
 	_intents.clear()
+	_intent_ids.clear()
 	_blackjack.clear()
 	var shown := []
 	for enemy in enemies:
@@ -153,28 +156,67 @@ func begin_round() -> bool:
 			continue
 		var brain: EnemyBrain = _brains[enemy.id]
 		var move_id := brain.next_move(rng.stream(&"combat"), float(enemy.hp) / enemy.max_hp)
+		move_id = _skip_summon_if_full(enemy, move_id)
 		var move: Dictionary = _db.get_enemy(enemy.def_id).moves.get(move_id, {})
 		_intents[enemy.id] = move
-		var intent: Dictionary = move.get("intent", {})
-		var entry := {"actor": enemy.id, "move": move_id, "intent": intent}
-		if intent.get("blackjack", false):
-			var raffle := _raffle_blackjack(enemy.id)
-			_blackjack[enemy.id] = raffle
-			entry["blackjack_total"] = raffle.roll
-			entry["blackjack_count"] = raffle.count
-			entry["bust"] = raffle.bust
-			entry["display_per_hit"] = 0 if raffle.bust else raffle.roll
-			entry["display_instances"] = 0 if raffle.bust else 1
-		else:
-			entry["display_per_hit"] = StatusRules.attack_damage(
-				int(round(int(intent.get("per_hit", 0)) * _dmg_mult)), enemy, _weak_pct)
-			entry["display_instances"] = int(intent.get("instances", 0))
+		_intent_ids[enemy.id] = move_id
+		if move.get("intent", {}).get("blackjack", false):
+			_blackjack[enemy.id] = _raffle_blackjack(enemy.id)
+		var entry := _build_intent_entry(enemy, move_id)
 		shown.append(entry)
 	emit_event(&"intents_shown", {"intents": shown})
 
 	_spin_machine()
 	phase = Phase.ASSIGNMENT
 	return true
+
+
+## Patch 0.13: with all MAX_ENEMIES slots full, summon moves are swapped for
+## the enemy's next non-summon move.
+func _skip_summon_if_full(enemy: CombatActor, move_id: String) -> String:
+	var moves: Dictionary = _db.get_enemy(enemy.def_id).moves
+	if moves.get(move_id, {}).get("intent", {}).get("summon", {}).is_empty():
+		return move_id
+	if _living_count() < MAX_ENEMIES:
+		return move_id
+	var keys := moves.keys()
+	var start := keys.find(move_id)
+	for offset in range(1, keys.size()):
+		var candidate: String = keys[(start + offset) % keys.size()]
+		if moves[candidate].get("intent", {}).get("summon", {}).is_empty():
+			return candidate
+	return move_id
+
+
+func _living_count() -> int:
+	return enemies.filter(func(e: CombatActor) -> bool: return e.is_alive()).size()
+
+
+func _build_intent_entry(enemy: CombatActor, move_id: String) -> Dictionary:
+	var move: Dictionary = _intents.get(enemy.id, {})
+	var intent: Dictionary = move.get("intent", {})
+	var entry := {"actor": enemy.id, "move": move_id, "intent": intent}
+	if intent.get("blackjack", false):
+		var raffle: Dictionary = _blackjack.get(enemy.id, {"roll": 0, "bust": true, "count": 0})
+		entry["blackjack_total"] = raffle.roll
+		entry["blackjack_count"] = raffle.count
+		entry["bust"] = raffle.bust
+		entry["display_per_hit"] = 0 if raffle.bust else raffle.roll
+		entry["display_instances"] = 0 if raffle.bust else 1
+	else:
+		entry["display_per_hit"] = StatusRules.attack_damage(
+			int(round(int(intent.get("per_hit", 0)) * _dmg_mult)), enemy, _weak_pct)
+		entry["display_instances"] = int(intent.get("instances", 0))
+	return entry
+
+
+## Current intent numbers for one enemy, recomputed with its live statuses —
+## the UI refreshes shown damage when buffs/debuffs land (patch 0.13).
+func intent_display(enemy_id: StringName) -> Dictionary:
+	for enemy in enemies:
+		if enemy.id == enemy_id and _intents.has(enemy_id):
+			return _build_intent_entry(enemy, str(_intent_ids.get(enemy_id, "")))
+	return {}
 
 
 func set_target(actor_id: StringName) -> void:
@@ -249,8 +291,12 @@ func check_death(actor: CombatActor) -> void:
 		_fire_relics(&"combat_won")
 
 
-## Re-spins the machine and adds the payout (Go Again / High Roller / round start).
+## Re-spins the machine and adds the payout (Go Again / High Roller).
+## No-op once the combat has ended (patch 0.13 crash fix: winning with
+## Pay Line must not spin into a dead encounter).
 func spin_again() -> void:
+	if phase == Phase.ENDED:
+		return
 	_spin_machine()
 
 
@@ -362,6 +408,8 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 	var summon: Dictionary = intent.get("summon", {})
 	if not summon.is_empty():
 		for i in int(summon.get("count", 1)):
+			if _living_count() >= MAX_ENEMIES:
+				break  # the field never holds more than 4 (patch 0.13)
 			_spawn_enemy(StringName(str(summon.get("enemy", ""))))
 
 	if intent.get("heal_allies", 0) > 0:

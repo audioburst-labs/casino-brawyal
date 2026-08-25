@@ -32,7 +32,7 @@ class ChipButton:
 
 func _ready() -> void:
 	# Constant footprint whether the tray holds 0 or 4 suits (patch 0.12).
-	custom_minimum_size = Vector2(4 * 104 + 3 * 18 + 32, 120)
+	custom_minimum_size = Vector2(4 * 96 + 3 * 14 + 32, 112)
 	_row = HBoxContainer.new()
 	_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_row.add_theme_constant_override("separation", 18)
@@ -58,7 +58,7 @@ func refresh() -> void:
 func _build_stack(suit: StringName, count: int) -> Control:
 	var button := ChipButton.new()
 	button.suit = suit
-	button.custom_minimum_size = Vector2(104, 104)
+	button.custom_minimum_size = Vector2(96, 96)
 	button.tooltip_text = "%s chips: %d — drag onto an ability socket" % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)
 	if texture != null:

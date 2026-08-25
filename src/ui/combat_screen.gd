@@ -106,7 +106,7 @@ func _build_layout() -> void:
 				icon.texture = load(icon_path)
 				icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				icon.custom_minimum_size = Vector2(44, 44)
+				icon.custom_minimum_size = Vector2(66, 66)  # patch 0.13: +50%
 				icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
 				hud.add_child(icon)
 			else:
@@ -133,7 +133,7 @@ func _build_layout() -> void:
 	bottom.anchor_right = 0.99
 	bottom.anchor_top = 0.70
 	bottom.anchor_bottom = 0.99
-	bottom.add_theme_constant_override("separation", 18)
+	bottom.add_theme_constant_override("separation", 10)
 	add_child(bottom)
 
 	var machine_box := VBoxContainer.new()
@@ -147,7 +147,7 @@ func _build_layout() -> void:
 
 	_ability_row = HBoxContainer.new()
 	_ability_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_ability_row.add_theme_constant_override("separation", 12)
+	_ability_row.add_theme_constant_override("separation", 8)
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
@@ -181,20 +181,11 @@ func _spawn_units() -> void:
 
 	for enemy in sim.enemies:
 		var view := UnitView.new()
-		view.sprite_height = _unit_height()
 		_enemies_row.add_child(view)
 		view.setup(enemy)
-		view.apply_height(_unit_height())  # also shrinks the panel width
 		view.clicked.connect(_on_unit_clicked)
 		_enemy_views[enemy.id] = view
 	_update_target_markers()
-
-
-## Enemies shrink as the lineup grows so 4-5 fighters still fit (patch 0.11).
-## Counts only living fighters — the fallen leave the field (patch 0.12).
-func _unit_height() -> float:
-	var living := sim.enemies.filter(func(e: CombatActor) -> bool: return e.is_alive()).size()
-	return clampf(430.0 - 55.0 * maxf(0.0, living - 2), 240.0, 430.0)
 
 
 func _spawn_abilities() -> void:
@@ -287,16 +278,12 @@ func _add_enemy_view(actor_id: StringName) -> void:
 	for enemy in sim.enemies:
 		if enemy.id == actor_id and not _enemy_views.has(actor_id):
 			var view := UnitView.new()
-			view.sprite_height = _unit_height()
 			_enemies_row.add_child(view)
 			view.setup(enemy)
 			view.clicked.connect(_on_unit_clicked)
 			view.modulate.a = 0.0
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.4)
 			_enemy_views[actor_id] = view
-	# Re-fit the whole row to the new crowd size.
-	for view: UnitView in _enemy_views.values():
-		view.apply_height(_unit_height())
 
 
 func _play_events(events: Array[CombatEvent]) -> void:
@@ -360,11 +347,13 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if target != null:
 					if event.data.target == sim.hero.id:
 						_impact(target.sprite_center())  # enemy strike swipe
+					else:
+						_sparks(target.sprite_center(), Color(1.0, 0.85, 0.5), 8)
 					target.play_hit()
 					target.refresh()
 					Fx.spawn_number(target.sprite_center(), str(event.data.amount))
 				Fx.shake(clampf(event.data.amount * 1.2, 4.0, 18.0))
-				await get_tree().create_timer(0.3).timeout
+				await get_tree().create_timer(0.36).timeout
 			&"block_gained":
 				var actor_view := _view_of(event.data.actor)
 				if actor_view != null:
@@ -379,7 +368,12 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					Fx.spawn_number(status_view.sprite_center(),
 						"%s %d" % [event.data.status, event.data.stacks],
 						Color(0.85, 0.7, 1.0))
-				await get_tree().create_timer(0.15).timeout
+					# Shown intent numbers track live buffs/debuffs (patch 0.13).
+					if event.data.actor != sim.hero.id:
+						var updated := sim.intent_display(event.data.actor)
+						if not updated.is_empty():
+							status_view.show_intent(updated)
+				await get_tree().create_timer(0.18).timeout
 			&"healed":
 				var healed_view := _view_of(event.data.actor)
 				if healed_view != null:
@@ -398,8 +392,6 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if dead_view != null:
 					_enemy_views.erase(event.data.actor)
 					dead_view.queue_free()
-					for view: UnitView in _enemy_views.values():
-						view.apply_height(_unit_height())
 				_update_target_markers()
 			&"enemy_move":
 				var mover := _view_of(event.data.actor)
@@ -493,10 +485,11 @@ func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> vo
 	projectile.global_position = from - Vector2(36, 36)
 	var tween := projectile.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(projectile, "global_position", to - Vector2(36, 36), 0.28) \
+	tween.tween_property(projectile, "global_position", to - Vector2(36, 36), 0.35) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(projectile, "rotation", TAU * 1.5, 0.28)
+	tween.tween_property(projectile, "rotation", TAU * 1.5, 0.35)
 	await tween.finished
+	_sparks(to, FLAME_TINT if flaming else Color(1.0, 0.9, 0.6))
 	projectile.queue_free()
 
 
@@ -518,12 +511,13 @@ func _dagger_slash(at: Vector2) -> void:
 	after.z_index = 89
 	add_child(after)
 	after.global_position = at - Vector2(9, 75)
+	_sparks(at, Color(0.6, 0.9, 1.0))
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(streak, "rotation", 0.8, 0.14)
-	tween.tween_property(after, "rotation", 0.8, 0.2)
-	tween.chain().tween_property(streak, "modulate:a", 0.0, 0.12)
-	tween.parallel().tween_property(after, "modulate:a", 0.0, 0.25)
+	tween.tween_property(streak, "rotation", 0.8, 0.17)
+	tween.tween_property(after, "rotation", 0.8, 0.24)
+	tween.chain().tween_property(streak, "modulate:a", 0.0, 0.15)
+	tween.parallel().tween_property(after, "modulate:a", 0.0, 0.3)
 	await tween.finished
 	streak.queue_free()
 	after.queue_free()
@@ -544,17 +538,41 @@ func _burst(at: Vector2, texture_path: String, tint: Color) -> void:
 	symbol.z_index = 90
 	add_child(symbol)
 	symbol.global_position = at - Vector2(40, 40)
+	_sparks(at, tint)
 	var tween := symbol.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(symbol, "scale", Vector2(1.7, 1.7), 0.32) \
+	tween.tween_property(symbol, "scale", Vector2(1.7, 1.7), 0.4) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(symbol, "modulate:a", 0.0, 0.32).set_ease(Tween.EASE_IN)
+	tween.tween_property(symbol, "modulate:a", 0.0, 0.4).set_ease(Tween.EASE_IN)
 	await tween.finished
 	symbol.queue_free()
 
 
+## A one-shot spark puff — the VFX layer under every hit and burst (patch 0.13).
+func _sparks(at: Vector2, color: Color, amount := 14) -> void:
+	var particles := CPUParticles2D.new()
+	particles.one_shot = true
+	particles.emitting = true
+	particles.amount = amount
+	particles.lifetime = 0.5
+	particles.explosiveness = 0.9
+	particles.direction = Vector2.UP
+	particles.spread = 180.0
+	particles.initial_velocity_min = 120.0
+	particles.initial_velocity_max = 260.0
+	particles.gravity = Vector2(0, 500)
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 5.0
+	particles.color = color
+	particles.z_index = 95
+	add_child(particles)
+	particles.global_position = at
+	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
+
+
 ## Enemy hits land with a visible strike swipe on Ace (patch 0.12).
 func _impact(at: Vector2) -> void:
+	_sparks(at, Color(1.0, 0.5, 0.4), 10)
 	var swipe := ColorRect.new()
 	swipe.color = Color(1.0, 0.35, 0.3, 0.8)
 	swipe.size = Vector2(8, 110)

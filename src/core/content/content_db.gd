@@ -292,6 +292,12 @@ func _parse_enemy(item: Dictionary) -> void:
 					errors.append("enemy %s: pair_then move '%s' is not a move" % [enemy.id, move])
 			if (enemy.brain.get("pair", []) as Array).size() != 2:
 				errors.append("enemy %s: pair_then needs exactly 2 pair moves" % enemy.id)
+		"intro_loop":
+			for move in (enemy.brain.get("intro", []) as Array) + (enemy.brain.get("loop", []) as Array):
+				if not enemy.moves.has(str(move)):
+					errors.append("enemy %s: intro_loop move '%s' is not a move" % [enemy.id, move])
+			if (enemy.brain.get("loop", []) as Array).is_empty():
+				errors.append("enemy %s: intro_loop needs loop moves" % enemy.id)
 
 	_enemies[enemy.id] = enemy
 

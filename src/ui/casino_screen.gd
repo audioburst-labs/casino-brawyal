@@ -3,12 +3,19 @@ extends ScreenBase
 ## every landed prize; three of a kind earns a free extra spin.
 
 const PRIZE_TEXTURES := {
-	&"coin_small": "res://assets/icons/coin.png",
-	&"coin_big": "res://assets/icons/coin.png",
-	&"heal": "res://assets/icons/suit_heart.png",
-	&"sticker": "res://assets/icons/suit_any.png",
-	&"relic": "res://assets/props/treasure_chest.png",
+	&"coins": "res://assets/icons/coin.png",
+	&"money_sack": "res://assets/props/treasure_chest.png",
+	&"heart": "res://assets/icons/suit_heart.png",
+	&"broken_heart": "res://assets/icons/status_vulnerable.png",
+	&"sticker_spade": "res://assets/icons/suit_spade.png",
+	&"sticker_heart": "res://assets/icons/suit_heart.png",
+	&"sticker_club": "res://assets/icons/suit_club.png",
+	&"sticker_diamond": "res://assets/icons/suit_diamond.png",
+	&"relic": "res://assets/icons/relic_house_chip.png",
+	&"extra_reel": "res://assets/icons/suit_any.png",
 }
+
+var _paid_spin_used := false
 
 var _status: Label
 var _faces: Array[TextureRect] = []
@@ -49,7 +56,8 @@ func _ready() -> void:
 		row.add_child(frame)
 		_faces.append(face)
 
-	_result = add_info_label("Feeling lucky? One spin: %d coins." % CasinoGame.SPIN_COST, 22)
+	_result = add_info_label(
+		"Feeling lucky? One spin: %d coins." % CasinoGame.spin_cost(Game.run), 22)
 
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -71,9 +79,14 @@ func _refresh() -> void:
 	if _free_spins > 0:
 		_spin_button.text = "FREE SPIN!"
 		_spin_button.disabled = false
+	elif _paid_spin_used:
+		# Doc v0.13: you play once (free re-spins from triples excepted).
+		_spin_button.text = "House rules: one spin"
+		_spin_button.disabled = true
 	else:
-		_spin_button.text = "Spin  (🪙 %d)" % CasinoGame.SPIN_COST
-		_spin_button.disabled = Game.run.coins < CasinoGame.SPIN_COST
+		var cost := CasinoGame.spin_cost(Game.run)
+		_spin_button.text = "Spin  (🪙 %d)" % cost
+		_spin_button.disabled = Game.run.coins < cost
 
 
 func _on_spin() -> void:
@@ -85,6 +98,8 @@ func _on_spin() -> void:
 	if result.is_empty():
 		_refresh()
 		return
+	if not free:
+		_paid_spin_used = true
 	_spin_button.disabled = true
 	await _animate(result.symbols)
 	if result.free_respin:

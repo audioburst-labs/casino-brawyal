@@ -5,8 +5,11 @@ extends VBoxContainer
 
 signal clicked(actor_id: StringName)
 
+## One constant size that fits up to 4 enemies side by side (patch 0.13).
+const UNIT_HEIGHT := 330.0
+
 var actor: CombatActor
-var sprite_height := 420.0
+var sprite_height := UNIT_HEIGHT
 
 var _intent_row: HBoxContainer
 var _intent_icon: TextureRect
@@ -16,25 +19,30 @@ var _sprite: TextureRect
 var _mark_icon: TextureRect
 var _mark_tween: Tween
 var _fallback: ColorRect
+var _hp_holder: PanelContainer
 var _hp_bar: ProgressBar
 var _hp_label: Label
 var _block_label: Label
 var _status_row: HBoxContainer
-var _target_marker: Label
+var _target_ring: TargetRing
 var _base_sprite_position := Vector2.ZERO
+
+
+## The blue target circle drawn under the targeted enemy's model (patch 0.13).
+class TargetRing:
+	extends Control
+
+	func _draw() -> void:
+		var center := Vector2(size.x * 0.5, size.y - 14.0)
+		draw_set_transform(center, 0.0, Vector2(1.0, 0.35))
+		draw_arc(Vector2.ZERO, size.x * 0.42, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.9), 5.0, true)
+		draw_arc(Vector2.ZERO, size.x * 0.42 + 6.0, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.35), 9.0, true)
 
 
 func setup(combat_actor: CombatActor) -> void:
 	actor = combat_actor
 	alignment = BoxContainer.ALIGNMENT_END
-	custom_minimum_size = Vector2(300, 0)
-
-	_target_marker = Label.new()
-	_target_marker.text = "▼"
-	_target_marker.theme_type_variation = &"SubtitleLabel"
-	_target_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_target_marker.visible = false
-	add_child(_target_marker)
+	custom_minimum_size = Vector2(260, 0)
 
 	_intent_row = HBoxContainer.new()
 	_intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -71,6 +79,13 @@ func setup(combat_actor: CombatActor) -> void:
 		_sprite.texture = texture
 	sprite_holder.add_child(_sprite)
 
+	_target_ring = TargetRing.new()
+	_target_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_target_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_target_ring.show_behind_parent = true
+	_target_ring.visible = false
+	_sprite.add_child(_target_ring)
+
 	# The Mark: a flaming spade hovering above the head while marked (doc anim).
 	if ResourceLoader.exists("res://assets/icons/status_mark.png"):
 		_mark_icon = TextureRect.new()
@@ -86,10 +101,10 @@ func setup(combat_actor: CombatActor) -> void:
 		_fallback.custom_minimum_size = Vector2(sprite_height * 0.45, sprite_height * 0.85)
 		sprite_holder.add_child(_fallback)
 
-	var hp_holder := PanelContainer.new()
-	add_child(hp_holder)
+	_hp_holder = PanelContainer.new()
+	add_child(_hp_holder)
 	var hp_box := VBoxContainer.new()
-	hp_holder.add_child(hp_box)
+	_hp_holder.add_child(hp_box)
 
 	var name_label := Label.new()
 	name_label.text = actor.display_name
@@ -155,17 +170,19 @@ func _refresh_mark() -> void:
 		return
 	var marked := actor.has_status(&"mark") and actor.is_alive()
 	if marked and not _mark_icon.visible:
+		# Bobs INSIDE the sprite's top edge so it never covers the intent
+		# text above (patch 0.13 size adjustments).
 		_mark_icon.visible = true
-		_mark_icon.position = Vector2(_sprite.size.x * 0.5 - 22, -52)
+		_mark_icon.position = Vector2(_sprite.size.x * 0.5 - 22, 14)
 		_mark_icon.scale = Vector2(0.2, 0.2)
 		_mark_icon.pivot_offset = Vector2(22, 22)
 		var pop := _mark_icon.create_tween()
 		pop.tween_property(_mark_icon, "scale", Vector2.ONE, 0.3) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_mark_tween = _mark_icon.create_tween().set_loops()
-		_mark_tween.tween_property(_mark_icon, "position:y", -60.0, 0.7) \
+		_mark_tween.tween_property(_mark_icon, "position:y", 4.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_mark_tween.tween_property(_mark_icon, "position:y", -46.0, 0.7) \
+		_mark_tween.tween_property(_mark_icon, "position:y", 18.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	elif not marked and _mark_icon.visible:
 		if _mark_tween != null:
@@ -205,16 +222,10 @@ func clear_intent() -> void:
 	_intent_icon.visible = false
 
 
+## Blue ring around the model + a glow on the stats box (patch 0.13).
 func set_targeted(targeted: bool) -> void:
-	_target_marker.visible = targeted
-
-
-## Shrinks/grows the sprite so crowded lineups still fit (patch 0.11).
-func apply_height(height: float) -> void:
-	sprite_height = height
-	_sprite_holder.custom_minimum_size = Vector2(0, height)
-	_sprite.custom_minimum_size = Vector2(height * 0.66, height)
-	custom_minimum_size.x = clampf(300.0 * height / 430.0, 180.0, 300.0)
+	_target_ring.visible = targeted
+	_hp_holder.modulate = Color(0.75, 1.05, 1.45) if targeted else Color.WHITE
 
 
 func sprite_center() -> Vector2:

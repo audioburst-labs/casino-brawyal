@@ -491,6 +491,46 @@
       "prompt": "A single game icon meaning 'any card suit', centered on a fully transparent background: a rounded four-pointed compass-rose arrangement of the four playing card suit symbols — small spade (midnight blue) on top, heart (crimson) on the right, club (emerald) on the bottom, diamond (sapphire) on the left — tightly clustered around a small gold star in the center. Thick dark outlines, chunky cartoon shapes, reads clearly at small sizes, fills most of the frame. Nothing else."
     },
     {
+      "id": "cursor_glove",
+      "out": "assets/icons/cursor_glove.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game mouse cursor on a fully transparent background: an elegant white dealer's glove pointing up-left with one finger, with a thin gold cuff trim. The pointing fingertip is at the upper-left of the image. Chunky readable cartoon shape with a thick dark outline, crisp at small sizes, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "keyword_cash_in",
+      "out": "assets/icons/keyword_cash_in.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A tiny game keyword icon on a fully transparent background: a midnight-blue spade symbol bursting apart into gold coins with teal and purple flame wisps. Extremely chunky and readable at very small sizes, thick dark outline, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "keyword_go_again",
+      "out": "assets/icons/keyword_go_again.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A tiny game keyword icon on a fully transparent background: two bold golden arrows chasing each other in a circle (a re-spin symbol) with a small sparkle. Extremely chunky and readable at very small sizes, thick dark outline, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "keyword_repeat",
+      "out": "assets/icons/keyword_repeat.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A tiny game keyword icon on a fully transparent background: a bold golden multiplication-style double-burst symbol — two overlapping starbursts, the second slightly offset, suggesting an effect repeating. Extremely chunky and readable at very small sizes, thick dark outline, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "badge_per_turn",
+      "out": "assets/icons/badge_per_turn.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A tiny game badge icon on a fully transparent background: a small cream hourglass inside a gold ring, one golden sand grain falling. Extremely chunky and readable at very small sizes, thick dark outline, centered, fills the frame. Nothing else."
+    },
+    {
       "id": "ability_card_sling",
       "out": "assets/icons/ability_card_sling.png",
       "size": "1024x1024",

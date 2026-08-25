@@ -8,6 +8,8 @@ extends RefCounted
 ##   pair_then — the sheet's "1 -> 2 / 2 -> 1, 3" pattern per designer ruling:
 ##               opening pair in random order, then the tail moves in order,
 ##               looping (pair re-shuffled each cycle)
+##   intro_loop — plays "intro" once in order, then loops "loop" in order
+##               (the boss's "1,2,3,4,5 -> repeat 2,4,5" pattern)
 ##   phased    — hp-threshold sub-brains; phases authored with descending
 ##               hp_below (1.0 first), tightest matching phase wins
 
@@ -35,6 +37,8 @@ func next_move(rng: RandomNumberGenerator, hp_ratio: float = 1.0) -> String:
 			return _next_weighted(rng)
 		"pair_then":
 			return _next_pair_then(rng)
+		"intro_loop":
+			return _next_intro_loop()
 		"phased":
 			return _next_phased(rng, hp_ratio)
 	push_error("EnemyBrain: unknown brain type '%s'" % _config.get("type"))
@@ -81,6 +85,18 @@ func _next_pair_then(rng: RandomNumberGenerator) -> String:
 		for move in _config.get("then", []):
 			_queue.append(str(move))
 	_last_move = _queue.pop_front()
+	return _last_move
+
+
+func _next_intro_loop() -> String:
+	var intro: Array = _config.get("intro", [])
+	if _step < intro.size():
+		_last_move = str(intro[_step])
+		_step += 1
+		return _last_move
+	var loop: Array = _config.get("loop", [])
+	_last_move = str(loop[(_step - intro.size()) % loop.size()])
+	_step += 1
 	return _last_move
 
 

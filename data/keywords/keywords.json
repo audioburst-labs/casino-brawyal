@@ -2,7 +2,7 @@
   "type": "keywords",
   "items": [
     {"id": "mark", "name": "Mark", "text": "Enemy is marked. Cash In to deal bonus damage."},
-    {"id": "cash_in", "name": "Cash In", "text": "Remove a Mark from an enemy to deal 10 bonus damage."},
+    {"id": "cash_in", "name": "Cash In", "text": "Remove a Mark from an enemy to deal 20 bonus damage."},
     {"id": "weak", "name": "Weak X", "text": "Enemies deal 25% less damage for the next X turns."},
     {"id": "vulnerable", "name": "Vulnerable X", "text": "Takes 25% more damage for the next X turns."},
     {"id": "block", "name": "Block", "text": "Absorbs incoming damage. Expires at your next round start."},

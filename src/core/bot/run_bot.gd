@@ -33,10 +33,11 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 				if relic != &"":
 					run.relic_ids.append(relic)
 			&"casino":
-				while run.coins >= CasinoGame.SPIN_COST + 20:
+				# One paid spin (doc v0.13), then chase any free re-spins.
+				if run.coins >= CasinoGame.spin_cost(run) + 10:
 					var result := CasinoGame.spin(db, run, rng.stream(&"rewards"))
-					if result.is_empty() or not result.free_respin:
-						break
+					while not result.is_empty() and result.free_respin:
+						result = CasinoGame.spin(db, run, rng.stream(&"rewards"), true)
 			&"shop":
 				_play_shop(db, run, rng, choice_rng)
 	return _result(run, true)

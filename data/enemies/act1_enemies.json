@@ -102,21 +102,19 @@
       "hp_min": 140,
       "hp_max": 160,
       "brain": {
-        "type": "pair_then",
-        "pair": ["call_servers", "money_barrage"],
-        "then": ["call_bouncer", "encore", "bonuses"]
+        "type": "intro_loop",
+        "intro": ["call_bouncers", "money_barrage", "call_server", "big_hit", "bonuses"],
+        "loop": ["money_barrage", "big_hit", "bonuses"]
       },
       "moves": {
-        "call_servers": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 2}}
+        "call_bouncers": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 2}}
         },
         "money_barrage": {"intent": {"instances": 8, "per_hit": 3, "debuffs": []}},
-        "call_bouncer": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 1}}
+        "call_server": {
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
         },
-        "encore": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "ally_attack_again": true}
-        },
+        "big_hit": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
         "bonuses": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20}
         }

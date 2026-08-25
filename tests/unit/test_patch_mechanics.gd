@@ -79,8 +79,8 @@ func test_spade_card_sling_marks_and_cash_in_pays_bonus() -> void:
 	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 10 dmg + Mark (spade bonus)
 	assert_eq(enemy.hp, hp_start - 10)
 	assert_eq(enemy.status_stacks(&"mark"), 1)
-	assert_true(_fire(sim, 1, [&"club", &"spade"]))  # double_down: 20 dmg + Cash In (10)
-	assert_eq(enemy.hp, hp_start - 10 - 20 - 10)
+	assert_true(_fire(sim, 1, [&"club", &"spade"]))  # double_down: 10 dmg + Cash In (20)
+	assert_eq(enemy.hp, hp_start - 10 - 10 - 20)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")
 
 
@@ -90,7 +90,62 @@ func test_cash_in_without_mark_deals_no_bonus() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"club", &"spade"])
-	assert_eq(enemy.hp, hp_start - 20)
+	assert_eq(enemy.hp, hp_start - 10)
+
+
+func test_summon_skips_to_next_move_when_field_is_full() -> void:
+	# Patch 0.13: with all 4 enemy slots taken, a summon move is swapped for
+	# the enemy's next non-summon move.
+	var sim := _sim(["manager", "server", "server", "server"], ["card_sling"], 3)
+	sim.hero.max_hp = 9999
+	sim.hero.hp = 9999
+	for i in 12:
+		if sim.phase != CombatSim.Phase.ROUND_START:
+			break
+		sim.begin_round()
+		sim.tray.discard_all()
+		sim.end_assignment()
+		for event in sim.drain_events():
+			assert_ne(event.type, &"enemy_summoned", "no summons on a full field")
+	assert_eq(sim.enemies.size(), 4)
+
+
+func test_go_again_win_does_not_spin_after_combat_ends() -> void:
+	# Patch 0.13 crash fix: winning with Pay Line must not respin the machine.
+	var sim := _sim(["bouncer"], ["pay_line"], 5)
+	sim.begin_round()
+	sim.enemies[0].hp = 5
+	var tray_events := 0
+	assert_true(_fire(sim, 0, [&"spade", &"diamond", &"heart", &"club"]))
+	assert_eq(sim.phase, CombatSim.Phase.ENDED)
+	for event in sim.drain_events():
+		if event.type == &"spin_resolved":
+			tray_events += 1
+	assert_eq(tray_events, 1, "only the round-start spin; no go-again after victory")
+
+
+func test_intro_loop_brain_plays_intro_once_then_loops() -> void:
+	var brain := EnemyBrain.new({
+		"type": "intro_loop",
+		"intro": ["a", "b", "c"],
+		"loop": ["b", "c"],
+	}, {"a": {}, "b": {}, "c": {}})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2
+	var picks: Array[String] = []
+	for i in 7:
+		picks.append(brain.next_move(rng))
+	assert_eq(picks, ["a", "b", "c", "b", "c", "b", "c"] as Array[String])
+
+
+func test_intent_display_updates_after_weak_is_applied() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7)
+	sim.begin_round()
+	var before: Dictionary = sim.intent_display(&"enemy_0")
+	sim.enemies[0].apply_status(&"weak", 1)
+	var after: Dictionary = sim.intent_display(&"enemy_0")
+	assert_lt(int(after.display_per_hit), int(before.display_per_hit),
+		"shown damage drops once the enemy is Weak")
 
 
 func test_per_turn_limit_blocks_reuse_until_next_round() -> void:
@@ -282,7 +337,7 @@ func test_dark_emblem_boosts_spade_club_abilities() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"heart", &"spade"])
-	assert_eq(enemy.hp, hp_start - 26, "20 * 1.3 = 26")
+	assert_eq(enemy.hp, hp_start - 13, "10 * 1.3 = 13")
 
 
 func test_block_per_chip_relic() -> void:

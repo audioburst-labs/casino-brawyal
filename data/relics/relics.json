@@ -29,7 +29,7 @@
       "price_min": 22,
       "price_max": 28,
       "effects": [{"op": "block_per_chip", "suit": "spade", "amount": 2}],
-      "description": "When you get a Spade gem, gain 2 Block."
+      "description": "When you get a Spade Chip, gain 2 Block."
     },
     {
       "id": "heart_protection",
@@ -38,7 +38,7 @@
       "price_min": 22,
       "price_max": 28,
       "effects": [{"op": "block_per_chip", "suit": "heart", "amount": 2}],
-      "description": "When you get a Heart gem, gain 2 Block."
+      "description": "When you get a Heart Chip, gain 2 Block."
     },
     {
       "id": "club_protection",
@@ -47,7 +47,7 @@
       "price_min": 22,
       "price_max": 28,
       "effects": [{"op": "block_per_chip", "suit": "club", "amount": 2}],
-      "description": "When you get a Club gem, gain 2 Block."
+      "description": "When you get a Club Chip, gain 2 Block."
     },
     {
       "id": "diamond_protection",
@@ -56,7 +56,7 @@
       "price_min": 22,
       "price_max": 28,
       "effects": [{"op": "block_per_chip", "suit": "diamond", "amount": 2}],
-      "description": "When you get a Diamond gem, gain 2 Block."
+      "description": "When you get a Diamond Chip, gain 2 Block."
     },
     {
       "id": "high_stakes",
@@ -87,7 +87,7 @@
     },
     {
       "id": "red_emblems",
-      "name": "Red Emblems",
+      "name": "Red Emblem",
       "trigger": "combat_started",
       "price_min": 32,
       "price_max": 38,
