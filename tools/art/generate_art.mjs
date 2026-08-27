@@ -73,13 +73,30 @@ async function generateOne(manifest, asset, target) {
   }
   body.prompt = prompt;
 
+  // Pose frames edit an existing sprite ("base") so the character's identity,
+  // outfit and style carry across every frame of an animation.
+  const editing = Boolean(asset.base);
+  let requestUrl = target.url;
+  let requestInit;
+  if (editing) {
+    requestUrl = target.url.replace("/images/generations", "/images/edits");
+    const basePath = join(projectRoot, asset.base);
+    const form = new FormData();
+    form.append("model", body.model);
+    form.append("prompt", prompt);
+    form.append("size", body.size);
+    form.append("quality", body.quality);
+    form.append("image", new Blob([readFileSync(basePath)], { type: "image/png" }),
+      basePath.split(/[\\/]/).pop());
+    const { "Content-Type": _drop, ...headers } = target.headers;
+    requestInit = { method: "POST", headers, body: form };
+  } else {
+    requestInit = { method: "POST", headers: target.headers, body: JSON.stringify(body) };
+  }
+
   let res;
   for (let attempt = 1; ; attempt++) {
-    res = await fetch(target.url, {
-      method: "POST",
-      headers: target.headers,
-      body: JSON.stringify(body),
-    });
+    res = await fetch(requestUrl, requestInit);
     if (res.status !== 429 || attempt >= 6) break;
     const text = await res.text();
     const wait = Number(text.match(/retry after (\d+) second/i)?.[1] ?? 20) + 2;

@@ -19,6 +19,9 @@ var _sprite: TextureRect
 var _mark_icon: TextureRect
 var _mark_tween: Tween
 var _sway_tween: Tween
+var _idle_texture: Texture2D
+var _poses: Dictionary = {}        # pose name -> Texture2D
+var _ghost_layer: Node = null      # CombatVfx, for motion smears
 var _fallback: ColorRect
 var _hp_holder: PanelContainer
 var _hp_bar: ProgressBar
@@ -78,6 +81,8 @@ func setup(combat_actor: CombatActor) -> void:
 	_sprite.custom_minimum_size = Vector2(sprite_height * 0.66, sprite_height)
 	if texture != null:
 		_sprite.texture = texture
+		_idle_texture = texture
+	_load_poses()
 	# Feet-anchored pivot: squash & stretch reads as weight, not levitation.
 	_sprite.pivot_offset = Vector2(sprite_height * 0.33, sprite_height)
 	if ResourceLoader.exists("res://assets/shaders/flash.gdshader"):
@@ -237,6 +242,142 @@ func show_intent(entry: Dictionary) -> void:
 func clear_intent() -> void:
 	_intent_label.text = ""
 	_intent_icon.visible = false
+
+
+## ---- pose-frame animation ----
+##
+## Actions animate by hard-cutting between generated pose keyframes (the way
+## Darkest Dungeon / hand-drawn 2D games do it) while motion tweens, smears
+## and impact FX cover the low frame count. Any actor lacking pose files
+## simply falls back to the tween-only lunge.
+
+const POSE_NAMES := [
+	"throw_windup", "throw_release", "throw_follow",
+	"slash_windup", "slash_strike",
+]
+
+
+func _load_poses() -> void:
+	for pose in POSE_NAMES:
+		var path := "res://assets/characters/%s_%s.png" % [actor.def_id, pose]
+		if ResourceLoader.exists(path):
+			_poses[pose] = load(path)
+
+
+func has_pose(pose: String) -> bool:
+	return _poses.has(pose)
+
+
+## Lets the presenter register the VFX layer used for motion smears.
+func set_ghost_layer(layer: Node) -> void:
+	_ghost_layer = layer
+
+
+func _show_pose(pose: String) -> void:
+	if _poses.has(pose):
+		_sprite.texture = _poses[pose]
+
+
+func _smear() -> void:
+	if _ghost_layer != null and _ghost_layer.has_method("ghost"):
+		_ghost_layer.ghost(_sprite)
+
+
+func _return_to_idle() -> void:
+	if _idle_texture == null:
+		return
+	# Crossfade home so the pose swap never pops.
+	var fade := create_tween()
+	fade.tween_property(_sprite, "modulate:a", 0.55, 0.09)
+	fade.tween_callback(func() -> void: _sprite.texture = _idle_texture)
+	fade.tween_property(_sprite, "modulate:a", 1.0, 0.16)
+
+
+## Throw: coil back on the wind-up frame, hold, then SNAP to the release
+## frame. Returns at the release instant so the caller launches its
+## projectile on exactly that frame; the follow-through plays after.
+func play_throw() -> void:
+	if not has_pose("throw_release"):
+		play_lunge()
+		await get_tree().create_timer(0.22).timeout
+		return
+	var origin := _sprite.position
+	# Anticipation — the longest beat.
+	_show_pose("throw_windup")
+	var wind := create_tween()
+	wind.set_parallel(true)
+	wind.tween_property(_sprite, "position:x", origin.x - 34.0, 0.22) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	wind.tween_property(_sprite, "scale", Vector2(0.96, 1.04), 0.22)
+	await wind.finished
+	await get_tree().create_timer(0.08).timeout  # the coiled moment
+	# Release — snap forward with motion smears.
+	_show_pose("throw_release")
+	_smear()
+	var snap := create_tween()
+	snap.set_parallel(true)
+	snap.tween_property(_sprite, "position:x", origin.x + 52.0, 0.07) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	snap.tween_property(_sprite, "scale", Vector2(1.06, 0.96), 0.07)
+	_smear()
+	await snap.finished
+	_smear()
+	# Follow-through resolves in the background; the caller fires NOW.
+	_finish_throw(origin)
+
+
+func _finish_throw(origin: Vector2) -> void:
+	await get_tree().create_timer(0.06).timeout
+	_show_pose("throw_follow")
+	var settle := create_tween()
+	settle.set_parallel(true)
+	settle.tween_property(_sprite, "position", origin, 0.34) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	settle.tween_property(_sprite, "scale", Vector2.ONE, 0.34) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(0.22).timeout
+	_return_to_idle()
+
+
+## Slash: raise the dagger, then lunge through the strike frame. Returns on
+## the strike instant so the caller lands its slash VFX on that frame.
+func play_slash() -> void:
+	if not has_pose("slash_strike"):
+		play_lunge()
+		await get_tree().create_timer(0.22).timeout
+		return
+	var origin := _sprite.position
+	_show_pose("slash_windup")
+	var wind := create_tween()
+	wind.set_parallel(true)
+	wind.tween_property(_sprite, "position:x", origin.x - 30.0, 0.2) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	wind.tween_property(_sprite, "scale", Vector2(0.95, 1.06), 0.2)
+	await wind.finished
+	await get_tree().create_timer(0.07).timeout
+	_show_pose("slash_strike")
+	_smear()
+	var strike := create_tween()
+	strike.set_parallel(true)
+	strike.tween_property(_sprite, "position:x", origin.x + 96.0, 0.09) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	strike.tween_property(_sprite, "scale", Vector2(1.08, 0.94), 0.09)
+	_smear()
+	await strike.finished
+	_smear()
+	_finish_slash(origin)
+
+
+func _finish_slash(origin: Vector2) -> void:
+	await get_tree().create_timer(0.12).timeout
+	var settle := create_tween()
+	settle.set_parallel(true)
+	settle.tween_property(_sprite, "position", origin, 0.36) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	settle.tween_property(_sprite, "scale", Vector2.ONE, 0.36) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(0.18).timeout
+	_return_to_idle()
 
 
 ## Blue ring around the model + a glow on the stats box (patch 0.13).

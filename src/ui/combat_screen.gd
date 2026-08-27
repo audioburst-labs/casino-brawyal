@@ -187,6 +187,7 @@ func _spawn_units() -> void:
 	add_child(_hero_view)
 	move_child(_banner, get_child_count() - 1)
 	_hero_view.setup(sim.hero)
+	_hero_view.set_ghost_layer(_vfx)  # motion smears during pose animations
 
 	for enemy in sim.enemies:
 		var view := UnitView.new()
@@ -328,8 +329,11 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					fired_card.flash_fire()
 				# The reveal beat: name the play, hold, THEN resolve it.
 				await _reveal_ability(event.data.ability, _view_of(event.data.target))
-				_hero_view.play_lunge()
-				await get_tree().create_timer(0.12).timeout  # wind-up lands first
+				# Abilities with their own pose animation drive their own
+				# motion; the rest keep the generic lunge.
+				if not _has_pose_anim(event.data.ability):
+					_hero_view.play_lunge()
+					await get_tree().create_timer(0.12).timeout
 				await _play_ability_anims(event.data.ability, _view_of(event.data.target))
 			&"passive_gained":
 				var passive_card := _card_of(event.data.ability)
@@ -541,9 +545,14 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 	for anim: String in ABILITY_ANIMS.get(ability_id, []):
 		match anim:
 			"card_fling":
+				# Ace physically throws: the card leaves his hand on the
+				# release frame of the pose animation.
+				await _hero_view.play_throw()
 				await _fly("res://assets/icons/ability_card_sling.png",
 					_hero_view.sprite_center(), _target_point(target_view), marks)
 			"dagger":
+				# The slash VFX lands on the strike frame.
+				await _hero_view.play_slash()
 				await _dagger_slash(_target_point(target_view))
 			"cash_in":
 				await _burst(_target_point(target_view),
@@ -568,6 +577,7 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				_vfx.vignette(0.5, 1.1)
 				Engine.time_scale = 0.65
 				Fx.shake(20.0)
+				await _hero_view.play_slash()
 				for view: UnitView in _enemy_views.values():
 					await _dagger_slash(view.sprite_center())
 					await _dagger_slash(view.sprite_center() + Vector2(20, -10))
@@ -577,6 +587,14 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				Fx.hitstop(0.1)
 				for view: UnitView in _enemy_views.values():
 					_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
+
+
+## True when the ability's animation list drives the hero's own pose frames.
+func _has_pose_anim(ability_id: StringName) -> bool:
+	for anim: String in ABILITY_ANIMS.get(ability_id, []):
+		if anim in ["card_fling", "dagger", "ultimate"]:
+			return true
+	return false
 
 
 func _ability_marks(ability_id: StringName) -> bool:

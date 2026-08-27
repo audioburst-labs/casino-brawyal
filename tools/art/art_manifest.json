@@ -491,6 +491,46 @@
       "prompt": "A single game icon meaning 'any card suit', centered on a fully transparent background: a rounded four-pointed compass-rose arrangement of the four playing card suit symbols — small spade (midnight blue) on top, heart (crimson) on the right, club (emerald) on the bottom, diamond (sapphire) on the left — tightly clustered around a small gold star in the center. Thick dark outlines, chunky cartoon shapes, reads clearly at small sizes, fills most of the frame. Nothing else."
     },
     {
+      "id": "ace_throw_windup",
+      "out": "assets/characters/ace_throw_windup.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — in a THROWING WIND-UP pose: his whole body coiled and twisted back to his right, weight shifted onto his back foot, right arm cocked back behind his head gripping a single playing card that glows faintly, left arm extended forward for balance, eyes locked on a target to the right, coat and hair pulled back by the motion. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_throw_release",
+      "out": "assets/characters/ace_throw_release.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — at the RELEASE INSTANT of a card throw: right arm snapped fully forward and extended toward the right, fingers just opening as a playing card leaves his fingertips trailing a faint motion streak, body lunging hard into the throw, front foot planted forward, back leg extended behind, coat and hair whipping backward. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_throw_follow",
+      "out": "assets/characters/ace_throw_follow.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — in a THROW FOLLOW-THROUGH pose: his right arm has swung all the way across his body and now points down-left, torso rotated through the motion, weight fully on his front foot, a confident smirk as he watches the throw land, coat tail and hair still trailing the movement. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_slash_windup",
+      "out": "assets/characters/ace_slash_windup.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — in a DAGGER WIND-UP pose: his slim dagger raised high across his opposite shoulder in both a coiled and menacing stance, body crouched and twisted, knees bent ready to spring forward to the right, eyes narrowed at his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_slash_strike",
+      "out": "assets/characters/ace_slash_strike.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — MID-SLASH: lunging forward to the right in a deep stride, his dagger sweeping down and across in a wide arc that leaves a glowing teal-and-purple crescent slash trail behind the blade, free arm flung back for balance, coat billowing. Full body, dynamic action three-quarter view. Same scale and framing as the original."
+    },
+    {
       "id": "cursor_glove",
       "out": "assets/icons/cursor_glove.png",
       "size": "1024x1024",
