@@ -8,7 +8,7 @@ extends PanelContainer
 signal socket_clicked(ability_index: int, slot_index: int)
 signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 
-const CARD_SIZE := Vector2(225, 330)   # patch 0.13: skill areas +25%
+const CARD_SIZE := Vector2(225, 300)   # patch 0.13 sizing, fits above the screen edge
 const SOCKET_SIZE := 48.0
 
 ## Keyword words in ability text render as inline icons (patch 0.13).
@@ -69,7 +69,7 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	add_child(box)
 
 	var icon_holder := CenterContainer.new()
-	icon_holder.custom_minimum_size = Vector2(0, 84)
+	icon_holder.custom_minimum_size = Vector2(0, 72)
 	box.add_child(icon_holder)
 	var icon_texture := SuitAssets.ability_texture(_state.def.id)
 	if icon_texture != null:

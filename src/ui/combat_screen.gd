@@ -135,8 +135,8 @@ func _build_layout() -> void:
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
 	bottom.anchor_right = 0.99
-	bottom.anchor_top = 0.70
-	bottom.anchor_bottom = 0.99
+	bottom.anchor_top = 0.67
+	bottom.anchor_bottom = 0.975   # breathing room below the cards
 	bottom.add_theme_constant_override("separation", 10)
 	add_child(bottom)
 
