@@ -29,21 +29,19 @@ class Ring:
 			Color(ring_color.r, ring_color.g, ring_color.b, alpha), 10.0 * (1.0 - progress) + 2.0, true)
 
 
-class Rays:
+class Glow:
 	extends Control
-	var ray_color := Color(1.0, 0.9, 0.5)
+	var glow_color := Color(1.0, 0.85, 0.4)
 	var reach := 160.0
 
 	func _draw() -> void:
-		for i in 12:
-			var angle := TAU * i / 12.0
-			var width := 0.10 if i % 2 == 0 else 0.05
-			var points := PackedVector2Array([
-				Vector2.ZERO,
-				Vector2.from_angle(angle - width) * reach,
-				Vector2.from_angle(angle + width) * reach,
-			])
-			draw_colored_polygon(points, ray_color)
+		# Concentric soft rings fake a radial gradient — a warm light bloom,
+		# not hard geometry.
+		for i in 14:
+			var t := float(i) / 14.0
+			var ring := glow_color
+			ring.a = glow_color.a * (1.0 - t) * (1.0 - t) * 0.28
+			draw_circle(Vector2.ZERO, reach * (0.25 + 0.75 * t), ring)
 
 
 ## Expanding luminous shockwave ring — the punctuation mark of every impact.
@@ -63,26 +61,27 @@ func shockwave(at: Vector2, color := Color(1.0, 0.85, 0.5), radius := 130.0) -> 
 	tween.tween_callback(ring.queue_free)
 
 
-## Rotating golden god-rays behind a big reveal or jackpot.
+## A warm breathing light bloom behind a big reveal or jackpot (replaces the
+## old hard-polygon rays, which read as grey wedges).
 func ray_burst(at: Vector2, color := Color(1.0, 0.9, 0.5, 0.55), reach := 180.0,
 		duration := 0.8) -> void:
-	var rays := Rays.new()
-	rays.ray_color = color
-	rays.reach = reach
-	rays.material = _additive
-	rays.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rays.z_index = 85
-	rays.scale = Vector2(0.2, 0.2)
-	add_child(rays)
-	rays.global_position = at
-	rays.queue_redraw()
-	var tween := rays.create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(rays, "scale", Vector2.ONE, 0.25) \
+	var glow := Glow.new()
+	glow.glow_color = color
+	glow.reach = reach
+	glow.material = _additive
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.z_index = 85
+	glow.scale = Vector2(0.2, 0.2)
+	add_child(glow)
+	glow.global_position = at
+	glow.queue_redraw()
+	var tween := glow.create_tween()
+	tween.tween_property(glow, "scale", Vector2.ONE, 0.22) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(rays, "rotation", 0.9, duration)
-	tween.chain().tween_property(rays, "modulate:a", 0.0, 0.25)
-	tween.chain().tween_callback(rays.queue_free)
+	tween.tween_property(glow, "scale", Vector2(1.12, 1.12), maxf(duration - 0.45, 0.2)) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(glow, "modulate:a", 0.0, 0.25)
+	tween.tween_callback(glow.queue_free)
 
 
 ## Fading afterimages behind a fast-moving node (ghost trail).

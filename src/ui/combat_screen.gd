@@ -62,6 +62,11 @@ func _ready() -> void:
 			"enemies": enemies,
 			"seed": randi(),
 		})
+		# CB_DEBUG_AUTOFIRE=1: fire card_sling automatically (animation review).
+		if OS.get_environment("CB_DEBUG_AUTOFIRE") != "":
+			await get_tree().create_timer(4.0).timeout
+			sim.tray.add(&"spade", 1)
+			_on_chip_dropped(0, 0, &"spade")
 
 
 func setup(config: Dictionary) -> void:
@@ -447,58 +452,88 @@ func _play_events(events: Array[CombatEvent]) -> void:
 ## ---- attack animations (doc's Animations table) ----
 
 
-## The Hearthstone moment: the played ability zooms to center stage with
-## god-rays, holds a dramatic beat, then dives toward its target.
+## The reveal: the ability CARD is flicked onto the table — it spins up from
+## tiny to large, flips face-up with an overshoot pop, glows, holds a beat,
+## then dives into its target.
 func _reveal_ability(ability_id: StringName, target_view: UnitView) -> void:
 	var def := Db.content.get_ability(ability_id)
 	if def == null:
 		return
 	var center := get_viewport_rect().size * Vector2(0.5, 0.4)
-	_vfx.ray_burst(center, Color(1.0, 0.9, 0.5, 0.4), 220.0, 0.7)
+	_vfx.ray_burst(center, Color(1.0, 0.85, 0.45, 0.5), 240.0, 0.9)
 
-	var banner := PanelContainer.new()
-	banner.z_index = 98
-	banner.theme_type_variation = &"FeltPanel"
+	# Build a proper CARD: portrait frame, gold border, icon + name.
+	var card := PanelContainer.new()
+	card.z_index = 98
+	var face := StyleBoxFlat.new()
+	face.bg_color = Color(0.13, 0.05, 0.08)
+	face.border_color = Color(0.95, 0.8, 0.35)
+	face.set_border_width_all(5)
+	face.set_corner_radius_all(18)
+	face.shadow_color = Color(0, 0, 0, 0.6)
+	face.shadow_size = 18
+	face.content_margin_left = 24
+	face.content_margin_right = 24
+	face.content_margin_top = 20
+	face.content_margin_bottom = 20
+	card.add_theme_stylebox_override("panel", face)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	banner.add_child(box)
+	box.add_theme_constant_override("separation", 10)
+	card.add_child(box)
 	var icon_texture := SuitAssets.ability_texture(ability_id)
 	if icon_texture != null:
 		var icon := TextureRect.new()
 		icon.texture = icon_texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(110, 110)
+		icon.custom_minimum_size = Vector2(140, 140)
 		box.add_child(icon)
 	var name_label := Label.new()
 	name_label.text = def.name
 	name_label.theme_type_variation = &"TitleLabel"
-	name_label.add_theme_font_size_override("font_size", 40)
+	name_label.add_theme_font_size_override("font_size", 42)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(name_label)
-	add_child(banner)
+	add_child(card)
 	await get_tree().process_frame
-	banner.pivot_offset = banner.size * 0.5
-	banner.global_position = center - banner.size * 0.5
-	banner.scale = Vector2(0.25, 0.25)
-	banner.rotation = -0.06
+	card.pivot_offset = card.size * 0.5
+	card.global_position = center - card.size * 0.5
 
-	var tween := banner.create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(banner, "scale", Vector2.ONE, 0.22) \
+	# The flick: spin in from tiny while whirling like a thrown card...
+	card.scale = Vector2(0.04, 0.04)
+	card.rotation = -TAU * 1.25
+	var toss := card.create_tween()
+	toss.set_parallel(true)
+	toss.tween_property(card, "scale", Vector2(1.18, 1.18), 0.34) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	toss.tween_property(card, "rotation", 0.0, 0.34) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await toss.finished
+	# ...flip accent: a quick horizontal fold-and-open, like turning it face up...
+	var flip := card.create_tween()
+	flip.tween_property(card, "scale:x", 0.12, 0.09).set_ease(Tween.EASE_IN)
+	flip.tween_callback(func() -> void:
+		_sparks(center, Color(1.0, 0.9, 0.55), 16)
+		_vfx.shockwave(center, Color(1.0, 0.85, 0.45), 150.0))
+	flip.tween_property(card, "scale:x", 1.06, 0.14) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(banner, "rotation", 0.0, 0.22)
-	await tween.finished
-	await get_tree().create_timer(0.3).timeout
+	flip.set_parallel(true)
+	flip.tween_property(card, "scale:y", 1.06, 0.14) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await flip.finished
+	# ...the read beat, then it dives into the target.
+	await get_tree().create_timer(0.28).timeout
 	var dive_target := _target_point(target_view)
-	var dive := banner.create_tween()
+	var dive := card.create_tween()
 	dive.set_parallel(true)
-	dive.tween_property(banner, "global_position", dive_target - banner.size * 0.125, 0.2) \
+	dive.tween_property(card, "global_position", dive_target - card.size * 0.1, 0.18) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	dive.tween_property(banner, "scale", Vector2(0.25, 0.25), 0.2)
-	dive.tween_property(banner, "modulate:a", 0.0, 0.22)
+	dive.tween_property(card, "scale", Vector2(0.2, 0.2), 0.18)
+	dive.tween_property(card, "rotation", 0.5, 0.18)
+	dive.tween_property(card, "modulate:a", 0.0, 0.2)
 	await dive.finished
-	banner.queue_free()
+	card.queue_free()
 
 
 func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
