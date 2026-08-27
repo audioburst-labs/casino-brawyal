@@ -42,6 +42,7 @@ var _tray_view: ChipTrayView
 var _ability_row: HBoxContainer
 var _ability_cards: Array[AbilityCard] = []
 var _end_turn: Button
+var _vfx: CombatVfx
 var _busy := false
 
 
@@ -83,6 +84,9 @@ func _build_layout() -> void:
 	if ResourceLoader.exists("res://assets/backgrounds/bg_casino_floor.png"):
 		_background.texture = load("res://assets/backgrounds/bg_casino_floor.png")
 	add_child(_background)
+
+	_vfx = CombatVfx.new()
+	add_child(_vfx)
 
 	_round_label = Label.new()
 	_round_label.theme_type_variation = &"SubtitleLabel"
@@ -299,6 +303,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				await get_tree().create_timer(0.2).timeout
 			&"spin_resolved":
 				await _reel_strip.spin_to(event.data.symbols)
+				await _payout_flourish(event.data.symbols)
 				_tray_view.refresh()
 			&"chips_generated", &"chips_converted":
 				_tray_view.refresh()
@@ -316,7 +321,10 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var fired_card := _card_of(event.data.ability)
 				if fired_card != null:
 					fired_card.flash_fire()
+				# The reveal beat: name the play, hold, THEN resolve it.
+				await _reveal_ability(event.data.ability, _view_of(event.data.target))
 				_hero_view.play_lunge()
+				await get_tree().create_timer(0.12).timeout  # wind-up lands first
 				await _play_ability_anims(event.data.ability, _view_of(event.data.target))
 			&"passive_gained":
 				var passive_card := _card_of(event.data.ability)
@@ -344,15 +352,27 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# One hit, one number, one beat — instances stay in sync with
 				# their damage numbers (patch 0.1).
 				var target := _view_of(event.data.target)
+				var amount := int(event.data.amount)
 				if target != null:
 					if event.data.target == sim.hero.id:
 						_impact(target.sprite_center())  # enemy strike swipe
 					else:
 						_sparks(target.sprite_center(), Color(1.0, 0.85, 0.5), 8)
+					# Layered impact: flash+squash, shockwave, freeze, kick.
 					target.play_hit()
 					target.refresh()
-					Fx.spawn_number(target.sprite_center(), str(event.data.amount))
-				Fx.shake(clampf(event.data.amount * 1.2, 4.0, 18.0))
+					_vfx.shockwave(target.sprite_center(),
+						Color(1.0, 0.85, 0.5) if amount < 20 else Color(1.0, 0.6, 0.3),
+						90.0 + amount * 3.0)
+					Fx.spawn_number(target.sprite_center(), str(amount))
+					if amount >= 25:
+						Fx.hitstop(0.12)
+						Fx.punch_zoom(0.05)
+						_vfx.screen_flash(0.25)
+					elif amount >= 12:
+						Fx.hitstop(0.05)
+						Fx.punch_zoom(0.025)
+				Fx.shake(clampf(amount * 1.2, 4.0, 18.0))
 				await get_tree().create_timer(0.36).timeout
 			&"block_gained":
 				var actor_view := _view_of(event.data.actor)
@@ -383,9 +403,14 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"actor_died":
 				var dead_view := _view_of(event.data.actor)
 				if dead_view != null:
+					# Enemies cash out: a burst of house chips and a shockwave.
+					_vfx.shockwave(dead_view.sprite_center(), Color(1.0, 0.7, 0.4), 170.0)
+					_vfx.confetti(dead_view.sprite_center(), 18)
+					_sparks(dead_view.sprite_center(), Color(1.0, 0.85, 0.4), 20)
 					dead_view.play_death()
 					dead_view.clear_intent()
-				Fx.hitstop()
+				Fx.hitstop(0.1)
+				Fx.punch_zoom(0.04)
 				await get_tree().create_timer(0.45).timeout
 				# Defeated enemies leave the field to make room for summons
 				# (patch 0.12).
@@ -396,9 +421,11 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"enemy_move":
 				var mover := _view_of(event.data.actor)
 				if mover != null and not event.data.get("skipped", false):
-					mover.play_lunge()
+					mover.play_telegraph()  # menace first...
+					await get_tree().create_timer(0.32).timeout
+					mover.play_lunge()      # ...then strike
 					mover.clear_intent()
-					await get_tree().create_timer(0.15).timeout
+					await get_tree().create_timer(0.2).timeout
 			&"chips_discarded":
 				_tray_view.refresh()
 			&"combat_won":
@@ -418,6 +445,60 @@ func _play_events(events: Array[CombatEvent]) -> void:
 
 
 ## ---- attack animations (doc's Animations table) ----
+
+
+## The Hearthstone moment: the played ability zooms to center stage with
+## god-rays, holds a dramatic beat, then dives toward its target.
+func _reveal_ability(ability_id: StringName, target_view: UnitView) -> void:
+	var def := Db.content.get_ability(ability_id)
+	if def == null:
+		return
+	var center := get_viewport_rect().size * Vector2(0.5, 0.4)
+	_vfx.ray_burst(center, Color(1.0, 0.9, 0.5, 0.4), 220.0, 0.7)
+
+	var banner := PanelContainer.new()
+	banner.z_index = 98
+	banner.theme_type_variation = &"FeltPanel"
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	banner.add_child(box)
+	var icon_texture := SuitAssets.ability_texture(ability_id)
+	if icon_texture != null:
+		var icon := TextureRect.new()
+		icon.texture = icon_texture
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(110, 110)
+		box.add_child(icon)
+	var name_label := Label.new()
+	name_label.text = def.name
+	name_label.theme_type_variation = &"TitleLabel"
+	name_label.add_theme_font_size_override("font_size", 40)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(name_label)
+	add_child(banner)
+	await get_tree().process_frame
+	banner.pivot_offset = banner.size * 0.5
+	banner.global_position = center - banner.size * 0.5
+	banner.scale = Vector2(0.25, 0.25)
+	banner.rotation = -0.06
+
+	var tween := banner.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(banner, "scale", Vector2.ONE, 0.22) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(banner, "rotation", 0.0, 0.22)
+	await tween.finished
+	await get_tree().create_timer(0.3).timeout
+	var dive_target := _target_point(target_view)
+	var dive := banner.create_tween()
+	dive.set_parallel(true)
+	dive.tween_property(banner, "global_position", dive_target - banner.size * 0.125, 0.2) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	dive.tween_property(banner, "scale", Vector2(0.25, 0.25), 0.2)
+	dive.tween_property(banner, "modulate:a", 0.0, 0.22)
+	await dive.finished
+	banner.queue_free()
 
 
 func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
@@ -447,9 +528,20 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				await _burst(_reel_strip.global_position + _reel_strip.size * 0.5,
 					"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
 			"ultimate":
+				# Flush: the house lights dim, time slows, five cuts land,
+				# and the finish detonates.
+				_vfx.vignette(0.5, 1.1)
+				Engine.time_scale = 0.65
 				Fx.shake(20.0)
 				for view: UnitView in _enemy_views.values():
 					await _dagger_slash(view.sprite_center())
+					await _dagger_slash(view.sprite_center() + Vector2(20, -10))
+				Engine.time_scale = 1.0
+				_vfx.screen_flash(0.4)
+				Fx.punch_zoom(0.06)
+				Fx.hitstop(0.1)
+				for view: UnitView in _enemy_views.values():
+					_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
 
 
 func _ability_marks(ability_id: StringName) -> bool:
@@ -468,7 +560,9 @@ func _target_point(target_view: UnitView) -> Vector2:
 	return Vector2(get_viewport_rect().size.x * 0.7, get_viewport_rect().size.y * 0.35)
 
 
-## A projectile flying from -> to (Card Fling; flaming when the hit Marks).
+## A projectile arcing from -> to with ghost afterimages, facing its velocity
+## (Card Fling; flaming when the hit Marks). Straight-and-level is the
+## giveaway of flat animation — this one travels.
 func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> void:
 	if not ResourceLoader.exists(texture_path):
 		return
@@ -482,14 +576,22 @@ func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> vo
 	if flaming:
 		projectile.modulate = FLAME_TINT
 	add_child(projectile)
-	projectile.global_position = from - Vector2(36, 36)
-	var tween := projectile.create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(projectile, "global_position", to - Vector2(36, 36), 0.35) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(projectile, "rotation", TAU * 1.5, 0.35)
+	var duration := 0.34
+	var apex := (from + to) * 0.5 + Vector2(0, -140)  # parabolic arc
+	var previous := from
+	var tween := create_tween()
+	tween.tween_method(func(t: float) -> void:
+		var p01 := from.lerp(apex, t)
+		var p12 := apex.lerp(to, t)
+		var at := p01.lerp(p12, t)
+		projectile.global_position = at - Vector2(36, 36)
+		projectile.rotation = (at - previous).angle() + PI * 0.25
+		if Engine.get_frames_drawn() % 2 == 0:
+			_vfx.ghost(projectile)
+		previous = at, 0.0, 1.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tween.finished
 	_sparks(to, FLAME_TINT if flaming else Color(1.0, 0.9, 0.6))
+	_vfx.shockwave(to, FLAME_TINT if flaming else Color(1.0, 0.9, 0.6), 80.0)
 	projectile.queue_free()
 
 
@@ -548,6 +650,48 @@ func _burst(at: Vector2, texture_path: String, tint: Color) -> void:
 	symbol.queue_free()
 
 
+## Balatro rule: never pay the total at once. Each landed symbol's chip flies
+## from its reel to the tray on its own beat; a three-of-a-kind detonates a
+## jackpot of rays and confetti.
+func _payout_flourish(symbols: Array) -> void:
+	var strip_origin := _reel_strip.global_position
+	var strip_step := _reel_strip.size.x / maxf(1.0, symbols.size())
+	var tray_center := _tray_view.global_position + _tray_view.size * 0.5
+	var triple: bool = symbols.size() >= 3 and symbols[0] == symbols[1] and symbols[1] == symbols[2]
+	if triple:
+		_vfx.ray_burst(strip_origin + _reel_strip.size * 0.5, Color(1.0, 0.9, 0.4, 0.6), 220.0, 0.9)
+		_vfx.confetti(strip_origin + Vector2(_reel_strip.size.x * 0.5, 0))
+		Fx.punch_zoom(0.04)
+		Fx.shake(10.0)
+	for i in symbols.size():
+		var chip_path := "res://assets/icons/chip_%s.png" % symbols[i]
+		if not ResourceLoader.exists(chip_path):
+			continue
+		var chip := TextureRect.new()
+		chip.texture = load(chip_path)
+		chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		chip.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		chip.size = Vector2(56, 56)
+		chip.pivot_offset = Vector2(28, 28)
+		chip.z_index = 92
+		add_child(chip)
+		chip.global_position = strip_origin + Vector2(strip_step * (i + 0.5) - 28, 40)
+		chip.scale = Vector2(0.4, 0.4)
+		var hop := chip.create_tween()
+		hop.tween_property(chip, "scale", Vector2.ONE, 0.12) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		hop.set_parallel(true)
+		hop.tween_property(chip, "global_position", tray_center - Vector2(28, 28), 0.24) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		hop.tween_property(chip, "rotation", TAU, 0.24)
+		hop.chain().tween_callback(func() -> void:
+			_sparks(tray_center, Color(1.0, 0.9, 0.6), 6)
+			_tray_view.refresh()
+			chip.queue_free())
+		await get_tree().create_timer(0.09).timeout  # one payoff per beat
+	await get_tree().create_timer(0.22).timeout
+
+
 ## A one-shot spark puff — the VFX layer under every hit and burst (patch 0.13).
 func _sparks(at: Vector2, color: Color, amount := 14) -> void:
 	var particles := CPUParticles2D.new()
@@ -592,6 +736,15 @@ func _show_banner(text: String) -> void:
 	_banner.visible = true
 	_banner.scale = Vector2(0.3, 0.3)
 	_banner.pivot_offset = _banner.size * 0.5
+	var center := get_viewport_rect().size * 0.5
+	if text.begins_with("VICTORY"):
+		_vfx.ray_burst(center, Color(1.0, 0.9, 0.5, 0.5), 320.0, 1.2)
+		_vfx.confetti(center + Vector2(-220, -60), 30)
+		_vfx.confetti(center + Vector2(220, -60), 30)
+		_vfx.screen_flash(0.3)
+		Fx.punch_zoom(0.05)
+	else:
+		_vfx.vignette(0.55, 1.2)
 	var tween := _banner.create_tween()
 	tween.tween_property(_banner, "scale", Vector2.ONE, 0.5) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

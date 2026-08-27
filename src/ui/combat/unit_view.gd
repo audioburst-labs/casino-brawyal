@@ -18,6 +18,7 @@ var _sprite_holder: CenterContainer
 var _sprite: TextureRect
 var _mark_icon: TextureRect
 var _mark_tween: Tween
+var _sway_tween: Tween
 var _fallback: ColorRect
 var _hp_holder: PanelContainer
 var _hp_bar: ProgressBar
@@ -77,6 +78,12 @@ func setup(combat_actor: CombatActor) -> void:
 	_sprite.custom_minimum_size = Vector2(sprite_height * 0.66, sprite_height)
 	if texture != null:
 		_sprite.texture = texture
+	# Feet-anchored pivot: squash & stretch reads as weight, not levitation.
+	_sprite.pivot_offset = Vector2(sprite_height * 0.33, sprite_height)
+	if ResourceLoader.exists("res://assets/shaders/flash.gdshader"):
+		var flash_material := ShaderMaterial.new()
+		flash_material.shader = load("res://assets/shaders/flash.gdshader")
+		_sprite.material = flash_material
 	sprite_holder.add_child(_sprite)
 
 	_target_ring = TargetRing.new()
@@ -135,6 +142,16 @@ func setup(combat_actor: CombatActor) -> void:
 
 	gui_input.connect(_on_gui_input)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Idle micro-motion: nothing on a casino floor ever stands perfectly
+	# still. Rotation-only so it never fights the lunge/hit tweens.
+	_sway_tween = create_tween().set_loops()
+	var phase := float(hash(actor.id) % 100) / 100.0
+	_sway_tween.tween_interval(phase * 1.2)
+	_sway_tween.tween_property(_sprite, "rotation", 0.012, 1.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_sway_tween.tween_property(_sprite, "rotation", -0.012, 1.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	refresh()
 
 
@@ -232,34 +249,76 @@ func sprite_center() -> Vector2:
 	return _sprite.global_position + _sprite.size * 0.5
 
 
+## Impact: white shader flash, knockback, and a feet-anchored squash that
+## springs back — the sprite visibly TAKES the hit.
 func play_hit() -> void:
 	var target: Control = _sprite if _sprite.texture != null else _fallback
 	if _base_sprite_position == Vector2.ZERO:
 		_base_sprite_position = target.position
+	if _sprite.material is ShaderMaterial:
+		_sprite.material.set_shader_parameter("flash", 0.9)
+		var flash_tween := create_tween()
+		flash_tween.tween_method(func(v: float) -> void:
+			_sprite.material.set_shader_parameter("flash", v), 0.9, 0.0, 0.28)
+	var direction := -1.0 if actor.is_hero else 1.0
+	target.scale = Vector2(1.12, 0.86)
 	var tween := create_tween()
-	target.modulate = Color(3.0, 1.2, 1.2)
-	tween.tween_property(target, "modulate", Color.WHITE, 0.25)
-	tween.parallel().tween_property(target, "position:x", _base_sprite_position.x + 14.0, 0.06)
-	tween.tween_property(target, "position:x", _base_sprite_position.x, 0.18) \
+	tween.set_parallel(true)
+	tween.tween_property(target, "scale", Vector2.ONE, 0.3) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(target, "position:x", _base_sprite_position.x + 20.0 * direction, 0.06)
+	tween.chain().tween_property(target, "position:x", _base_sprite_position.x, 0.22) \
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
+## Attack: anticipation (pull back and coil), then a snapping strike lunge
+## with follow-through overshoot — no more polite drifting.
 func play_lunge() -> void:
-	# Animate a wrapper-independent offset via the sprite's pivot-safe
-	# position, always restoring the exact captured origin so container
-	# re-layouts can't leave the sprite drifted (patch 0.1 fix).
 	var origin := _sprite.position
 	var direction := 1.0 if actor.is_hero else -1.0
 	var tween := create_tween()
-	tween.tween_property(_sprite, "position:x", origin.x + 46.0 * direction, 0.1) \
+	# Wind-up: pull away and crouch...
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "position:x", origin.x - 22.0 * direction, 0.14) \
 		.set_ease(Tween.EASE_OUT)
-	tween.tween_property(_sprite, "position", origin, 0.22) \
-		.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(_sprite, "scale", Vector2(0.94, 1.05), 0.14)
+	# ...snap forward...
+	tween.chain().tween_property(_sprite, "position:x", origin.x + 70.0 * direction, 0.08) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(_sprite, "scale", Vector2(1.08, 0.94), 0.08)
+	# ...and settle home with follow-through.
+	tween.chain().tween_property(_sprite, "position", origin, 0.3) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_sprite, "scale", Vector2.ONE, 0.3) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
-func play_death() -> void:
+## Telegraph: a menacing red-tinted rise just before an enemy strikes.
+func play_telegraph() -> void:
 	var tween := create_tween()
-	tween.tween_property(self, "modulate", Color(0.35, 0.3, 0.3, 0.5), 0.5)
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "modulate", Color(1.35, 0.75, 0.7), 0.16)
+	tween.tween_property(_sprite, "scale", Vector2(1.06, 1.06), 0.16) \
+		.set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(_sprite, "modulate", Color.WHITE, 0.2)
+	tween.parallel().tween_property(_sprite, "scale", Vector2.ONE, 0.2)
+
+
+## Death: a white blowout, then the sprite crumples at its feet and fades.
+func play_death() -> void:
+	if _sway_tween != null:
+		_sway_tween.kill()  # the idle sway must not fight the collapse
+	if _sprite.material is ShaderMaterial:
+		_sprite.material.set_shader_parameter("flash", 1.0)
+		var flash_tween := create_tween()
+		flash_tween.tween_method(func(v: float) -> void:
+			_sprite.material.set_shader_parameter("flash", v), 1.0, 0.0, 0.35)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "scale", Vector2(1.25, 0.0), 0.45) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(_sprite, "rotation", 0.12, 0.45)
+	tween.tween_property(self, "modulate:a", 0.0, 0.5)
 
 
 func _on_gui_input(event: InputEvent) -> void:

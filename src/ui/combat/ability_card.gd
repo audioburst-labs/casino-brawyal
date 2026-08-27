@@ -59,8 +59,9 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	ability_index = index
 	custom_minimum_size = CARD_SIZE
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mouse_entered.connect(_show_keywords)
-	mouse_exited.connect(_hide_keywords)
+	pivot_offset = Vector2(CARD_SIZE.x * 0.5, CARD_SIZE.y)
+	mouse_entered.connect(_on_hover_entered)
+	mouse_exited.connect(_on_hover_exited)
 
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -263,6 +264,21 @@ func flash_fire() -> void:
 	tween.tween_property(self, "modulate", Color.WHITE, 0.35)
 	tween.parallel().tween_property(self, "scale", Vector2.ONE, 0.35) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Balatro-style hover: the card leans up at you and settles back springily.
+func _on_hover_entered() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector2(1.06, 1.06), 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_show_keywords()
+
+
+func _on_hover_exited() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector2.ONE, 0.14) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_hide_keywords()
 
 
 func _show_keywords() -> void:
