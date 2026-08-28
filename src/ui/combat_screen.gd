@@ -27,6 +27,12 @@ const ABILITY_ANIMS := {
 	&"flush": ["ultimate"],
 }
 const FLAME_TINT := Color(0.45, 1.1, 0.95)  # the green/teal/purple mark flame
+## The doc's "green, teal, and purple flame" — Mark/Cash In/flaming Card
+## Fling all cycle through these instead of a single flat tint.
+const FLAME_COLORS := [
+	Color(0.6, 1.0, 0.5), Color(0.45, 1.0, 0.85), Color(0.65, 0.4, 1.0),
+]
+const DEBUFF_STATUSES: Array[StringName] = [&"weak", &"vulnerable", &"stun"]
 
 var sim: CombatSim
 var run_mode := false   # true when launched by Game flow (reports results back)
@@ -103,33 +109,19 @@ func _build_layout() -> void:
 	add_child(_round_label)
 
 	if Game.run != null:
+		# The Relics display now lives in the persistent header (HeaderHud,
+		# doc's Screen UI spec) — this row is just the coins/encounter tally.
 		var hud := HBoxContainer.new()
 		hud.anchor_left = 0.55
 		hud.anchor_right = 0.99
-		hud.anchor_top = 0.0
-		hud.anchor_bottom = 0.05
+		hud.anchor_top = 0.06
+		hud.anchor_bottom = 0.11
 		hud.alignment = BoxContainer.ALIGNMENT_END
 		hud.add_theme_constant_override("separation", 10)
 		add_child(hud)
-		for relic_id in Game.run.relic_ids:
-			var relic := Db.content.get_relic(relic_id)
-			var icon_path := "res://assets/icons/relic_%s.png" % relic_id
-			if ResourceLoader.exists(icon_path):
-				var icon := TextureRect.new()
-				icon.texture = load(icon_path)
-				icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-				icon.custom_minimum_size = Vector2(66, 66)  # patch 0.13: +50%
-				icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
-				hud.add_child(icon)
-			else:
-				var chip := Label.new()
-				chip.text = "[%s]" % relic.name
-				chip.tooltip_text = relic.description
-				hud.add_child(chip)
 		var coins := Label.new()
 		coins.theme_type_variation = &"SubtitleLabel"
-		coins.text = "  🪙 %d   Encounter %d/10" % [Game.run.coins, Game.run.history.size()]
+		coins.text = "🪙 %d   Encounter %d/10" % [Game.run.coins, Game.run.history.size()]
 		hud.add_child(coins)
 
 	_enemies_row = HBoxContainer.new()
@@ -374,6 +366,9 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					# Layered impact: flash+squash, shockwave, freeze, kick.
 					target.play_hit()
 					target.refresh()
+					# Damage (doc animation): a small explosion icon on the hit.
+					_burst(target.sprite_center(), "res://assets/icons/fx_explosion.png",
+						Color(1.0, 0.75, 0.3))
 					_vfx.shockwave(target.sprite_center(),
 						Color(1.0, 0.85, 0.5) if amount < 20 else Color(1.0, 0.6, 0.3),
 						90.0 + amount * 3.0)
@@ -393,6 +388,9 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					actor_view.refresh()
 					Fx.spawn_number(actor_view.sprite_center(),
 						"+%d" % event.data.amount, Color(0.6, 0.85, 1.0))
+					# Block Gain (doc animation): shield icon + blue flash.
+					_burst(actor_view.sprite_center(),
+						"res://assets/icons/status_block.png", Color(0.6, 0.85, 1.0))
 				await get_tree().create_timer(0.15).timeout
 			&"status_applied":
 				var status_view := _view_of(event.data.actor)
@@ -401,6 +399,9 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					Fx.spawn_number(status_view.sprite_center(),
 						"%s %d" % [event.data.status, event.data.stacks],
 						Color(0.85, 0.7, 1.0))
+					# Apply Debuff (doc animation): a quick side-to-side shake.
+					if StringName(event.data.status) in DEBUFF_STATUSES:
+						status_view.play_debuff_shake()
 					# Shown intent numbers track live buffs/debuffs (patch 0.13).
 					if event.data.actor != sim.hero.id:
 						var updated := sim.intent_display(event.data.actor)
@@ -559,35 +560,27 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				await _hero_view.play_slash()
 				await _dagger_slash(_target_point(target_view))
 			"cash_in":
-				await _burst(_target_point(target_view),
-					"res://assets/icons/status_mark.png", FLAME_TINT)
+				await _burst_duo(_target_point(target_view),
+					"res://assets/icons/status_mark.png",
+					FLAME_COLORS[1], FLAME_COLORS[2])
 			"block":
-				await _burst(_hero_view.sprite_center(),
-					"res://assets/icons/status_block.png", Color(0.7, 1.0, 0.8))
+				# The shield-icon + blue-flash burst itself now plays generically
+				# off the sim's block_gained event (doc: "Block Gain animation"
+				# applies to every source of Block, not just abilities).
+				await get_tree().create_timer(0.15).timeout
 			"chip":
 				await _fly("res://assets/icons/chip_spade.png",
 					_hero_view.sprite_center(),
 					_tray_view.global_position + _tray_view.size * 0.5, false)
 			"mark_wave":
 				for view: UnitView in _enemy_views.values():
-					_burst(view.sprite_center(), "res://assets/icons/status_mark.png", FLAME_TINT)
+					_burst_duo(view.sprite_center(), "res://assets/icons/status_mark.png",
+						FLAME_COLORS[0], FLAME_COLORS[2])
 				await get_tree().create_timer(0.35).timeout
 			"go_again":
-				await _burst(_reel_strip.global_position + _reel_strip.size * 0.5,
-					"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
+				await _go_again_flourish()
 			"ultimate":
-				# Flush: the house lights dim, time slows, five cuts land,
-				# and the finish detonates.
-				_vfx.vignette(0.5, 1.1)
-				Engine.time_scale = 0.65
-				Fx.shake(20.0)
-				await _hero_view.play_slash()
-				for view: UnitView in _enemy_views.values():
-					await _dagger_slash(view.sprite_center())
-					await _dagger_slash(view.sprite_center() + Vector2(20, -10))
-				Engine.time_scale = 1.0
-				_vfx.screen_flash(0.4)
-				Fx.punch_zoom(0.06)
+				await _ultimate_flourish()
 				Fx.hitstop(0.1)
 				for view: UnitView in _enemy_views.values():
 					_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
@@ -631,7 +624,7 @@ func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> vo
 	projectile.pivot_offset = Vector2(36, 36)
 	projectile.z_index = 90
 	if flaming:
-		projectile.modulate = FLAME_TINT
+		projectile.modulate = FLAME_COLORS[0]
 	add_child(projectile)
 	var duration := 0.34
 	var apex := (from + to) * 0.5 + Vector2(0, -140)  # parabolic arc
@@ -643,19 +636,33 @@ func _fly(texture_path: String, from: Vector2, to: Vector2, flaming: bool) -> vo
 		var at := p01.lerp(p12, t)
 		projectile.global_position = at - Vector2(36, 36)
 		projectile.rotation = (at - previous).angle() + PI * 0.25
+		if flaming:
+			# Blazing with green, teal, and purple flame (doc's "Flaming Card
+			# Fling") as the card travels, not a single flat tint.
+			projectile.modulate = _flame_color_at(t)
 		if Engine.get_frames_drawn() % 2 == 0:
 			_vfx.ghost(projectile)
 		previous = at, 0.0, 1.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tween.finished
-	_sparks(to, FLAME_TINT if flaming else Color(1.0, 0.9, 0.6))
-	_vfx.shockwave(to, FLAME_TINT if flaming else Color(1.0, 0.9, 0.6), 80.0)
+	var impact_color := _flame_color_at(1.0) if flaming else Color(1.0, 0.9, 0.6)
+	_sparks(to, impact_color)
+	_vfx.shockwave(to, impact_color, 80.0)
 	projectile.queue_free()
+
+
+## Interpolates across the green -> teal -> purple flame gradient (t in 0..1).
+func _flame_color_at(t: float) -> Color:
+	var scaled := clampf(t, 0.0, 1.0) * (FLAME_COLORS.size() - 1)
+	var i := int(scaled)
+	if i >= FLAME_COLORS.size() - 1:
+		return FLAME_COLORS[-1]
+	return FLAME_COLORS[i].lerp(FLAME_COLORS[i + 1], scaled - i)
 
 
 ## Ace's dagger slash with the teal-and-purple afterslash (doc animation).
 func _dagger_slash(at: Vector2) -> void:
 	var streak := ColorRect.new()
-	streak.color = Color(0.5, 0.9, 1.0, 0.85)
+	streak.color = Color(0.4, 1.0, 0.85, 0.85)
 	streak.size = Vector2(10, 150)
 	streak.pivot_offset = Vector2(5, 75)
 	streak.rotation = -0.8
@@ -670,7 +677,7 @@ func _dagger_slash(at: Vector2) -> void:
 	after.z_index = 89
 	add_child(after)
 	after.global_position = at - Vector2(9, 75)
-	_sparks(at, Color(0.6, 0.9, 1.0))
+	_sparks(at, Color(0.4, 1.0, 0.85))
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(streak, "rotation", 0.8, 0.17)
@@ -705,6 +712,111 @@ func _burst(at: Vector2, texture_path: String, tint: Color) -> void:
 	tween.tween_property(symbol, "modulate:a", 0.0, 0.4).set_ease(Tween.EASE_IN)
 	await tween.finished
 	symbol.queue_free()
+
+
+## Two-tone flash (Cash In doc animation: "bursts in a teal and purple
+## flash") — a teal symbol swells first, a purple one a beat behind it.
+func _burst_duo(at: Vector2, texture_path: String, tint_a: Color, tint_b: Color) -> void:
+	_burst(at, texture_path, tint_a)
+	await get_tree().create_timer(0.05).timeout
+	await _burst(at, texture_path, tint_b)
+
+
+## Go Again (doc animation): the Slot Machine shakes in joy, and the
+## End Turn button flips over to read "Go Again!" for a beat.
+func _go_again_flourish() -> void:
+	await _burst(_reel_strip.global_position + _reel_strip.size * 0.5,
+		"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
+	var origin := _reel_strip.position
+	_reel_strip.pivot_offset = _reel_strip.size * 0.5
+	var shake := create_tween()
+	shake.tween_property(_reel_strip, "position", origin + Vector2(-6, 0), 0.05)
+	shake.tween_property(_reel_strip, "position", origin + Vector2(6, 0), 0.06)
+	shake.tween_property(_reel_strip, "position", origin + Vector2(-4, 0), 0.06)
+	shake.tween_property(_reel_strip, "position", origin, 0.07) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	var original_text := _end_turn.text
+	_end_turn.pivot_offset = _end_turn.size * 0.5
+	var flip := create_tween()
+	flip.tween_property(_end_turn, "scale:x", 0.0, 0.08).set_ease(Tween.EASE_IN)
+	flip.tween_callback(func() -> void: _end_turn.text = "Go Again! ▶")
+	flip.tween_property(_end_turn, "scale:x", 1.0, 0.1) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await flip.finished
+	await get_tree().create_timer(1.0).timeout
+	if not is_instance_valid(_end_turn):
+		return
+	var flip_back := create_tween()
+	flip_back.tween_property(_end_turn, "scale:x", 0.0, 0.08).set_ease(Tween.EASE_IN)
+	flip_back.tween_callback(func() -> void: _end_turn.text = original_text)
+	flip_back.tween_property(_end_turn, "scale:x", 1.0, 0.1) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Ultimate Animation (doc): Flush leads with a streak of paint crossing the
+## screen and a close-up of Ace's face, fading quickly — then the actual
+## multi-hit flurry (lights dim, time slows, five cuts land, detonation).
+func _ultimate_flourish() -> void:
+	await _paint_streak_closeup()
+	_vfx.vignette(0.5, 1.1)
+	Engine.time_scale = 0.65
+	Fx.shake(20.0)
+	await _hero_view.play_slash()
+	for view: UnitView in _enemy_views.values():
+		await _dagger_slash(view.sprite_center())
+		await _dagger_slash(view.sprite_center() + Vector2(20, -10))
+	Engine.time_scale = 1.0
+	_vfx.screen_flash(0.4)
+	Fx.punch_zoom(0.06)
+	Fx.hitstop(0.1)
+	for view: UnitView in _enemy_views.values():
+		_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
+
+
+func _paint_streak_closeup() -> void:
+	var viewport_size := get_viewport_rect().size
+	var streak := ColorRect.new()
+	streak.color = Color(0.85, 0.15, 0.35, 0.0)
+	streak.size = Vector2(viewport_size.x * 1.6, 240)
+	streak.rotation = -0.18
+	streak.z_index = 95
+	streak.position = Vector2(-viewport_size.x * 0.3, viewport_size.y * 0.5 - 120)
+	add_child(streak)
+
+	# Crop the top of Ace's idle art down to a face-focused close-up window.
+	var clip := Control.new()
+	clip.clip_contents = true
+	clip.custom_minimum_size = Vector2(260, 210)
+	clip.size = Vector2(260, 210)
+	clip.z_index = 96
+	clip.pivot_offset = clip.size * 0.5
+	clip.position = viewport_size * 0.5 - clip.size * 0.5
+	clip.modulate.a = 0.0
+	add_child(clip)
+	if ResourceLoader.exists("res://assets/characters/ace_idle.png"):
+		var portrait := TextureRect.new()
+		portrait.texture = load("res://assets/characters/ace_idle.png")
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.size = Vector2(260, 390)  # native 1024x1536 aspect at width 260
+		clip.add_child(portrait)
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(streak, "modulate:a", 1.0, 0.06)
+	tween.tween_property(streak, "position:x", viewport_size.x * 0.3, 0.22) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(clip, "modulate:a", 1.0, 0.08)
+	tween.tween_property(clip, "scale", Vector2(1.06, 1.06), 0.22) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	await tween.finished
+	var fade := create_tween()
+	fade.set_parallel(true)
+	fade.tween_property(streak, "modulate:a", 0.0, 0.14)
+	fade.tween_property(clip, "modulate:a", 0.0, 0.14)
+	await fade.finished
+	streak.queue_free()
+	clip.queue_free()
 
 
 ## Balatro rule: never pay the total at once. Each landed symbol's chip flies

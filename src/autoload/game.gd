@@ -9,6 +9,10 @@ const BOSS_INTRO_VIDEO := "res://assets/video/moneyman_boss_intro.ogv"
 var run: RunState
 var rng: GameRng
 
+## Run duration, for the header Timer (doc: "does not include the videos").
+var run_elapsed_sec := 0.0
+var cinematic_playing := false
+
 var _screen_root: Node = null
 var _combat_gold := Vector2i.ZERO   # gold range of the lineup being fought
 
@@ -30,18 +34,22 @@ func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 		screen.setup(args)
 
 
-func new_run(seed_value: int = -1) -> void:
+func new_run(seed_value: int = -1, skip_cinematic := false) -> void:
 	var run_seed := seed_value if seed_value >= 0 else (randi() % 1_000_000_000)
 	run = RunState.new()
 	run.seed_value = run_seed
+	run_elapsed_sec = 0.0
 	rng = GameRng.new(run_seed)
 	var hero := Db.content.get_hero(run.hero_id)
 	run.max_hp = hero.max_hp
 	run.hp = hero.max_hp
 	for ability_id in hero.starting_abilities:
 		run.acquire_ability(ability_id)
-	play_cinematic(ACE_INTRO_VIDEO,
-		func() -> void: choose_encounter({"type": &"combat"}))
+	if skip_cinematic:
+		choose_encounter({"type": &"combat"})
+	else:
+		play_cinematic(ACE_INTRO_VIDEO,
+			func() -> void: choose_encounter({"type": &"combat"}))
 
 
 var _cached_options: Array[Dictionary] = []
@@ -58,6 +66,7 @@ func continue_run() -> bool:
 	if loaded == null:
 		return false
 	run = loaded
+	run_elapsed_sec = 0.0
 	# Salt the RNG with progress so a reloaded run doesn't replay identical draws.
 	rng = GameRng.new(run.seed_value + run.history.size() * 7919)
 	goto_screen("res://scenes/screens/map_screen.tscn")
@@ -149,6 +158,7 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 	if not ResourceLoader.exists(path) or DisplayServer.get_name() == "headless":
 		on_done.call()
 		return
+	cinematic_playing = true
 	var layer := CanvasLayer.new()
 	layer.layer = 50
 	var backdrop := ColorRect.new()
@@ -164,6 +174,7 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 	var finish := func() -> void:
 		if is_instance_valid(layer):
 			layer.queue_free()
+			cinematic_playing = false
 			on_done.call()
 	player.finished.connect(finish)
 	backdrop.gui_input.connect(func(event: InputEvent) -> void:

@@ -110,7 +110,7 @@
         "call_bouncers": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 2}}
         },
-        "money_barrage": {"intent": {"instances": 8, "per_hit": 3, "debuffs": []}},
+        "money_barrage": {"intent": {"instances": 3, "per_hit": 8, "debuffs": []}},
         "call_server": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
         },

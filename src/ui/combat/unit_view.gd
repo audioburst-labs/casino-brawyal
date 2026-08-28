@@ -605,6 +605,21 @@ func play_hit() -> void:
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
+## Apply Debuff (doc animation): the target briefly and quickly shifts side
+## to side, then settles back.
+func play_debuff_shake() -> void:
+	var target: Control = _sprite if _sprite.texture != null else _fallback
+	if _base_sprite_position == Vector2.ZERO:
+		_base_sprite_position = target.position
+	var base_x := _base_sprite_position.x
+	var tween := create_tween()
+	tween.tween_property(target, "position:x", base_x - 14.0, 0.05)
+	tween.tween_property(target, "position:x", base_x + 14.0, 0.06)
+	tween.tween_property(target, "position:x", base_x - 8.0, 0.06)
+	tween.tween_property(target, "position:x", base_x, 0.07) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
 ## Attack: anticipation (pull back and coil), then a snapping strike lunge
 ## with follow-through overshoot — no more polite drifting.
 func play_lunge() -> void:

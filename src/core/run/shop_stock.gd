@@ -1,14 +1,14 @@
 class_name ShopStock
 extends RefCounted
-## Generates one shop visit's stock and prices, scaled to the patch 0.1
-## economy (per-lineup gold rewards, relic prices from the capabilities sheet):
-##   Extra Reel: 60 + 30 per previously purchased reel, machine cap 8
-##   Symbol Stickers x4 (one per suit): 10 + 2 x encounter number
-##   Relics x3 priced per their sheet range, Abilities x4 @ 20-40;
+## Generates one shop visit's stock and prices, per the design doc's economy
+## (per-lineup gold rewards, relic prices from the capabilities sheet):
+##   Extra Reel: 50 + 50 per previously purchased reel, machine cap 8
+##   Symbol Stickers x4 (one per suit): 20 + 5 x encounter number
+##   Relics x3 priced per their sheet range, Abilities x4 @ 30-50;
 ##   slots stay empty when a pool runs out.
 
-const REEL_BASE_PRICE := 60
-const REEL_PRICE_STEP := 30
+const REEL_BASE_PRICE := 50
+const REEL_PRICE_STEP := 50
 
 
 static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -> Dictionary:
@@ -23,7 +23,7 @@ static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -
 		"abilities": [],
 	}
 
-	var sticker_price := 10 + 2 * run.encounter_number()
+	var sticker_price := 20 + 5 * run.encounter_number()
 	for suit: StringName in ContentDB.SUITS:
 		stock.stickers.append({"suit": suit, "price": sticker_price})
 
@@ -46,7 +46,7 @@ static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -
 			ability_pool.append(id)
 	for i in mini(4, ability_pool.size()):
 		var index := rng.randi_range(0, ability_pool.size() - 1)
-		stock.abilities.append({"id": ability_pool[index], "price": rng.randi_range(20, 40)})
+		stock.abilities.append({"id": ability_pool[index], "price": rng.randi_range(30, 50)})
 		ability_pool.remove_at(index)
 
 	return stock

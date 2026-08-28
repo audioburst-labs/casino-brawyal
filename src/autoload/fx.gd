@@ -7,6 +7,10 @@ var _shake_rotation := 0.0
 var _zoom_punch := 0.0
 var _shake_target: Control = null
 
+var _cursor_idle: ImageTexture = null
+var _cursor_grab: ImageTexture = null
+const CURSOR_HOTSPOT := Vector2(8, 4)
+
 
 func _process(delta: float) -> void:
 	if _shake_target == null:
@@ -38,6 +42,30 @@ func _process(delta: float) -> void:
 ## The screen root that shake/zoom displaces (set once by Main).
 func set_shake_target(target: Control) -> void:
 	_shake_target = target
+
+
+## Ace's own hand as the in-game cursor (doc's Mouse spec): a neutral point
+## by default, briefly a grabbing fist while a chip is held.
+func init_cursor() -> void:
+	_cursor_idle = _load_cursor("res://assets/icons/cursor_ace_hand.png")
+	_cursor_grab = _load_cursor("res://assets/icons/cursor_ace_hand_grab.png")
+	if _cursor_idle != null:
+		Input.set_custom_mouse_cursor(_cursor_idle, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
+
+
+func _load_cursor(path: String) -> ImageTexture:
+	if not ResourceLoader.exists(path):
+		return null
+	var image: Image = (load(path) as Texture2D).get_image()
+	image.resize(48, 48, Image.INTERPOLATE_LANCZOS)
+	return ImageTexture.create_from_image(image)
+
+
+func set_cursor_grabbing(active: bool) -> void:
+	if _cursor_idle == null:
+		return
+	var texture := _cursor_grab if (active and _cursor_grab != null) else _cursor_idle
+	Input.set_custom_mouse_cursor(texture, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
 
 
 ## Tiered shake: big requests also kick a slight screen rotation —

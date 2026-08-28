@@ -27,7 +27,15 @@ class ChipButton:
 			image.modulate.a = 0.9
 			wrapper.add_child(image)
 			set_drag_preview(wrapper)
+		# Doc's Mouse spec: selecting a chip triggers a brief grabbing gesture.
+		Fx.set_cursor_grabbing(true)
 		return {"suit": suit}
+
+	## NOTIFICATION_DRAG_END fires on the control that started the drag,
+	## whether or not the drop succeeded — the cue to revert the cursor.
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_DRAG_END:
+			Fx.set_cursor_grabbing(false)
 
 
 func _ready() -> void:
