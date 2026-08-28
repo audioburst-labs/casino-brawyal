@@ -292,6 +292,14 @@
       "prompt": "Redraw this exact same character — same towering vault-door build, same maroon doorman coat with gold braid and epaulettes, same velvet rope bandolier, same stern jaw, identical art style and colors — at the IMPACT INSTANT of a haymaker punch: his massive right fist fully extended forward and slightly left, knuckles leading with a sharp motion blur behind the arm, torso rotated all the way through the punch, front leg planted hard, back leg extended, coat flaring from the force. Full body, dynamic three-quarter view. Same scale and framing as the original."
     },
     {
+      "id": "bouncer_punch_follow",
+      "out": "assets/characters/bouncer_punch_follow.png",
+      "base": "assets/characters/enemy_bouncer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same towering vault-door build, same maroon doorman coat with gold braid and epaulettes, same velvet rope bandolier, same stern jaw, identical art style and colors — in a HAYMAKER FOLLOW-THROUGH pose: the punch has connected and finished, his right arm now relaxing slightly forward and down after full extension, shoulders settling back to a squared stance, weight resting fully on his front foot, a satisfied smirk on his stern face, coat settling from the motion. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
       "id": "enemy_croupier",
       "out": "assets/characters/enemy_croupier.png",
       "size": "1024x1536",
@@ -537,6 +545,14 @@
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — in a DAGGER WIND-UP pose: his slim dagger raised high across his opposite shoulder in both a coiled and menacing stance, body crouched and twisted, knees bent ready to spring forward to the right, eyes narrowed at his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_slash_follow",
+      "out": "assets/characters/ace_slash_follow.png",
+      "base": "assets/characters/ace_idle.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same face, same slicked dark hair, same maroon vest over cream rolled-sleeve shirt, same black slacks, same golden-spade bolo tie, identical art style and colors — in a DAGGER SLASH FOLLOW-THROUGH pose: the slash has fully completed, his dagger arm now extended low and out to his right at the end of the swing, torso rotated all the way through the cut, weight settled onto his front foot, a confident smirk as he watches the hit land, coat tail and hair still trailing the motion. Full body, three-quarter view. Same scale and framing as the original."
     },
     {
       "id": "ace_slash_strike",

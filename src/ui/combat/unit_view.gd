@@ -8,9 +8,9 @@ signal clicked(actor_id: StringName)
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
 const UNIT_HEIGHT := 330.0
 
-## Local "flame origin" point inside the Mark's 60x46 wrapper (bottom-center
+## Local "flame origin" point inside the Mark's wrapper (bottom-center
 ## anchored to _mark_row — see _build_mark).
-const MARK_ORIGIN := Vector2(30.0, 30.0)
+const MARK_ORIGIN := Vector2(50.0, 48.0)
 
 var actor: CombatActor
 var sprite_height := UNIT_HEIGHT
@@ -18,6 +18,7 @@ var sprite_height := UNIT_HEIGHT
 var _mark_row: Control
 var _mark_icon: TextureRect
 var _mark_glow: Control
+var _mark_glow_outer: Control
 var _mark_particles: CPUParticles2D
 var _mark_tween: Tween
 var _intent_row: HBoxContainer
@@ -61,7 +62,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# further down), and one that's a sibling of _sprite rather than a
 	# child of it — so hit-squash/lunge/sway transforms never distort it.
 	_mark_row = Control.new()
-	_mark_row.custom_minimum_size = Vector2(0, 46)
+	_mark_row.custom_minimum_size = Vector2(0, 70)
 	_mark_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mark_row)
 	_build_mark(_mark_row)
@@ -210,9 +211,9 @@ func _build_mark(row: Control) -> void:
 	wrapper.anchor_right = 0.5
 	wrapper.anchor_top = 1.0
 	wrapper.anchor_bottom = 1.0
-	wrapper.offset_left = -30.0
-	wrapper.offset_right = 30.0
-	wrapper.offset_top = -46.0
+	wrapper.offset_left = -50.0
+	wrapper.offset_right = 50.0
+	wrapper.offset_top = -70.0
 	wrapper.offset_bottom = 0.0
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(wrapper)
@@ -220,9 +221,21 @@ func _build_mark(row: Control) -> void:
 	var additive := CanvasItemMaterial.new()
 	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 
+	# Two-tone bloom (bigger, softer purple halo behind a brighter teal
+	# core) so the "green/teal/purple flame" reads as more than one color
+	# even before the particles add their own cycling hues.
+	_mark_glow_outer = CombatVfx.Glow.new()
+	_mark_glow_outer.glow_color = Color(0.6, 0.35, 1.0, 0.4)
+	_mark_glow_outer.reach = 52.0
+	_mark_glow_outer.material = additive
+	_mark_glow_outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mark_glow_outer.position = MARK_ORIGIN
+	_mark_glow_outer.visible = false
+	wrapper.add_child(_mark_glow_outer)
+
 	_mark_glow = CombatVfx.Glow.new()
-	_mark_glow.glow_color = Color(0.4, 1.0, 0.8, 0.55)
-	_mark_glow.reach = 26.0
+	_mark_glow.glow_color = Color(0.4, 1.0, 0.8, 0.65)
+	_mark_glow.reach = 36.0
 	_mark_glow.material = additive
 	_mark_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark_glow.position = MARK_ORIGIN
@@ -231,20 +244,20 @@ func _build_mark(row: Control) -> void:
 
 	_mark_particles = CPUParticles2D.new()
 	_mark_particles.emitting = false
-	_mark_particles.amount = 12
-	_mark_particles.lifetime = 0.8
-	_mark_particles.preprocess = 0.8  # already "burning" the instant it appears
-	_mark_particles.randomness = 0.5
+	_mark_particles.amount = 26
+	_mark_particles.lifetime = 1.1
+	_mark_particles.preprocess = 1.1  # already "burning" the instant it appears
+	_mark_particles.randomness = 0.55
 	_mark_particles.direction = Vector2.UP
-	_mark_particles.spread = 20.0
-	_mark_particles.initial_velocity_min = 16.0
-	_mark_particles.initial_velocity_max = 32.0
-	_mark_particles.gravity = Vector2(0, -14)
-	_mark_particles.scale_amount_min = 1.2
-	_mark_particles.scale_amount_max = 2.6
+	_mark_particles.spread = 24.0
+	_mark_particles.initial_velocity_min = 26.0
+	_mark_particles.initial_velocity_max = 50.0
+	_mark_particles.gravity = Vector2(0, -22)
+	_mark_particles.scale_amount_min = 3.5
+	_mark_particles.scale_amount_max = 7.5
 	_mark_particles.color_ramp = _mark_flame_gradient()
 	_mark_particles.material = additive
-	_mark_particles.position = MARK_ORIGIN + Vector2(0, 4)
+	_mark_particles.position = MARK_ORIGIN + Vector2(0, 6)
 	wrapper.add_child(_mark_particles)
 
 	_mark_icon = TextureRect.new()
@@ -252,19 +265,29 @@ func _build_mark(row: Control) -> void:
 		_mark_icon.texture = load("res://assets/icons/status_mark.png")
 	_mark_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_mark_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_mark_icon.size = Vector2(32, 32)
-	_mark_icon.position = MARK_ORIGIN - Vector2(16.0, 16.0)
-	_mark_icon.pivot_offset = Vector2(16, 16)
+	_mark_icon.size = Vector2(54, 54)
+	_mark_icon.position = MARK_ORIGIN - Vector2(27.0, 27.0)
+	_mark_icon.pivot_offset = Vector2(27, 27)
 	_mark_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark_icon.visible = false
 	wrapper.add_child(_mark_icon)
 
 
+## More, brighter stops so the green -> teal -> purple progression is
+## clearly visible as particles rise and age, instead of fading to
+## near-nothing halfway through their life. Set as parallel arrays
+## (rather than chained add_point calls) so the offset-to-color mapping
+## can't be thrown off by add_point's index-shifting insert behavior.
 static func _mark_flame_gradient() -> Gradient:
 	var gradient := Gradient.new()
-	gradient.set_color(0, Color(0.55, 1.0, 0.85, 0.9))   # bright teal-green base
-	gradient.add_point(0.5, Color(0.5, 0.85, 1.0, 0.6))  # teal-blue mid
-	gradient.set_color(1, Color(0.65, 0.35, 1.0, 0.0))   # fades to purple, transparent
+	gradient.offsets = PackedFloat32Array([0.0, 0.3, 0.6, 0.85, 1.0])
+	gradient.colors = PackedColorArray([
+		Color(0.6, 1.0, 0.5, 1.0),    # bright green base
+		Color(0.45, 1.0, 0.85, 1.0),  # teal-green
+		Color(0.4, 0.75, 1.0, 0.9),   # teal-blue
+		Color(0.65, 0.4, 1.0, 0.7),   # purple
+		Color(0.75, 0.3, 1.0, 0.0),   # fades out at the very tip
+	])
 	return gradient
 
 
@@ -278,6 +301,7 @@ func _refresh_mark() -> void:
 	if marked and not _mark_icon.visible:
 		_mark_icon.visible = true
 		_mark_glow.visible = true
+		_mark_glow_outer.visible = true
 		_mark_particles.emitting = true
 		_mark_icon.scale = Vector2(0.2, 0.2)
 		var pop := _mark_icon.create_tween()
@@ -285,20 +309,29 @@ func _refresh_mark() -> void:
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_mark_tween = create_tween().set_loops()
 		_mark_tween.set_parallel(true)
-		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 21.0, 0.7) \
+		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 33.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_mark_tween.tween_property(_mark_glow, "modulate:a", 0.5, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_glow_outer, "modulate:a", 0.7, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_glow_outer, "scale", Vector2(1.15, 1.15), 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_mark_tween.chain().set_parallel(true)
-		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 11.0, 0.7) \
+		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 23.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_mark_tween.tween_property(_mark_glow, "modulate:a", 1.0, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_glow_outer, "modulate:a", 1.0, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_glow_outer, "scale", Vector2.ONE, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	elif not marked and _mark_icon.visible:
 		if _mark_tween != null:
 			_mark_tween.kill()
 		_mark_icon.visible = false
 		_mark_glow.visible = false
+		_mark_glow_outer.visible = false
 		_mark_particles.emitting = false
 
 
@@ -343,8 +376,8 @@ func clear_intent() -> void:
 
 const POSE_NAMES := [
 	"throw_windup", "throw_release", "throw_follow",
-	"slash_windup", "slash_strike",
-	"punch_windup", "punch_strike",
+	"slash_windup", "slash_strike", "slash_follow",
+	"punch_windup", "punch_strike", "punch_follow",
 ]
 
 
@@ -516,6 +549,7 @@ func play_punch() -> void:
 
 func _finish_punch(origin: Vector2) -> void:
 	await get_tree().create_timer(0.12).timeout
+	_show_pose("punch_follow")
 	var settle := create_tween()
 	settle.set_parallel(true)
 	settle.tween_property(_sprite, "position", origin, 0.36) \
@@ -528,6 +562,7 @@ func _finish_punch(origin: Vector2) -> void:
 
 func _finish_slash(origin: Vector2) -> void:
 	await get_tree().create_timer(0.12).timeout
+	_show_pose("slash_follow")
 	var settle := create_tween()
 	settle.set_parallel(true)
 	settle.tween_property(_sprite, "position", origin, 0.36) \
