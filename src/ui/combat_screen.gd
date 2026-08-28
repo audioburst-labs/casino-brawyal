@@ -67,6 +67,10 @@ func _ready() -> void:
 			await get_tree().create_timer(4.0).timeout
 			sim.tray.add(&"spade", 1)
 			_on_chip_dropped(0, 0, &"spade")
+		# CB_DEBUG_ENDTURN=1: auto-end the turn so enemy attacks play out too.
+		if OS.get_environment("CB_DEBUG_ENDTURN") != "":
+			await get_tree().create_timer(6.5).timeout
+			_on_end_turn()
 
 
 func setup(config: Dictionary) -> void:
@@ -432,7 +436,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if mover != null and not event.data.get("skipped", false):
 					mover.play_telegraph()  # menace first...
 					await get_tree().create_timer(0.32).timeout
-					mover.play_lunge()      # ...then strike
+					await mover.play_attack()  # ...then strike (pose art if it has any)
 					mover.clear_intent()
 					await get_tree().create_timer(0.2).timeout
 			&"chips_discarded":

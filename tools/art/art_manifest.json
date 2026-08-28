@@ -276,6 +276,22 @@
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a towering nightclub bouncer built like a vault door. Extremely wide shoulders in a maroon doorman coat with gold braid and epaulettes, a velvet rope wrapped across his chest like a bandolier, stern jaw, arms crossed. Facing slightly left, immovable stance. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
+      "id": "bouncer_punch_windup",
+      "out": "assets/characters/bouncer_punch_windup.png",
+      "base": "assets/characters/enemy_bouncer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same towering vault-door build, same maroon doorman coat with gold braid and epaulettes, same velvet rope bandolier, same stern jaw, identical art style and colors — in a HAYMAKER WIND-UP pose: his massive right fist cocked back low and behind his hip, torso twisted hard to load the punch, weight sunk deep into his back leg, left arm raised defensively in front, snarling with menace, facing slightly left toward his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "bouncer_punch_strike",
+      "out": "assets/characters/bouncer_punch_strike.png",
+      "base": "assets/characters/enemy_bouncer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same towering vault-door build, same maroon doorman coat with gold braid and epaulettes, same velvet rope bandolier, same stern jaw, identical art style and colors — at the IMPACT INSTANT of a haymaker punch: his massive right fist fully extended forward and slightly left, knuckles leading with a sharp motion blur behind the arm, torso rotated all the way through the punch, front leg planted hard, back leg extended, coat flaring from the force. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
       "id": "enemy_croupier",
       "out": "assets/characters/enemy_croupier.png",
       "size": "1024x1536",
@@ -696,6 +712,30 @@
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a snooty casino cocktail server. Slim and quick, in a maroon waistcoat with gold buttons over a cream shirt, black bowtie, a round serving tray balanced on one raised hand loaded with wobbling glasses, the other hand flinging a cocktail glass forward with green liquid arcing out. Smug expression. Facing slightly left, mid-stride. Exaggerated cartoon proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "server_throw_windup",
+      "out": "assets/characters/server_throw_windup.png",
+      "base": "assets/characters/enemy_server.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same slim snooty cocktail server, same maroon waistcoat with gold buttons over cream shirt, same black bowtie, same serving tray, identical art style and colors — in a GLASS-THROW WIND-UP pose: he still balances the tray of wobbling glasses on one raised hand, but his other hand now cocks a full cocktail glass back behind his shoulder ready to hurl it, green liquid sloshing dangerously toward the rim, torso twisted back to load the throw, smug grin, weight on his back foot, facing slightly left toward his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "server_throw_release",
+      "out": "assets/characters/server_throw_release.png",
+      "base": "assets/characters/enemy_server.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same slim snooty cocktail server, same maroon waistcoat with gold buttons over cream shirt, same black bowtie, same serving tray, identical art style and colors — at the RELEASE INSTANT of a glass throw: his throwing arm snapped fully forward and extended toward the left, the cocktail glass just leaving his fingertips with green liquid arcing off it mid-air, the tray still balanced on his other raised hand, body lunging into the throw, front foot planted, smug grin. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "server_throw_follow",
+      "out": "assets/characters/server_throw_follow.png",
+      "base": "assets/characters/enemy_server.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same slim snooty cocktail server, same maroon waistcoat with gold buttons over cream shirt, same black bowtie, same serving tray, identical art style and colors — in a GLASS-THROW FOLLOW-THROUGH pose: his throwing arm has swung all the way across his body and now points down-left, torso rotated through the motion, weight fully on his front foot, tray still perfectly balanced on his other hand despite the motion, satisfied smirk watching the throw land. Full body, three-quarter view. Same scale and framing as the original."
     },
     {
       "id": "status_mark",

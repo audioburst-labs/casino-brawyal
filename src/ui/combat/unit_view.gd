@@ -8,16 +8,23 @@ signal clicked(actor_id: StringName)
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
 const UNIT_HEIGHT := 330.0
 
+## Local "flame origin" point inside the Mark's 60x46 wrapper (bottom-center
+## anchored to _mark_row — see _build_mark).
+const MARK_ORIGIN := Vector2(30.0, 30.0)
+
 var actor: CombatActor
 var sprite_height := UNIT_HEIGHT
 
+var _mark_row: Control
+var _mark_icon: TextureRect
+var _mark_glow: Control
+var _mark_particles: CPUParticles2D
+var _mark_tween: Tween
 var _intent_row: HBoxContainer
 var _intent_icon: TextureRect
 var _intent_label: Label
 var _sprite_holder: CenterContainer
 var _sprite: TextureRect
-var _mark_icon: TextureRect
-var _mark_tween: Tween
 var _sway_tween: Tween
 var _idle_texture: Texture2D
 var _poses: Dictionary = {}        # pose name -> Texture2D
@@ -47,6 +54,17 @@ func setup(combat_actor: CombatActor) -> void:
 	actor = combat_actor
 	alignment = BoxContainer.ALIGNMENT_END
 	custom_minimum_size = Vector2(260, 0)
+
+	# The Mark gets its OWN reserved band above the intent text, same trick
+	# as intent_row's fixed height: a slot that always exists (so it can
+	## never overlap the intent line below it or the character's face
+	# further down), and one that's a sibling of _sprite rather than a
+	# child of it — so hit-squash/lunge/sway transforms never distort it.
+	_mark_row = Control.new()
+	_mark_row.custom_minimum_size = Vector2(0, 46)
+	_mark_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_mark_row)
+	_build_mark(_mark_row)
 
 	_intent_row = HBoxContainer.new()
 	_intent_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -98,15 +116,6 @@ func setup(combat_actor: CombatActor) -> void:
 	_target_ring.visible = false
 	_sprite.add_child(_target_ring)
 
-	# The Mark: a flaming spade hovering above the head while marked (doc anim).
-	if ResourceLoader.exists("res://assets/icons/status_mark.png"):
-		_mark_icon = TextureRect.new()
-		_mark_icon.texture = load("res://assets/icons/status_mark.png")
-		_mark_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_mark_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_mark_icon.size = Vector2(44, 44)
-		_mark_icon.visible = false
-		_sprite.add_child(_mark_icon)
 	if texture == null:
 		_fallback = ColorRect.new()
 		_fallback.color = Color(0.4, 0.2, 0.3)
@@ -143,6 +152,10 @@ func setup(combat_actor: CombatActor) -> void:
 
 	_status_row = HBoxContainer.new()
 	_status_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	# Fixed height reserved whether or not any statuses are showing — an
+	# icon appearing/disappearing must not change the panel's total height
+	# (that reflow was pushing the whole unit upward: designer note).
+	_status_row.custom_minimum_size = Vector2(0, 36)
 	hp_box.add_child(_status_row)
 
 	gui_input.connect(_on_gui_input)
@@ -186,30 +199,107 @@ func refresh() -> void:
 	_refresh_mark()
 
 
-## Floating, bobbing flaming spade while the actor is marked (doc animation).
+## Builds the Mark's living-flame assembly: a soft additive glow, rising
+## fire particles (green/teal/purple per the design doc), and a spade icon
+## on top for readability — all inside a small wrapper anchored to the
+## bottom-center of `row`, so it stays put across any width and never
+## needs the actor's sprite size at build time.
+func _build_mark(row: Control) -> void:
+	var wrapper := Control.new()
+	wrapper.anchor_left = 0.5
+	wrapper.anchor_right = 0.5
+	wrapper.anchor_top = 1.0
+	wrapper.anchor_bottom = 1.0
+	wrapper.offset_left = -30.0
+	wrapper.offset_right = 30.0
+	wrapper.offset_top = -46.0
+	wrapper.offset_bottom = 0.0
+	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(wrapper)
+
+	var additive := CanvasItemMaterial.new()
+	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+
+	_mark_glow = CombatVfx.Glow.new()
+	_mark_glow.glow_color = Color(0.4, 1.0, 0.8, 0.55)
+	_mark_glow.reach = 26.0
+	_mark_glow.material = additive
+	_mark_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mark_glow.position = MARK_ORIGIN
+	_mark_glow.visible = false
+	wrapper.add_child(_mark_glow)
+
+	_mark_particles = CPUParticles2D.new()
+	_mark_particles.emitting = false
+	_mark_particles.amount = 12
+	_mark_particles.lifetime = 0.8
+	_mark_particles.preprocess = 0.8  # already "burning" the instant it appears
+	_mark_particles.randomness = 0.5
+	_mark_particles.direction = Vector2.UP
+	_mark_particles.spread = 20.0
+	_mark_particles.initial_velocity_min = 16.0
+	_mark_particles.initial_velocity_max = 32.0
+	_mark_particles.gravity = Vector2(0, -14)
+	_mark_particles.scale_amount_min = 1.2
+	_mark_particles.scale_amount_max = 2.6
+	_mark_particles.color_ramp = _mark_flame_gradient()
+	_mark_particles.material = additive
+	_mark_particles.position = MARK_ORIGIN + Vector2(0, 4)
+	wrapper.add_child(_mark_particles)
+
+	_mark_icon = TextureRect.new()
+	if ResourceLoader.exists("res://assets/icons/status_mark.png"):
+		_mark_icon.texture = load("res://assets/icons/status_mark.png")
+	_mark_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_mark_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_mark_icon.size = Vector2(32, 32)
+	_mark_icon.position = MARK_ORIGIN - Vector2(16.0, 16.0)
+	_mark_icon.pivot_offset = Vector2(16, 16)
+	_mark_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mark_icon.visible = false
+	wrapper.add_child(_mark_icon)
+
+
+static func _mark_flame_gradient() -> Gradient:
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.55, 1.0, 0.85, 0.9))   # bright teal-green base
+	gradient.add_point(0.5, Color(0.5, 0.85, 1.0, 0.6))  # teal-blue mid
+	gradient.set_color(1, Color(0.65, 0.35, 1.0, 0.0))   # fades to purple, transparent
+	return gradient
+
+
+## Living flame above the enemy's head while marked — particles + a pulsing
+## glow + a gently bobbing spade icon, all in the reserved _mark_row (never
+## a child of _sprite, so hit-squash/lunge/sway never distorts it).
 func _refresh_mark() -> void:
 	if _mark_icon == null:
 		return
 	var marked := actor.has_status(&"mark") and actor.is_alive()
 	if marked and not _mark_icon.visible:
-		# Bobs INSIDE the sprite's top edge so it never covers the intent
-		# text above (patch 0.13 size adjustments).
 		_mark_icon.visible = true
-		_mark_icon.position = Vector2(_sprite.size.x * 0.5 - 22, 14)
+		_mark_glow.visible = true
+		_mark_particles.emitting = true
 		_mark_icon.scale = Vector2(0.2, 0.2)
-		_mark_icon.pivot_offset = Vector2(22, 22)
 		var pop := _mark_icon.create_tween()
 		pop.tween_property(_mark_icon, "scale", Vector2.ONE, 0.3) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_mark_tween = _mark_icon.create_tween().set_loops()
-		_mark_tween.tween_property(_mark_icon, "position:y", 4.0, 0.7) \
+		_mark_tween = create_tween().set_loops()
+		_mark_tween.set_parallel(true)
+		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 21.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_mark_tween.tween_property(_mark_icon, "position:y", 18.0, 0.7) \
+		_mark_tween.tween_property(_mark_glow, "modulate:a", 0.5, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.chain().set_parallel(true)
+		_mark_tween.tween_property(_mark_icon, "position:y", MARK_ORIGIN.y - 11.0, 0.7) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_mark_tween.tween_property(_mark_glow, "modulate:a", 1.0, 0.7) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	elif not marked and _mark_icon.visible:
 		if _mark_tween != null:
 			_mark_tween.kill()
 		_mark_icon.visible = false
+		_mark_glow.visible = false
+		_mark_particles.emitting = false
 
 
 ## `entry` is the intents_shown payload: intent dict + display_per_hit /
@@ -254,6 +344,7 @@ func clear_intent() -> void:
 const POSE_NAMES := [
 	"throw_windup", "throw_release", "throw_follow",
 	"slash_windup", "slash_strike",
+	"punch_windup", "punch_strike",
 ]
 
 
@@ -266,6 +357,21 @@ func _load_poses() -> void:
 
 func has_pose(pose: String) -> bool:
 	return _poses.has(pose)
+
+
+## Plays whichever attack animation this actor has pose art for (throw beats
+## slash beats punch), falling back to the plain lunge. New pose sets drop in
+## automatically for any actor without touching call sites.
+func play_attack() -> void:
+	if has_pose("throw_release"):
+		await play_throw()
+	elif has_pose("slash_strike"):
+		await play_slash()
+	elif has_pose("punch_strike"):
+		await play_punch()
+	else:
+		play_lunge()
+		await get_tree().create_timer(0.22).timeout
 
 
 ## Lets the presenter register the VFX layer used for motion smears.
@@ -293,6 +399,14 @@ func _return_to_idle() -> void:
 	fade.tween_property(_sprite, "modulate:a", 1.0, 0.16)
 
 
+## Facing multiplier: heroes lunge toward +x (enemies stand to their right);
+## enemies lunge toward -x (the hero stands to their left). Every pose
+## animation's travel distances are scaled by this so "forward" always
+## means "toward the target," not just "toward the right edge of the screen."
+func _facing() -> float:
+	return 1.0 if actor.is_hero else -1.0
+
+
 ## Throw: coil back on the wind-up frame, hold, then SNAP to the release
 ## frame. Returns at the release instant so the caller launches its
 ## projectile on exactly that frame; the follow-through plays after.
@@ -302,11 +416,12 @@ func play_throw() -> void:
 		await get_tree().create_timer(0.22).timeout
 		return
 	var origin := _sprite.position
+	var facing := _facing()
 	# Anticipation — the longest beat.
 	_show_pose("throw_windup")
 	var wind := create_tween()
 	wind.set_parallel(true)
-	wind.tween_property(_sprite, "position:x", origin.x - 34.0, 0.22) \
+	wind.tween_property(_sprite, "position:x", origin.x - 34.0 * facing, 0.22) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	wind.tween_property(_sprite, "scale", Vector2(0.96, 1.04), 0.22)
 	await wind.finished
@@ -316,7 +431,7 @@ func play_throw() -> void:
 	_smear()
 	var snap := create_tween()
 	snap.set_parallel(true)
-	snap.tween_property(_sprite, "position:x", origin.x + 52.0, 0.07) \
+	snap.tween_property(_sprite, "position:x", origin.x + 52.0 * facing, 0.07) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	snap.tween_property(_sprite, "scale", Vector2(1.06, 0.96), 0.07)
 	_smear()
@@ -347,10 +462,11 @@ func play_slash() -> void:
 		await get_tree().create_timer(0.22).timeout
 		return
 	var origin := _sprite.position
+	var facing := _facing()
 	_show_pose("slash_windup")
 	var wind := create_tween()
 	wind.set_parallel(true)
-	wind.tween_property(_sprite, "position:x", origin.x - 30.0, 0.2) \
+	wind.tween_property(_sprite, "position:x", origin.x - 30.0 * facing, 0.2) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	wind.tween_property(_sprite, "scale", Vector2(0.95, 1.06), 0.2)
 	await wind.finished
@@ -359,13 +475,55 @@ func play_slash() -> void:
 	_smear()
 	var strike := create_tween()
 	strike.set_parallel(true)
-	strike.tween_property(_sprite, "position:x", origin.x + 96.0, 0.09) \
+	strike.tween_property(_sprite, "position:x", origin.x + 96.0 * facing, 0.09) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	strike.tween_property(_sprite, "scale", Vector2(1.08, 0.94), 0.09)
 	_smear()
 	await strike.finished
 	_smear()
 	_finish_slash(origin)
+
+
+## Punch: a heavier haymaker — a longer, lower coil (weight sinks into the
+## rear leg) than a slash, then a short explosive snap with a harder squash.
+## Returns on the strike instant so the caller can land impact FX on it.
+func play_punch() -> void:
+	if not has_pose("punch_strike"):
+		play_lunge()
+		await get_tree().create_timer(0.22).timeout
+		return
+	var origin := _sprite.position
+	var facing := _facing()
+	_show_pose("punch_windup")
+	var wind := create_tween()
+	wind.set_parallel(true)
+	wind.tween_property(_sprite, "position:x", origin.x - 26.0 * facing, 0.3) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	wind.tween_property(_sprite, "scale", Vector2(1.1, 0.9), 0.3) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	await wind.finished
+	await get_tree().create_timer(0.1).timeout  # the coiled moment, held longer
+	_show_pose("punch_strike")
+	_smear()
+	var strike := create_tween()
+	strike.set_parallel(true)
+	strike.tween_property(_sprite, "position:x", origin.x + 74.0 * facing, 0.06) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	strike.tween_property(_sprite, "scale", Vector2(1.16, 0.82), 0.06)
+	await strike.finished
+	_finish_punch(origin)
+
+
+func _finish_punch(origin: Vector2) -> void:
+	await get_tree().create_timer(0.12).timeout
+	var settle := create_tween()
+	settle.set_parallel(true)
+	settle.tween_property(_sprite, "position", origin, 0.36) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	settle.tween_property(_sprite, "scale", Vector2.ONE, 0.36) \
+		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(0.18).timeout
+	_return_to_idle()
 
 
 func _finish_slash(origin: Vector2) -> void:
