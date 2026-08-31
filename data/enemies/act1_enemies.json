@@ -4,8 +4,8 @@
     {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp_min": 75,
-      "hp_max": 85,
+      "hp_min": 55,
+      "hp_max": 65,
       "brain": {
         "type": "pair_then",
         "pair": ["door_check", "double_jab"],
@@ -35,8 +35,8 @@
     {
       "id": "server",
       "name": "Server",
-      "hp_min": 35,
-      "hp_max": 45,
+      "hp_min": 25,
+      "hp_max": 35,
       "brain": {
         "type": "weighted",
         "weights": {"hot_plate": 1, "spilled_drink": 1, "glass_barrage": 1},
@@ -63,8 +63,8 @@
     {
       "id": "dealer",
       "name": "Dealer",
-      "hp_min": 30,
-      "hp_max": 40,
+      "hp_min": 22,
+      "hp_max": 27,
       "brain": {"type": "sequence", "loop": true, "steps": ["deal_the_cards"]},
       "moves": {
         "deal_the_cards": {
@@ -75,12 +75,12 @@
     {
       "id": "manager",
       "name": "Manager",
-      "hp_min": 55,
-      "hp_max": 65,
+      "hp_min": 40,
+      "hp_max": 50,
       "brain": {
-        "type": "pair_then",
-        "pair": ["clipboard_strike", "performance_review"],
-        "then": ["call_staff"]
+        "type": "intro_loop",
+        "intro": ["call_staff"],
+        "loop": ["clipboard_strike", "performance_review"]
       },
       "moves": {
         "clipboard_strike": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
@@ -99,8 +99,8 @@
     {
       "id": "mr_moneybags",
       "name": "Mr. Moneybags",
-      "hp_min": 140,
-      "hp_max": 160,
+      "hp_min": 100,
+      "hp_max": 120,
       "brain": {
         "type": "intro_loop",
         "intro": ["call_bouncers", "money_barrage", "call_server", "big_hit", "bonuses"],

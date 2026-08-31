@@ -5,7 +5,7 @@ extends ScreenBase
 const PRIZE_TEXTURES := {
 	&"coins": "res://assets/icons/coin.png",
 	&"money_sack": "res://assets/props/treasure_chest.png",
-	&"heart": "res://assets/icons/suit_heart.png",
+	&"heart": "res://assets/icons/fx_heal.png",
 	&"broken_heart": "res://assets/icons/status_vulnerable.png",
 	&"sticker_spade": "res://assets/icons/suit_spade.png",
 	&"sticker_heart": "res://assets/icons/suit_heart.png",

@@ -7,6 +7,7 @@ const FRAME_RATES := [30, 60, 120, 144]
 
 var _volume_row: HBoxContainer
 var _volume_slider: HSlider
+var _volume_dragging := false
 var _mute_button: Button
 var _muted := false
 
@@ -92,11 +93,20 @@ func _ready() -> void:
 	_volume_slider.max_value = 100
 	_volume_slider.value = _current_volume_pct()
 	_volume_slider.custom_minimum_size = Vector2(140, 0)
-	_volume_slider.visible = false
+	# Stays visible (and so keeps receiving drag input) at all times — only
+	# its opacity toggles on hover. Toggling `visible` instead (patch 0.17
+	# bug) cut the slider's input off mid-drag the instant the mouse
+	# wandered a pixel off it, making it "only clickable, not slidable."
+	_volume_slider.modulate.a = 0.0
 	_volume_slider.value_changed.connect(_on_volume_changed)
+	_volume_slider.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			_volume_dragging = event.pressed)
 	_volume_row.add_child(_volume_slider)
-	_volume_row.mouse_entered.connect(func() -> void: _volume_slider.visible = true)
-	_volume_row.mouse_exited.connect(func() -> void: _volume_slider.visible = false)
+	_volume_row.mouse_entered.connect(func() -> void: _volume_slider.modulate.a = 1.0)
+	_volume_row.mouse_exited.connect(func() -> void:
+		if not _volume_dragging:
+			_volume_slider.modulate.a = 0.0)
 
 	column.add_child(HSeparator.new())
 

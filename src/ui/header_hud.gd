@@ -4,10 +4,34 @@ extends Control
 ## Timer / Layout Tab / Settings icons top-right, left to right in that
 ## order. Lives in HudLayer so it survives every screen swap.
 
+const BAR_HEIGHT := 60.0
+
+## Screens outside an active run — the header has no business appearing on
+## these even though Game.run may still be holding the just-finished run's
+## data for their own summary text (patch 0.17).
+const HIDDEN_SCREENS := [
+	"res://scenes/screens/main_menu.tscn",
+	"res://scenes/screens/game_over_screen.tscn",
+	"res://scenes/screens/victory_screen.tscn",
+]
+
+var _bar: Control
 var _relics_row: HBoxContainer
 var _right_row: HBoxContainer
 var _timer_label: Label
 var _last_relic_count := -1
+
+
+## A distinct bolded bar behind the header content (patch 0.17 — "like in
+## Slay the Spire"): a dark banded panel with a gold trim line along its
+## bottom edge, instead of text floating directly on the scene art.
+class Bar:
+	extends Control
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.08, 0.04, 0.05, 0.82))
+		draw_rect(Rect2(Vector2(0, size.y - 3), Vector2(size.x, 3)),
+			Color(0.83, 0.69, 0.22, 0.9))
 
 
 static func attach(main_node: Node) -> HeaderHud:
@@ -20,8 +44,12 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	_bar = Bar.new()
+	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_bar)
+
 	_relics_row = HBoxContainer.new()
-	_relics_row.position = Vector2(20, 16)
+	_relics_row.position = Vector2(20, 12)
 	_relics_row.add_theme_constant_override("separation", 8)
 	add_child(_relics_row)
 
@@ -49,7 +77,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	visible = Game.run != null
+	visible = Game.run != null and not HIDDEN_SCREENS.has(Game.current_screen_path)
 	if not visible:
 		return
 	if not Game.cinematic_playing:
@@ -58,6 +86,7 @@ func _process(delta: float) -> void:
 	_timer_label.text = "%02d:%02d" % [total / 60, total % 60]
 	if Game.run.relic_ids.size() != _last_relic_count:
 		_refresh_relics()
+	_bar.size = Vector2(get_viewport_rect().size.x, BAR_HEIGHT)
 	# Anchoring a right-hugging row without a known content width fights
 	# Godot's anchor math (it collapses to zero/negative width) — simplest
 	# robust fix is to just reposition it against its own computed size.

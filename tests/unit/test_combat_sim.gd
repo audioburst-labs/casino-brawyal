@@ -47,8 +47,8 @@ func test_full_ability_auto_fires_with_suit_bonus() -> void:
 	sim.tray.add(&"spade", 1)
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
-	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_sling: 10 dmg, spade -> Mark
-	assert_eq(enemy.hp, hp_before - 10)
+	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_sling: 8 dmg, spade -> Mark
+	assert_eq(enemy.hp, hp_before - 8)
 	assert_true(enemy.has_status(&"mark"))
 	assert_has(_types(sim.drain_events()), &"ability_fired")
 
@@ -60,7 +60,7 @@ func test_off_suit_chip_skips_the_bonus() -> void:
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
 	sim.assign_chip(&"heart", 0, 0)  # card_sling without the spade bonus
-	assert_eq(enemy.hp, hp_before - 10)
+	assert_eq(enemy.hp, hp_before - 8)
 	assert_false(enemy.has_status(&"mark"))
 
 
@@ -150,22 +150,30 @@ func test_ability_hits_the_selected_target() -> void:
 	var hp_b := sim.enemies[1].hp
 	sim.tray.add(&"spade", 1)
 	sim.assign_chip(&"spade", 0, 0)
-	assert_eq(sim.enemies[0].hp, hp_a - 10)
+	assert_eq(sim.enemies[0].hp, hp_a - 8)
 	assert_eq(sim.enemies[1].hp, hp_b)
 
 
 func test_enemy_debuff_is_applied_to_hero() -> void:
-	# Manager: clipboard_strike (1x20), then performance_review (Vulnerable 3).
+	# Manager: call_staff (summon, round 1), clipboard_strike (1x20, round 2),
+	# then performance_review (Vulnerable 3, round 3) — intro_loop brain.
+	# The round-1 summon also acts from round 2 onward, so this checks the
+	# Manager's own events rather than pinning total hero hp/vulnerable stacks
+	# (which the summoned Server's own random move would otherwise perturb).
 	var sim := _sim(["manager"])
-	for i in 2:
+	var manager_id: StringName = sim.enemies[0].id
+	var dealt_twenty := false
+	var applied_vulnerable := false
+	for i in 3:
 		sim.begin_round()
 		sim.tray.discard_all()
 		sim.end_assignment()
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 20)
-	assert_eq(sim.hero.status_stacks(&"vulnerable"), 2,
-		"vulnerable 3 applied on round 2, ticked once at round end")
-	var had_status := false
-	for event: CombatEvent in sim.drain_events():
-		if event.type == &"status_applied" and event.data.get("status") == &"vulnerable":
-			had_status = true
-	assert_true(had_status)
+		for event: CombatEvent in sim.drain_events():
+			if event.type == &"damage_dealt" and event.data.get("source") == manager_id \
+					and int(event.data.get("amount", 0)) == 20:
+				dealt_twenty = true
+			if event.type == &"status_applied" and event.data.get("actor") == &"hero" \
+					and event.data.get("status") == &"vulnerable":
+				applied_vulnerable = true
+	assert_true(dealt_twenty, "clipboard_strike deals 20 to the hero")
+	assert_true(applied_vulnerable, "performance_review applies Vulnerable to the hero")

@@ -8,21 +8,8 @@ extends PanelContainer
 signal socket_clicked(ability_index: int, slot_index: int)
 signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 
-const CARD_SIZE := Vector2(225, 300)   # patch 0.13 sizing, fits above the screen edge
+const CARD_SIZE := Vector2(195, 280)   # patch 0.17: narrower so 6 cards fit on screen
 const SOCKET_SIZE := 48.0
-
-## Keyword words in ability text render as inline icons (patch 0.13).
-const KEYWORD_ICONS := {
-	&"mark": "res://assets/icons/status_mark.png",
-	&"weak": "res://assets/icons/status_weak.png",
-	&"vulnerable": "res://assets/icons/status_vulnerable.png",
-	&"block": "res://assets/icons/status_block.png",
-	&"taunt": "res://assets/icons/status_taunt.png",
-	&"stun": "res://assets/icons/status_stun.png",
-	&"cash_in": "res://assets/icons/keyword_cash_in.png",
-	&"go_again": "res://assets/icons/keyword_go_again.png",
-	&"repeat": "res://assets/icons/keyword_repeat.png",
-}
 
 var ability_index := -1
 
@@ -200,9 +187,10 @@ static func _socket_rows(count: int) -> Array:
 	return rows
 
 
-## Live numbers (patch 0.12) + inline keyword icons (patch 0.13): damage
-## figures reflect the hero's current modifiers, and keyword words render
-## as their icons (the hover popup spells them out).
+## Live numbers (patch 0.12): damage figures reflect the hero's current
+## Strength/Weak modifiers, colored red when lowered and green when raised
+## (patch 0.17). Keyword icons render on enemy intents instead — inline
+## icons here were on the wrong text (patch 0.17).
 func _refresh_description() -> void:
 	var text := _state.def.description
 	if _sim != null:
@@ -211,15 +199,10 @@ func _refresh_description() -> void:
 				continue
 			var base := int(effect.get("amount", 0))
 			var modified := _sim.preview_damage(base, _state)
-			if modified != base:
-				text = text.replace(str(base), "[color=#f0cf5d]%d[/color]" % modified)
-	for keyword_id: StringName in _state.def.keywords:
-		var keyword := Db.content.get_keyword(keyword_id)
-		var icon_path: String = KEYWORD_ICONS.get(keyword_id, "")
-		if keyword == null or icon_path == "" or not ResourceLoader.exists(icon_path):
-			continue
-		var word := keyword.name.trim_suffix(" X")
-		text = text.replace(word, "[img=20]%s[/img]" % icon_path)
+			if modified > base:
+				text = text.replace(str(base), "[color=#6ee06e]%d[/color]" % modified)
+			elif modified < base:
+				text = text.replace(str(base), "[color=#e06e6e]%d[/color]" % modified)
 	_description.text = "[center]%s[/center]" % text
 
 

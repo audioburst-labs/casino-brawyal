@@ -2,16 +2,13 @@
   "type": "relics",
   "items": [
     {
-      "id": "gamblers_pass",
-      "name": "Gambler's Pass",
-      "trigger": "combat_won",
+      "id": "gamblers_confidence",
+      "name": "Gambler's Confidence",
+      "trigger": "combat_started",
       "price_min": 17,
       "price_max": 23,
-      "effects": [
-        {"op": "lose_coins", "amount": 10},
-        {"op": "gain_coins", "min": 20, "max": 30}
-      ],
-      "description": "At the end of each fight, lose 10 gold to collect a better payout."
+      "effects": [{"op": "gain_block", "amount": 20}],
+      "description": "Start combat with 20 Block."
     },
     {
       "id": "bounty_list",
@@ -19,8 +16,8 @@
       "trigger": "enemy_killed",
       "price_min": 17,
       "price_max": 23,
-      "effects": [{"op": "gain_coins", "amount": 5}],
-      "description": "At the end of each fight, gain 5 gold for each enemy killed."
+      "effects": [{"op": "gain_coins", "amount": 7}],
+      "description": "At the end of each fight, gain 7 gold for each enemy killed."
     },
     {
       "id": "spade_protection",
@@ -59,13 +56,13 @@
       "description": "When you get a Diamond Chip, gain 2 Block."
     },
     {
-      "id": "high_stakes",
-      "name": "High Stakes",
+      "id": "winners_aura",
+      "name": "Winner's Aura",
       "trigger": "combat_started",
       "price_min": 17,
       "price_max": 23,
-      "effects": [],
-      "description": "Weak and Vulnerable values are increased to 50%."
+      "effects": [{"op": "apply_status", "status": "weak", "stacks": 2, "target": "all_enemies"}],
+      "description": "At the start of combat, apply Weak 2 to all enemies."
     },
     {
       "id": "high_roller",
@@ -73,8 +70,8 @@
       "trigger": "spin_resolved",
       "price_min": 27,
       "price_max": 33,
-      "effects": [{"op": "respin_reel", "condition": "spin_has_triple"}],
-      "description": "When you roll 3 of the same type, go again."
+      "effects": [{"op": "damage", "amount": 20, "times": 1, "target": "random_enemy", "condition": "spin_has_triple"}],
+      "description": "When you roll 3 of the same type, deal 20 to a random enemy."
     },
     {
       "id": "dark_emblem",

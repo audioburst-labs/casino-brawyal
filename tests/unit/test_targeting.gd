@@ -60,3 +60,22 @@ func test_no_living_enemies_returns_null() -> void:
 	enemies[0].take_damage(99)
 	var targeting := Targeting.new()
 	assert_null(targeting.effective_target(enemies))
+
+
+func test_choosing_between_multiple_taunting_enemies() -> void:
+	var enemies: Array[CombatActor] = [_enemy("a", 20), _enemy("b", 10), _enemy("c", 15)]
+	enemies[1].apply_status(&"taunt", 1)
+	enemies[2].apply_status(&"taunt", 1)
+	var targeting := Targeting.new()
+	targeting.set_target(&"c")
+	assert_eq(targeting.effective_target(enemies).id, &"c", "manual pick among taunters is honored")
+
+
+func test_target_does_not_change_when_taunt_wears_off() -> void:
+	var enemies: Array[CombatActor] = [_enemy("a", 20), _enemy("b", 10), _enemy("c", 15)]
+	enemies[2].apply_status(&"taunt", 1)
+	var targeting := Targeting.new()
+	targeting.set_target(&"a")
+	assert_eq(targeting.effective_target(enemies).id, &"c", "taunt forces the target while it lasts")
+	enemies[2].statuses.erase(&"taunt")  # taunt wears off
+	assert_eq(targeting.effective_target(enemies).id, &"c", "target stays put once taunt ends")

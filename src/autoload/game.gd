@@ -16,6 +16,10 @@ var cinematic_playing := false
 var _screen_root: Node = null
 var _combat_gold := Vector2i.ZERO   # gold range of the lineup being fought
 
+## The header (HeaderHud) hides itself outside an active run — main menu and
+## the end-of-run summary screens — by checking this against its own denylist.
+var current_screen_path := ""
+
 
 func register_screen_root(root: Node) -> void:
 	_screen_root = root
@@ -28,6 +32,7 @@ func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 		# outgoing one (same-name siblings get auto-renamed by Godot).
 		_screen_root.remove_child(child)
 		child.queue_free()
+	current_screen_path = scene_path
 	var screen: Node = load(scene_path).instantiate()
 	_screen_root.add_child(screen)
 	if not args.is_empty() and screen.has_method("setup"):

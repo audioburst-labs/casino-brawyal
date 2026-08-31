@@ -587,6 +587,14 @@
       "prompt": "A game mouse cursor on a fully transparent background: Ace's own bare hand (tan skin, black fingerless glove with a gold spade stud on the wrist, cream shirt cuff) shown mid-grab, fingers and thumb closed into a gripping fist as if clutching a poker chip, knuckles up-left. The grip point is at the upper-left of the image. Chunky readable cartoon shape with a thick dark outline, crisp at small sizes, fills most of the frame, same hand/style/palette as a neutral pointing version of this cursor. Nothing else."
     },
     {
+      "id": "fx_heal",
+      "out": "assets/icons/fx_heal.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game reward icon on a fully transparent background: a plump cartoon red heart with a bright white plus-sign cross on top of it and a small sparkle, clearly reading as 'health restored' rather than a plain card-suit heart. Thick dark outline, chunky readable shape that works at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
       "id": "fx_explosion",
       "out": "assets/icons/fx_explosion.png",
       "size": "1024x1024",

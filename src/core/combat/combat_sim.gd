@@ -16,7 +16,6 @@ const CASH_IN_BONUS := 20   # sheet v0.13
 const MAX_ENEMIES := 4      # patch 0.13: the field holds at most 4 fighters
 const EMBLEM_MULTIPLIER := 1.3
 const LUCKY_FOOT_CHANCE := 0.1
-const HIGH_STAKES_PCT := 0.5
 
 var phase: Phase = Phase.ROUND_START
 var round_number := 0
@@ -75,9 +74,6 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 			continue
 		_relics.append(relic)
 		match relic.id:
-			&"high_stakes":
-				_weak_pct = HIGH_STAKES_PCT
-				_vuln_pct = HIGH_STAKES_PCT
 			&"dark_emblem":
 				_has_dark_emblem = true
 			&"red_emblems":
@@ -309,12 +305,12 @@ func _spin_machine() -> void:
 	_fire_relics(&"spin_resolved")
 
 
-## Each dealer attack deals a random 1-11 (patch 0.12: never a flat 0 outside
-## a bust) and a per-dealer damage count accumulates across rounds. When the
-## count would pass 21, that attack is negated (the dealer sits the round out)
-## and the count resets.
+## Each dealer attack deals a random 1-10 (patch 0.17 sheet sync) and a
+## per-dealer damage count accumulates across rounds. When the count would
+## pass 21, that attack is negated (the dealer sits the round out) and the
+## count resets.
 func _raffle_blackjack(enemy_id: StringName) -> Dictionary:
-	var roll := rng.stream(&"combat").randi_range(1, 11)
+	var roll := rng.stream(&"combat").randi_range(1, 10)
 	var count: int = _bj_counters.get(enemy_id, 0)
 	var bust := count + roll > 21
 	if bust:

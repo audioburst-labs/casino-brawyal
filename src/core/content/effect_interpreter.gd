@@ -84,8 +84,14 @@ static func _condition_met(effect: Dictionary, sim: CombatSim) -> bool:
 
 static func _damage_targets(effect: Dictionary, sim: CombatSim,
 		target: CombatActor) -> Array:
-	if str(effect.get("target", "enemy")) == "all_enemies":
-		return sim.enemies.filter(func(e: CombatActor) -> bool: return e.is_alive())
+	match str(effect.get("target", "enemy")):
+		"all_enemies":
+			return sim.enemies.filter(func(e: CombatActor) -> bool: return e.is_alive())
+		"random_enemy":
+			var living := sim.enemies.filter(func(e: CombatActor) -> bool: return e.is_alive())
+			if living.is_empty():
+				return []
+			return [living[sim.rng.stream(&"combat").randi_range(0, living.size() - 1)]]
 	return [target] if target != null else []
 
 

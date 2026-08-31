@@ -34,7 +34,7 @@ func _fire(sim: CombatSim, ability_index: int, suits: Array) -> bool:
 func test_enemy_hp_rolls_within_range() -> void:
 	for seed_value in 20:
 		var sim := _sim(["bouncer"], ["card_sling"], seed_value)
-		assert_between(sim.enemies[0].hp, 75, 85)
+		assert_between(sim.enemies[0].hp, 55, 65)
 
 
 func test_pair_then_brain_shuffles_pair_then_plays_tail_in_order() -> void:
@@ -76,11 +76,11 @@ func test_spade_card_sling_marks_and_cash_in_pays_bonus() -> void:
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 10 dmg + Mark (spade bonus)
-	assert_eq(enemy.hp, hp_start - 10)
+	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 8 dmg + Mark (spade bonus)
+	assert_eq(enemy.hp, hp_start - 8)
 	assert_eq(enemy.status_stacks(&"mark"), 1)
 	assert_true(_fire(sim, 1, [&"club", &"spade"]))  # double_down: 10 dmg + Cash In (20)
-	assert_eq(enemy.hp, hp_start - 10 - 10 - 20)
+	assert_eq(enemy.hp, hp_start - 8 - 10 - 20)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")
 
 
@@ -166,7 +166,7 @@ func test_solo_ability_condition() -> void:
 	var solo := _sim(["bouncer"], ["slow_playing", "card_sling"])
 	solo.begin_round()
 	_fire(solo, 0, [&"heart", &"diamond"])
-	assert_eq(solo.hero.block, 30, "alone this round -> 30 block")
+	assert_eq(solo.hero.block, 20, "alone this round -> 20 block")
 
 	var crowded := _sim(["bouncer"], ["slow_playing", "card_sling"])
 	crowded.begin_round()
@@ -180,7 +180,7 @@ func test_slow_playing_locks_out_other_abilities_for_the_round() -> void:
 	var sim := _sim(["bouncer"], ["slow_playing", "card_sling"])
 	sim.begin_round()
 	assert_true(_fire(sim, 0, [&"heart", &"diamond"]))
-	assert_eq(sim.hero.block, 30)
+	assert_eq(sim.hero.block, 20)
 	sim.tray.add(&"spade", 1)
 	assert_false(sim.assign_chip(&"spade", 1, 0),
 		"other abilities are disabled after Slow Playing")
@@ -226,7 +226,7 @@ func test_passive_fires_at_round_start_after_activation() -> void:
 func test_summon_adds_a_new_enemy() -> void:
 	var sim := _sim(["manager"], ["card_sling"], 3)
 	sim.hero.max_hp = 9999
-	sim.hero.hp = 9999  # survive long enough for the graph to reach call_staff
+	sim.hero.hp = 9999  # survive long enough to see the manager's summon
 	var summoned := false
 	for i in 16:
 		if sim.phase != CombatSim.Phase.ROUND_START:
@@ -245,9 +245,9 @@ func test_summon_adds_a_new_enemy() -> void:
 
 
 func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
-	# Sheet v0.11: each attack deals random 0-11; the count accumulates across
-	# rounds; when it would pass 21 that attack is negated, the dealer is
-	# stunned for the round, and the count resets.
+	# Patch 0.17 sheet sync: each attack deals random 1-10; the count
+	# accumulates across rounds; when it would pass 21 that attack is
+	# negated, the dealer is stunned for the round, and the count resets.
 	var sim := _sim(["dealer"], ["card_sling"], 4)
 	sim.hero.max_hp = 9999
 	sim.hero.hp = 9999
@@ -260,7 +260,7 @@ func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
 			if event.type == &"intents_shown":
 				shown = event.data.intents[0]
 		var roll := int(shown.get("blackjack_total", -1))
-		assert_between(roll, 1, 11, "each attack rolls 1-11 (patch 0.12)")
+		assert_between(roll, 1, 10, "each attack rolls 1-10 (patch 0.17)")
 		var hp_before := sim.hero.hp
 		sim.tray.discard_all()
 		sim.end_assignment()
@@ -272,7 +272,7 @@ func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
 		else:
 			assert_eq(sim.hero.hp, hp_before - roll, "hit for the rolled amount")
 			counter += roll
-	assert_true(saw_bust, "12 rounds of 0-11 rolls should bust at least once")
+	assert_true(saw_bust, "12 rounds of 1-10 rolls should bust at least once")
 
 
 func test_bouncer_self_taunt_forces_targeting() -> void:
@@ -299,13 +299,13 @@ func test_pocket_rockets_repeats_when_both_chips_are_spades() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	assert_true(_fire(sim, 0, [&"spade", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 40, "20 damage, repeated once for double spades")
+	assert_eq(enemy.hp, hp_start - 32, "16 damage, repeated once for double spades")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
 	var hp_mid := enemy.hp
 	_fire(sim, 0, [&"spade", &"heart"])
-	assert_eq(enemy.hp, hp_mid - 20, "mixed chips deal the base 20 only")
+	assert_eq(enemy.hp, hp_mid - 16, "mixed chips deal the base 16 only")
 
 
 func test_intent_display_includes_strength_buff() -> void:
@@ -321,14 +321,26 @@ func test_intent_display_includes_strength_buff() -> void:
 		"displayed damage includes strength")
 
 
-func test_high_stakes_relic_raises_weak_to_half() -> void:
-	var sim := _sim(["bouncer"], ["card_sling"], 7, ["high_stakes"])
-	sim.hero.apply_status(&"weak", 1)
+func test_winners_aura_relic_weakens_enemies_at_combat_start() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["winners_aura"])
 	sim.begin_round()
-	var enemy := sim.enemies[0]
-	var hp_start := enemy.hp
-	_fire(sim, 0, [&"heart"])
-	assert_eq(enemy.hp, hp_start - 5, "10 * 0.5 = 5 under high stakes")
+	assert_eq(sim.enemies[0].status_stacks(&"weak"), 2,
+		"Winner's Aura applies Weak 2 to all enemies at combat start")
+
+
+func test_gamblers_confidence_relic_grants_starting_block() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["gamblers_confidence"])
+	sim.begin_round()
+	assert_eq(sim.hero.block, 20, "Gambler's Confidence starts combat with 20 Block")
+
+
+func test_high_roller_relic_hits_a_random_enemy_on_triple() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["high_roller"])
+	sim.begin_round()
+	var hp_before := sim.enemies[0].hp
+	sim.last_payout = {&"spade": 3}
+	sim._fire_relics(&"spin_resolved")
+	assert_eq(sim.enemies[0].hp, hp_before - 20, "High Roller deals 20 on a forced triple")
 
 
 func test_dark_emblem_boosts_spade_club_abilities() -> void:
@@ -352,15 +364,17 @@ func test_flush_hits_all_enemies() -> void:
 	sim.begin_round()
 	var hp_a := sim.enemies[0].hp
 	var hp_b := sim.enemies[1].hp
-	_fire(sim, 0, [&"spade", &"spade", &"spade", &"spade", &"spade"])
-	assert_eq(sim.enemies[0].hp, hp_a - 50)
-	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 50))
+	_fire(sim, 0, [&"spade", &"spade", &"spade", &"spade"])
+	assert_eq(sim.enemies[0].hp, hp_a - 40)
+	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 40))
 
 
-func test_damage_missing_pct() -> void:
+func test_bust_cashes_in_and_deals_flat_damage() -> void:
 	var sim := _sim(["bouncer"], ["bust"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
-	enemy.hp = enemy.max_hp - 40
+	var hp_start := enemy.hp
+	enemy.apply_status(&"mark", 1)
 	_fire(sim, 0, [&"spade", &"club"])
-	assert_eq(enemy.hp, enemy.max_hp - 40 - 12, "30% of 40 missing = 12")
+	assert_eq(enemy.hp, hp_start - 20 - 20, "cash in (20) + flat 20 damage")
+	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")

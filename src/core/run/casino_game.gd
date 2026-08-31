@@ -64,8 +64,13 @@ static func _award(symbol: StringName, db: ContentDB, run: RunState,
 			run.coins += 10 * encounter
 			return "Money sack: +%d coins!" % (10 * encounter)
 		&"heart":
-			var healed: int = mini(1 * encounter, run.max_hp - run.hp)
+			var roll := 1 * encounter
+			var healed: int = mini(roll, run.max_hp - run.hp)
 			run.hp += healed
+			# Show the roll even when it's capped by missing HP (patch 0.17),
+			# instead of a bare "+0 HP" with no explanation.
+			if healed < roll:
+				return "Heal %d (+%d HP, already near full)" % [roll, healed]
 			return "+%d HP" % healed
 		&"broken_heart":
 			var loss: int = mini(1 * encounter, run.hp - 1)  # never fatal

@@ -22,11 +22,8 @@ var _mark_glow_outer: Control
 var _mark_particles: CPUParticles2D
 var _mark_tween: Tween
 var _intent_row: HBoxContainer
-var _intent_icon: TextureRect
-var _intent_label: Label
 var _sprite_holder: CenterContainer
 var _sprite: TextureRect
-var _sway_tween: Tween
 var _idle_texture: Texture2D
 var _poses: Dictionary = {}        # pose name -> Texture2D
 var _ghost_layer: Node = null      # CombatVfx, for motion smears
@@ -37,6 +34,7 @@ var _hp_label: Label
 var _block_label: Label
 var _status_row: HBoxContainer
 var _target_ring: TargetRing
+var _frame_outline: FrameOutline
 var _base_sprite_position := Vector2.ZERO
 
 
@@ -49,6 +47,17 @@ class TargetRing:
 		draw_set_transform(center, 0.0, Vector2(1.0, 0.35))
 		draw_arc(Vector2.ZERO, size.x * 0.42, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.9), 5.0, true)
 		draw_arc(Vector2.ZERO, size.x * 0.42 + 6.0, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.35), 9.0, true)
+
+
+## Targeted marker (patch 0.17): only the outer frame of the name/HP
+## panel outlines blue — the panel's fill and text stay normal, instead
+## of the whole box getting tinted.
+class FrameOutline:
+	extends Control
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2(2, 2), size - Vector2(4, 4)),
+			Color(0.45, 0.8, 1.0, 0.95), false, 3.0)
 
 
 func setup(combat_actor: CombatActor) -> void:
@@ -74,19 +83,6 @@ func setup(combat_actor: CombatActor) -> void:
 	# (patch 0.1: "opponent moves slightly up when first attacking").
 	_intent_row.custom_minimum_size = Vector2(0, 42)
 	add_child(_intent_row)
-	_intent_icon = TextureRect.new()
-	_intent_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_intent_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_intent_icon.custom_minimum_size = Vector2(38, 38)
-	_intent_icon.visible = false
-	if ResourceLoader.exists("res://assets/icons/intent_attack.png"):
-		_intent_icon.texture = load("res://assets/icons/intent_attack.png")
-	_intent_row.add_child(_intent_icon)
-	_intent_label = Label.new()
-	_intent_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
-	_intent_label.add_theme_font_size_override("font_size", 26)
-	_intent_label.text = ""
-	_intent_row.add_child(_intent_label)
 
 	_sprite_holder = CenterContainer.new()
 	_sprite_holder.custom_minimum_size = Vector2(0, sprite_height)
@@ -127,6 +123,11 @@ func setup(combat_actor: CombatActor) -> void:
 	add_child(_hp_holder)
 	var hp_box := VBoxContainer.new()
 	_hp_holder.add_child(hp_box)
+	_frame_outline = FrameOutline.new()
+	_frame_outline.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_frame_outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame_outline.visible = false
+	_hp_holder.add_child(_frame_outline)
 
 	var name_label := Label.new()
 	name_label.text = actor.display_name
@@ -151,26 +152,21 @@ func setup(combat_actor: CombatActor) -> void:
 	_block_label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
 	under_bar.add_child(_block_label)
 
+	# A separate section below the name/HP square (patch 0.17), not packed
+	# into hp_box — so a growing number of buff/debuff icons can never widen
+	# or resize the HP panel itself (it used to visibly "swell").
 	_status_row = HBoxContainer.new()
 	_status_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	# Fixed height reserved whether or not any statuses are showing — an
-	# icon appearing/disappearing must not change the panel's total height
+	_status_row.add_theme_constant_override("separation", 4)
+	# Fixed size reserved whether or not any statuses are showing — an icon
+	# appearing/disappearing must not change size or reflow the sprite
 	# (that reflow was pushing the whole unit upward: designer note).
-	_status_row.custom_minimum_size = Vector2(0, 36)
-	hp_box.add_child(_status_row)
+	_status_row.custom_minimum_size = Vector2(260, 36)
+	_status_row.clip_contents = true
+	add_child(_status_row)
 
 	gui_input.connect(_on_gui_input)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-
-	# Idle micro-motion: nothing on a casino floor ever stands perfectly
-	# still. Rotation-only so it never fights the lunge/hit tweens.
-	_sway_tween = create_tween().set_loops()
-	var phase := float(hash(actor.id) % 100) / 100.0
-	_sway_tween.tween_interval(phase * 1.2)
-	_sway_tween.tween_property(_sprite, "rotation", 0.012, 1.4) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_sway_tween.tween_property(_sprite, "rotation", -0.012, 1.4) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	refresh()
 
 
@@ -337,34 +333,60 @@ func _refresh_mark() -> void:
 
 ## `entry` is the intents_shown payload: intent dict + display_per_hit /
 ## display_instances (strength-buffed values) + optional blackjack fields.
+## Icons belong on enemy intents, not player ability text (patch 0.17): each
+## debuff/buff gets its status icon inline, ahead of its stack count.
 func show_intent(entry: Dictionary) -> void:
+	clear_intent()
 	var intent: Dictionary = entry.get("intent", {})
-	var parts: Array[String] = []
 	for debuff: Dictionary in intent.get("debuffs", []):
-		parts.append("%s %d" % [debuff.get("status", "?"), int(debuff.get("stacks", 1))])
+		_add_intent_chunk(StringName(str(debuff.get("status", ""))),
+			"%d" % int(debuff.get("stacks", 1)))
 	for buff: Dictionary in intent.get("self_status", []):
-		parts.append("+%s %d" % [buff.get("status", "?"), int(buff.get("stacks", 1))])
+		_add_intent_chunk(StringName(str(buff.get("status", ""))),
+			"+%d" % int(buff.get("stacks", 1)))
 	if not intent.get("summon", {}).is_empty():
-		parts.append("summon x%d" % int(intent.get("summon").get("count", 1)))
+		_add_intent_text("summon x%d" % int(intent.get("summon").get("count", 1)))
 	if intent.get("heal_allies", 0) > 0:
-		parts.append("heal allies")
+		_add_intent_text("heal allies")
 	if intent.get("ally_attack_again", false):
-		parts.append("encore")
+		_add_intent_text("encore")
 	var instances := int(entry.get("display_instances", intent.get("instances", 0)))
 	var per_hit := int(entry.get("display_per_hit", intent.get("per_hit", 0)))
 	if entry.get("bust", false):
-		parts.append("BUST!")
+		_add_intent_text("BUST!")
 	elif instances > 1:
-		parts.append("%dx%d" % [instances, per_hit])
+		_add_intent_chunk(&"attack", "%dx%d" % [instances, per_hit])
 	elif instances == 1:
-		parts.append("%d" % per_hit)
-	_intent_icon.visible = instances > 0 and _intent_icon.texture != null
-	_intent_label.text = "  ".join(parts)
+		_add_intent_chunk(&"attack", "%d" % per_hit)
+
+
+## One icon (status_<id>.png, falling back to the generic attack dagger)
+## plus its stack/damage number.
+func _add_intent_chunk(status_id: StringName, label_text: String) -> void:
+	var texture := SuitAssets.status_texture(status_id) if status_id != &"attack" else null
+	if texture == null and ResourceLoader.exists("res://assets/icons/intent_attack.png"):
+		texture = load("res://assets/icons/intent_attack.png")
+	if texture != null:
+		var icon := TextureRect.new()
+		icon.texture = texture
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(30, 30)
+		_intent_row.add_child(icon)
+	_add_intent_text(label_text)
+
+
+func _add_intent_text(text: String) -> void:
+	var label := Label.new()
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
+	label.add_theme_font_size_override("font_size", 22)
+	label.text = text
+	_intent_row.add_child(label)
 
 
 func clear_intent() -> void:
-	_intent_label.text = ""
-	_intent_icon.visible = false
+	for child in _intent_row.get_children():
+		child.queue_free()
 
 
 ## ---- pose-frame animation ----
@@ -425,9 +447,11 @@ func _smear() -> void:
 func _return_to_idle() -> void:
 	if _idle_texture == null:
 		return
-	# Crossfade home so the pose swap never pops.
+	# Fade all the way to invisible before swapping the texture, then back
+	# in — swapping at partial alpha (patch 0.17) still showed a visible
+	# flicker/pop between the two poses' silhouettes.
 	var fade := create_tween()
-	fade.tween_property(_sprite, "modulate:a", 0.55, 0.09)
+	fade.tween_property(_sprite, "modulate:a", 0.0, 0.1)
 	fade.tween_callback(func() -> void: _sprite.texture = _idle_texture)
 	fade.tween_property(_sprite, "modulate:a", 1.0, 0.16)
 
@@ -573,14 +597,25 @@ func _finish_slash(origin: Vector2) -> void:
 	_return_to_idle()
 
 
-## Blue ring around the model + a glow on the stats box (patch 0.13).
+## Blue ring around the model + a blue outline on just the frame of the
+## stats box (patch 0.17: not a full tint over the whole panel).
 func set_targeted(targeted: bool) -> void:
 	_target_ring.visible = targeted
-	_hp_holder.modulate = Color(0.75, 1.05, 1.45) if targeted else Color.WHITE
+	_frame_outline.visible = targeted
 
 
 func sprite_center() -> Vector2:
 	return _sprite.global_position + _sprite.size * 0.5
+
+
+## Steps the HP bar down by exactly this hit's amount (patch 0.17): the sim
+## resolves every instance of a multi-hit attack synchronously, so a plain
+## refresh() would jump straight to the final HP before the later hits even
+## finish animating. This keeps the bar in lockstep with each landed hit.
+func apply_damage_display(amount: int) -> void:
+	var shown := maxi(0, int(_hp_bar.value) - amount)
+	_hp_bar.value = shown
+	_hp_label.text = "%d / %d" % [shown, actor.max_hp]
 
 
 ## Impact: white shader flash, knockback, and a feet-anchored squash that
@@ -642,21 +677,17 @@ func play_lunge() -> void:
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
-## Telegraph: a menacing red-tinted rise just before an enemy strikes.
+## Telegraph: a menacing rise just before an enemy strikes.
 func play_telegraph() -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(_sprite, "modulate", Color(1.35, 0.75, 0.7), 0.16)
 	tween.tween_property(_sprite, "scale", Vector2(1.06, 1.06), 0.16) \
 		.set_ease(Tween.EASE_OUT)
-	tween.chain().tween_property(_sprite, "modulate", Color.WHITE, 0.2)
-	tween.parallel().tween_property(_sprite, "scale", Vector2.ONE, 0.2)
+	tween.chain().tween_property(_sprite, "scale", Vector2.ONE, 0.2)
 
 
 ## Death: a white blowout, then the sprite crumples at its feet and fades.
 func play_death() -> void:
-	if _sway_tween != null:
-		_sway_tween.kill()  # the idle sway must not fight the collapse
 	if _sprite.material is ShaderMaterial:
 		_sprite.material.set_shader_parameter("flash", 1.0)
 		var flash_tween := create_tween()

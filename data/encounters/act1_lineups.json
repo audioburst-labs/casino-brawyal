@@ -1,15 +1,21 @@
 {
   "type": "lineups",
   "items": [
-    {"id": "door_duty", "stage": 1, "enemies": ["bouncer"], "gold_min": 17, "gold_max": 23},
-    {"id": "cocktail_hour", "stage": 2, "enemies": ["bouncer", "server", "server"], "gold_min": 22, "gold_max": 28},
-    {"id": "double_door", "stage": 2, "enemies": ["bouncer", "bouncer"], "gold_min": 27, "gold_max": 33},
-    {"id": "card_table", "stage": 3, "enemies": ["dealer", "dealer", "dealer"], "gold_min": 32, "gold_max": 38},
-    {"id": "high_table", "stage": 3, "enemies": ["dealer", "dealer", "dealer"], "gold_min": 37, "gold_max": 43},
-    {"id": "floor_check", "stage": 4, "enemies": ["bouncer", "manager"], "gold_min": 42, "gold_max": 48},
-    {"id": "full_service", "stage": 4, "enemies": ["bouncer", "server", "server", "dealer"], "gold_min": 47, "gold_max": 53},
-    {"id": "staff_meeting", "stage": 5, "enemies": ["server", "server", "manager", "server"], "gold_min": 52, "gold_max": 58},
-    {"id": "the_pit", "stage": 5, "enemies": ["dealer", "dealer", "dealer", "dealer"], "gold_min": 57, "gold_max": 63},
+    {"id": "door_duty", "stage": 1, "enemies": ["bouncer"], "gold_min": 27, "gold_max": 33},
+    {"id": "double_shift", "stage": 1, "enemies": ["server", "server"], "gold_min": 27, "gold_max": 33},
+    {"id": "twin_tables", "stage": 1, "enemies": ["dealer", "dealer"], "gold_min": 27, "gold_max": 33},
+    {"id": "muscle_and_service", "stage": 2, "enemies": ["bouncer", "server"], "gold_min": 37, "gold_max": 43},
+    {"id": "pit_backup", "stage": 2, "enemies": ["bouncer", "dealer"], "gold_min": 37, "gold_max": 43},
+    {"id": "triple_shift", "stage": 2, "enemies": ["server", "dealer", "dealer"], "gold_min": 37, "gold_max": 43},
+    {"id": "double_door", "stage": 3, "enemies": ["bouncer", "bouncer"], "gold_min": 47, "gold_max": 53},
+    {"id": "mixed_floor", "stage": 3, "enemies": ["bouncer", "dealer", "server"], "gold_min": 47, "gold_max": 53},
+    {"id": "the_manager", "stage": 3, "enemies": ["manager"], "gold_min": 47, "gold_max": 53},
+    {"id": "managers_pet", "stage": 4, "enemies": ["server", "manager"], "gold_min": 57, "gold_max": 63},
+    {"id": "full_service", "stage": 4, "enemies": ["bouncer", "server", "server", "dealer"], "gold_min": 57, "gold_max": 63},
+    {"id": "audit_night", "stage": 4, "enemies": ["dealer", "dealer", "manager"], "gold_min": 57, "gold_max": 63},
+    {"id": "floor_check", "stage": 5, "enemies": ["bouncer", "manager"], "gold_min": 67, "gold_max": 73},
+    {"id": "the_pit", "stage": 5, "enemies": ["dealer", "dealer", "dealer", "dealer"], "gold_min": 67, "gold_max": 73},
+    {"id": "closing_shift", "stage": 5, "enemies": ["server", "dealer", "manager"], "gold_min": 67, "gold_max": 73},
     {"id": "final_fight", "stage": 6, "enemies": ["mr_moneybags"], "gold_min": 0, "gold_max": 0}
   ]
 }

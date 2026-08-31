@@ -49,8 +49,15 @@ func set_shake_target(target: Control) -> void:
 func init_cursor() -> void:
 	_cursor_idle = _load_cursor("res://assets/icons/cursor_ace_hand.png")
 	_cursor_grab = _load_cursor("res://assets/icons/cursor_ace_hand_grab.png")
-	if _cursor_idle != null:
-		Input.set_custom_mouse_cursor(_cursor_idle, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
+	if _cursor_idle == null:
+		return
+	Input.set_custom_mouse_cursor(_cursor_idle, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
+	# Godot swaps in its own built-in drag/can-drop/forbidden cursor shapes
+	# during a drag depending on whether the hovered target currently
+	# accepts the drop — the cursor should never change on that basis
+	# (patch 0.17), so pin our own grab pose to all of them too.
+	for shape in [Input.CURSOR_DRAG, Input.CURSOR_CAN_DROP, Input.CURSOR_FORBIDDEN]:
+		Input.set_custom_mouse_cursor(_cursor_grab, shape, CURSOR_HOTSPOT)
 
 
 func _load_cursor(path: String) -> ImageTexture:
