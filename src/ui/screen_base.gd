@@ -32,7 +32,7 @@ func build_screen(title: String, background_path: String) -> void:
 	var column := VBoxContainer.new()
 	column.anchor_left = 0.18
 	column.anchor_right = 0.82
-	column.anchor_top = 0.05
+	column.anchor_top = 0.075  # below the persistent run header bar
 	column.anchor_bottom = 0.95
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 24)

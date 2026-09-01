@@ -8,8 +8,14 @@ extends PanelContainer
 signal socket_clicked(ability_index: int, slot_index: int)
 signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 
-const CARD_SIZE := Vector2(195, 280)   # patch 0.17: narrower so 6 cards fit on screen
-const SOCKET_SIZE := 48.0
+## Patch 0.18: a taller, slightly wider constant frame, and a description
+## band of a FIXED height whose font shrinks to fit — the old card clipped
+## longer ability text against its own border.
+const CARD_SIZE := Vector2(214, 300)
+const SOCKET_SIZE := 46.0
+const DESC_HEIGHT := 64.0
+const DESC_FONT_MAX := 17
+const DESC_FONT_MIN := 11
 
 var ability_index := -1
 
@@ -56,7 +62,7 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	add_child(box)
 
 	var icon_holder := CenterContainer.new()
-	icon_holder.custom_minimum_size = Vector2(0, 72)
+	icon_holder.custom_minimum_size = Vector2(0, 58)
 	box.add_child(icon_holder)
 	var icon_texture := SuitAssets.ability_texture(_state.def.id)
 	if icon_texture != null:
@@ -64,7 +70,7 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 		icon.texture = icon_texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(80, 80)
+		icon.custom_minimum_size = Vector2(70, 70)
 		icon_holder.add_child(icon)
 
 	var name_label := Label.new()
@@ -72,16 +78,17 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 24)
+	name_label.add_theme_font_size_override("font_size", 22)
 	box.add_child(name_label)
 
 	_description = RichTextLabel.new()
 	_description.bbcode_enabled = true
-	_description.fit_content = true
+	_description.fit_content = false
 	_description.scroll_active = false
 	_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_description.add_theme_font_size_override("normal_font_size", 16)
+	_description.add_theme_font_size_override("normal_font_size", DESC_FONT_MAX)
 	_description.add_theme_color_override("default_color", Color(0.9, 0.86, 0.78))
+	_description.custom_minimum_size = Vector2(0, DESC_HEIGHT)
 	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_description)
 
@@ -203,7 +210,26 @@ func _refresh_description() -> void:
 				text = text.replace(str(base), "[color=#6ee06e]%d[/color]" % modified)
 			elif modified < base:
 				text = text.replace(str(base), "[color=#e06e6e]%d[/color]" % modified)
+	_fit_description_font(_state.def.description)
 	_description.text = "[center]%s[/center]" % text
+
+
+## Picks the largest font size at which the whole description still fits the
+## card's fixed description band, measuring the real theme font rather than
+## waiting a frame and reading a laid-out height (patch 0.18). Text that will
+## not fit even at the floor size is still readable in full on hover.
+func _fit_description_font(plain: String) -> void:
+	var font := _description.get_theme_font("normal_font")
+	if font == null:
+		return
+	var width := CARD_SIZE.x - 26.0
+	for font_size in range(DESC_FONT_MAX, DESC_FONT_MIN - 1, -1):
+		var measured := font.get_multiline_string_size(
+			plain, HORIZONTAL_ALIGNMENT_CENTER, width, font_size)
+		if measured.y <= DESC_HEIGHT:
+			_description.add_theme_font_size_override("normal_font_size", font_size)
+			return
+	_description.add_theme_font_size_override("normal_font_size", DESC_FONT_MIN)
 
 
 ## Immediately paints a chip into a socket, even if the sim already cleared
@@ -275,6 +301,14 @@ func _show_keywords() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	_keyword_panel.add_child(box)
+	var full := PanelContainer.new()
+	var full_label := Label.new()
+	full_label.text = "%s — %s" % [_state.def.name, _state.def.description]
+	full_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	full_label.custom_minimum_size = Vector2(280, 0)
+	full_label.add_theme_font_size_override("font_size", 15)
+	full.add_child(full_label)
+	box.add_child(full)
 	for keyword_id: StringName in _state.def.keywords:
 		var keyword := Db.content.get_keyword(keyword_id)
 		if keyword == null:

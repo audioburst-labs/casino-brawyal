@@ -68,3 +68,51 @@ func test_apply_sticker_changes_targeted_reel_slot() -> void:
 	machine.apply_sticker(1, 3, H)
 	assert_eq(machine.reels[1].symbols, [S, C, H, H] as Array[StringName])
 	assert_eq(machine.reels[0].symbols, [S, C, H, D] as Array[StringName])
+
+
+## Doc "Behavior -> Combat -> Slot Machine": each reel draws from its own pool
+## of three copies of every symbol on it, without replacement, refilling only
+## once the pool runs dry — so streaks and droughts both stay bounded.
+func test_reel_draws_without_replacement_from_a_three_deep_pool() -> void:
+	var reel := Reel.new()
+	var rng := _rng()
+	var counts := {}
+	for i in reel.symbols.size() * Reel.POOL_COPIES:
+		var symbol := reel.spin(rng)
+		counts[symbol] = counts.get(symbol, 0) + 1
+	for suit in reel.symbols:
+		assert_eq(counts.get(suit, 0), Reel.POOL_COPIES,
+			"%s appears exactly %d times per pool" % [suit, Reel.POOL_COPIES])
+
+
+func test_pool_weights_duplicated_symbols() -> void:
+	var reel := Reel.new()
+	reel.set_symbol(1, S)   # two spades, one heart, one diamond
+	reel.set_symbol(2, S)
+	var rng := _rng()
+	var counts := {}
+	for i in reel.symbols.size() * Reel.POOL_COPIES:
+		var symbol := reel.spin(rng)
+		counts[symbol] = counts.get(symbol, 0) + 1
+	assert_eq(counts.get(S, 0), 3 * Reel.POOL_COPIES, "spades are three times as likely")
+	assert_eq(counts.get(D, 0), Reel.POOL_COPIES)
+
+
+func test_pool_refills_once_depleted() -> void:
+	var reel := Reel.new()
+	var rng := _rng()
+	for i in reel.symbols.size() * Reel.POOL_COPIES * 3:
+		assert_has(reel.symbols, reel.spin(rng))
+
+
+func test_applying_a_sticker_rebuilds_the_pool() -> void:
+	var reel := Reel.new()
+	var rng := _rng()
+	reel.spin(rng)
+	reel.set_symbol(0, H)
+	var counts := {}
+	for i in reel.symbols.size() * Reel.POOL_COPIES:
+		var symbol := reel.spin(rng)
+		counts[symbol] = counts.get(symbol, 0) + 1
+	assert_eq(counts.get(S, 0), 0, "the replaced symbol is gone from the pool")
+	assert_eq(counts.get(H, 0), 2 * Reel.POOL_COPIES)

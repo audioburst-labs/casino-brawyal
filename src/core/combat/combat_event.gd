@@ -7,8 +7,8 @@ extends RefCounted
 ## Types used so far:
 ##   round_started, intents_shown, spin_resolved, chip_assigned, chip_unassigned,
 ##   ability_fired, damage_dealt, block_gained, status_applied, healed,
-##   chips_converted, chips_discarded, actor_died, enemy_move, round_ended,
-##   combat_won, combat_lost
+##   chips_converted, chips_discarded, actor_died, actor_removed, enemy_move,
+##   enemy_summoned, round_ended, combat_won, combat_lost
 
 var type: StringName
 var data: Dictionary

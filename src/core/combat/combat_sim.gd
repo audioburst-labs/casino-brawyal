@@ -320,17 +320,67 @@ func _raffle_blackjack(enemy_id: StringName) -> Dictionary:
 	return {"roll": roll, "count": _bj_counters[enemy_id], "bust": bust}
 
 
-func _spawn_enemy(def_id: StringName, announce := true) -> void:
+## `enemies` is ordered from the centre of the field outward: index 0 is the
+## slot closest to the middle of the screen, index 3 the furthest. That order
+## is also the enemy phase's "left to right" acting order.
+func _spawn_enemy(def_id: StringName, announce := true,
+		summoner: CombatActor = null) -> void:
 	var def := _db.get_enemy(def_id)
 	var stream := rng.stream(&"combat")
 	var hp := int(round(stream.randi_range(def.hp_min, def.hp_max) * _hp_mult))
 	var enemy := CombatActor.new(StringName("enemy_%d" % _summon_counter), def.id, def.name, hp)
 	_summon_counter += 1
-	enemies.append(enemy)
+	var slot := _summon_slot(summoner)
+	if slot < 0:
+		enemies.append(enemy)
+	else:
+		enemies.insert(slot, enemy)
 	_brains[enemy.id] = EnemyBrain.new(def.brain, def.moves)
+	_evict_outermost_corpse()
 	if announce:
 		emit_event(&"enemy_summoned",
-			{"actor": enemy.id, "def_id": def.id, "name": def.name, "hp": hp})
+			{"actor": enemy.id, "def_id": def.id, "name": def.name, "hp": hp,
+			"slot": enemies.find(enemy)})
+
+
+## Doc "Unit Positioning": a summon takes the nearest empty slot between its
+## summoner and the centre of the field; failing that the summoner shifts one
+## position further out to make room. An "empty" inner slot is one whose
+## occupant is dead — that corpse is cleared away as the new unit takes over.
+func _summon_slot(summoner: CombatActor) -> int:
+	if summoner == null:
+		return -1
+	var index := enemies.find(summoner)
+	if index < 0:
+		return -1
+	for inner in range(index - 1, -1, -1):
+		if not enemies[inner].is_alive():
+			_remove_actor(enemies[inner])
+			return inner
+	return index  # no inner slot: the summoner is pushed one step outward
+
+
+## Keeps the field within its MAX_ENEMIES slots by clearing the corpse
+## furthest from the centre (living fighters are never displaced).
+func _evict_outermost_corpse() -> void:
+	while enemies.size() > MAX_ENEMIES:
+		var victim: CombatActor = null
+		for index in range(enemies.size() - 1, -1, -1):
+			if not enemies[index].is_alive():
+				victim = enemies[index]
+				break
+		if victim == null:
+			return
+		_remove_actor(victim)
+
+
+func _remove_actor(actor: CombatActor) -> void:
+	enemies.erase(actor)
+	_brains.erase(actor.id)
+	_intents.erase(actor.id)
+	_intent_ids.erase(actor.id)
+	_blackjack.erase(actor.id)
+	emit_event(&"actor_removed", {"actor": actor.id})
 
 
 func _fire_relics(trigger: StringName) -> void:
@@ -406,7 +456,7 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 		for i in int(summon.get("count", 1)):
 			if _living_count() >= MAX_ENEMIES:
 				break  # the field never holds more than 4 (patch 0.13)
-			_spawn_enemy(StringName(str(summon.get("enemy", ""))))
+			_spawn_enemy(StringName(str(summon.get("enemy", ""))), true, enemy)
 
 	if intent.get("heal_allies", 0) > 0:
 		var amount := int(intent.get("heal_allies"))
@@ -463,6 +513,7 @@ func _hit_hero(enemy: CombatActor, base: int) -> void:
 	emit_event(&"damage_dealt", {
 		"source": enemy.id, "target": hero.id,
 		"amount": damage, "hp_lost": hp_lost,
+		"blocked": hero.last_absorbed,
 	})
 
 

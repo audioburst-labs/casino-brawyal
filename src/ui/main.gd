@@ -11,6 +11,10 @@ func _ready() -> void:
 	# (header/settings/layout-tab review).
 	if OS.get_environment("CB_DEBUG_AUTORUN") != "":
 		Game.new_run(-1, true)
+		# CB_DEBUG_STICKERS="spade,heart": start holding unplaced stickers, so
+		# the Layout Tab's sticker-placing flow can be reviewed.
+		for suit in OS.get_environment("CB_DEBUG_STICKERS").split(",", false):
+			Game.run.sticker_inventory.append(StringName(suit))
 		# CB_DEBUG_OPEN_SETTINGS / CB_DEBUG_OPEN_LAYOUT=1: pop the matching
 		# header overlay open for review.
 		if OS.get_environment("CB_DEBUG_OPEN_SETTINGS") != "":

@@ -241,7 +241,11 @@ func test_summon_adds_a_new_enemy() -> void:
 			break
 	assert_true(summoned, "manager eventually calls staff")
 	assert_gt(sim.enemies.size(), 1)
-	assert_eq(sim.enemies[1].def_id, &"server")
+	# Patch 0.18 (doc "Unit Positioning"): with no empty slot between the
+	# Manager and the centre, the summon takes the Manager's slot and the
+	# Manager shifts one position outward.
+	assert_eq(sim.enemies[0].def_id, &"server")
+	assert_eq(sim.enemies[1].def_id, &"manager")
 
 
 func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:

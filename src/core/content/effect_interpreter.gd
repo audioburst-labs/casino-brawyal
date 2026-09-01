@@ -108,6 +108,7 @@ static func _deal_damage(amount: int, times: int, sim: CombatSim,
 		sim.emit_event(&"damage_dealt", {
 			"source": source.id, "target": target.id,
 			"amount": damage, "hp_lost": hp_lost,
+			"blocked": target.last_absorbed,
 		})
 		sim.check_death(target)
 
@@ -120,6 +121,7 @@ static func _deal_flat_damage(base: int, sim: CombatSim,
 	sim.emit_event(&"damage_dealt", {
 		"source": source.id, "target": target.id,
 		"amount": damage, "hp_lost": hp_lost,
+		"blocked": target.last_absorbed,
 	})
 	sim.check_death(target)
 

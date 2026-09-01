@@ -7,6 +7,9 @@ signal clicked(actor_id: StringName)
 
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
 const UNIT_HEIGHT := 330.0
+## Patch 0.18: narrower units, so a full 4-slot line stays clear of the
+## End Turn button no matter how many fighters are on the field.
+const UNIT_WIDTH := 214.0
 
 ## Local "flame origin" point inside the Mark's wrapper (bottom-center
 ## anchored to _mark_row — see _build_mark).
@@ -36,6 +39,7 @@ var _status_row: HBoxContainer
 var _target_ring: TargetRing
 var _frame_outline: FrameOutline
 var _base_sprite_position := Vector2.ZERO
+var _shown_block := 0              # block currently drawn under the HP bar
 
 
 ## The blue target circle drawn under the targeted enemy's model (patch 0.13).
@@ -63,7 +67,7 @@ class FrameOutline:
 func setup(combat_actor: CombatActor) -> void:
 	actor = combat_actor
 	alignment = BoxContainer.ALIGNMENT_END
-	custom_minimum_size = Vector2(260, 0)
+	custom_minimum_size = Vector2(UNIT_WIDTH, 0)
 
 	# The Mark gets its OWN reserved band above the intent text, same trick
 	# as intent_row's fixed height: a slot that always exists (so it can
@@ -133,8 +137,16 @@ func setup(combat_actor: CombatActor) -> void:
 	name_label.text = actor.display_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 24)
+	# One line always — a long name (Mr. Moneybags) shrinks to fit rather than
+	# wrapping, which would push the whole unit up out of line with its
+	# neighbours, or clipping against the panel edge (patch 0.18).
+	name_label.clip_text = true
 	hp_box.add_child(name_label)
+	# Sized only once it is in the tree — the theme variation's real font is
+	# what has to be measured, and an orphan Control resolves the plain
+	# default instead.
+	name_label.add_theme_font_size_override("font_size",
+		_name_font_size(name_label, actor.display_name))
 
 	_hp_bar = ProgressBar.new()
 	_hp_bar.custom_minimum_size = Vector2(0, 26)
@@ -161,7 +173,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# Fixed size reserved whether or not any statuses are showing — an icon
 	# appearing/disappearing must not change size or reflow the sprite
 	# (that reflow was pushing the whole unit upward: designer note).
-	_status_row.custom_minimum_size = Vector2(260, 36)
+	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 36)
 	_status_row.clip_contents = true
 	add_child(_status_row)
 
@@ -170,10 +182,23 @@ func setup(combat_actor: CombatActor) -> void:
 	refresh()
 
 
+## Largest font size at which `text` still fits the panel on one line.
+static func _name_font_size(label: Label, text: String) -> int:
+	var font := label.get_theme_font("font")
+	if font == null:
+		return 24
+	for font_size in range(24, 13, -1):
+		if font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1,
+				font_size).x <= UNIT_WIDTH - 24.0:
+			return font_size
+	return 14
+
+
 func refresh() -> void:
 	_hp_bar.max_value = actor.max_hp
 	_hp_bar.value = actor.hp
 	_hp_label.text = "%d / %d" % [actor.hp, actor.max_hp]
+	_shown_block = actor.block
 	_block_label.text = ("  🛡 %d" % actor.block) if actor.block > 0 else ""
 	for child in _status_row.get_children():
 		child.queue_free()
@@ -186,14 +211,38 @@ func refresh() -> void:
 			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			rect.custom_minimum_size = Vector2(30, 30)
-			rect.tooltip_text = String(status_id)
+			rect.tooltip_text = status_tooltip(status_id, stacks)
+			rect.mouse_filter = Control.MOUSE_FILTER_PASS
 			_status_row.add_child(rect)
 		var stack_label := Label.new()
 		stack_label.add_theme_font_size_override("font_size", 18)
 		stack_label.text = ("%s %d " % [status_id, stacks]) if icon == null else ("%d " % stacks)
+		stack_label.tooltip_text = status_tooltip(status_id, stacks)
+		stack_label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_status_row.add_child(stack_label)
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
 	_refresh_mark()
+
+
+## One human-readable explanation for a status/keyword, used by every hover
+## surface in combat: the buff/debuff strip under a unit and the icons on an
+## enemy's announced intent (patch 0.18 — "hovering should display the
+## keyword, like hovering a player ability").
+static func status_tooltip(status_id: StringName, stacks: int = 0) -> String:
+	var title := String(status_id).capitalize()
+	var body := ""
+	var keyword := Db.content.get_keyword(status_id)
+	if keyword != null:
+		title = keyword.name
+		body = keyword.text
+	else:
+		var status := Db.content.get_status(status_id)
+		if status != null:
+			title = status.name
+			body = status.description
+	if stacks > 0:
+		title = "%s %d" % [title, stacks]
+	return title if body == "" else "%s — %s" % [title, body]
 
 
 ## Builds the Mark's living-flame assembly: a soft additive glow, rising
@@ -345,11 +394,14 @@ func show_intent(entry: Dictionary) -> void:
 		_add_intent_chunk(StringName(str(buff.get("status", ""))),
 			"+%d" % int(buff.get("stacks", 1)))
 	if not intent.get("summon", {}).is_empty():
-		_add_intent_text("summon x%d" % int(intent.get("summon").get("count", 1)))
+		# Patch 0.18: a summon reads as an icon like every other intent, not
+		# as bare text in the middle of the icon row.
+		_add_intent_chunk(&"summon",
+			"x%d" % int(intent.get("summon").get("count", 1)))
 	if intent.get("heal_allies", 0) > 0:
-		_add_intent_text("heal allies")
+		_add_intent_chunk(&"heal_allies", "%d" % int(intent.get("heal_allies")))
 	if intent.get("ally_attack_again", false):
-		_add_intent_text("encore")
+		_add_intent_chunk(&"encore", "")
 	var instances := int(entry.get("display_instances", intent.get("instances", 0)))
 	var per_hit := int(entry.get("display_per_hit", intent.get("per_hit", 0)))
 	if entry.get("bust", false):
@@ -360,27 +412,55 @@ func show_intent(entry: Dictionary) -> void:
 		_add_intent_chunk(&"attack", "%d" % per_hit)
 
 
-## One icon (status_<id>.png, falling back to the generic attack dagger)
-## plus its stack/damage number.
+## Non-status intent parts that still deserve an icon + a hover explanation.
+const INTENT_ICONS := {
+	&"attack": "res://assets/icons/intent_attack.png",
+	&"summon": "res://assets/icons/intent_summon.png",
+	&"heal_allies": "res://assets/icons/fx_heal.png",
+	&"encore": "res://assets/icons/keyword_go_again.png",
+}
+const INTENT_HINTS := {
+	&"attack": "Attack — [instances] x [damage per hit].",
+	&"summon": "Summon — brings new enemies onto the field.",
+	&"heal_allies": "Heal Allies — restores health to every living enemy.",
+	&"encore": "Encore — another enemy attacks a second time.",
+}
+
+
+## One icon (status_<id>.png, or an intent icon, falling back to the generic
+## attack dagger) plus its stack/damage number. Both halves carry the same
+## hover text so the whole chunk explains itself (patch 0.18).
 func _add_intent_chunk(status_id: StringName, label_text: String) -> void:
-	var texture := SuitAssets.status_texture(status_id) if status_id != &"attack" else null
-	if texture == null and ResourceLoader.exists("res://assets/icons/intent_attack.png"):
-		texture = load("res://assets/icons/intent_attack.png")
+	var texture: Texture2D = null
+	if not INTENT_ICONS.has(status_id):
+		texture = SuitAssets.status_texture(status_id)
+	var fallback_path: String = INTENT_ICONS.get(status_id, INTENT_ICONS[&"attack"])
+	if texture == null and ResourceLoader.exists(fallback_path):
+		texture = load(fallback_path)
+	if texture == null and ResourceLoader.exists(INTENT_ICONS[&"attack"]):
+		texture = load(INTENT_ICONS[&"attack"])
+	var hint: String = INTENT_HINTS.get(status_id, status_tooltip(status_id, label_text.to_int()))
 	if texture != null:
 		var icon := TextureRect.new()
 		icon.texture = texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(30, 30)
+		icon.tooltip_text = hint
+		icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		_intent_row.add_child(icon)
-	_add_intent_text(label_text)
+	if label_text != "":
+		_add_intent_text(label_text, hint)
 
 
-func _add_intent_text(text: String) -> void:
+func _add_intent_text(text: String, hint: String = "") -> void:
 	var label := Label.new()
 	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
 	label.add_theme_font_size_override("font_size", 22)
 	label.text = text
+	if hint != "":
+		label.tooltip_text = hint
+		label.mouse_filter = Control.MOUSE_FILTER_PASS
 	_intent_row.add_child(label)
 
 
@@ -444,16 +524,34 @@ func _smear() -> void:
 		_ghost_layer.ghost(_sprite)
 
 
+## True cross-dissolve back to the idle art: a throwaway copy of the sprite
+## holding the IDLE texture fades up on top of the pose frame, which fades
+## out underneath it, so something is always on screen. Patch 0.17 faded the
+## one sprite out to alpha 0 and back to hide the silhouette pop — which is
+## why the Bouncer briefly vanished mid-transition (patch 0.18).
 func _return_to_idle() -> void:
-	if _idle_texture == null:
+	if _idle_texture == null or _sprite.texture == _idle_texture:
 		return
-	# Fade all the way to invisible before swapping the texture, then back
-	# in — swapping at partial alpha (patch 0.17) still showed a visible
-	# flicker/pop between the two poses' silhouettes.
-	var fade := create_tween()
-	fade.tween_property(_sprite, "modulate:a", 0.0, 0.1)
-	fade.tween_callback(func() -> void: _sprite.texture = _idle_texture)
-	fade.tween_property(_sprite, "modulate:a", 1.0, 0.16)
+	# The overlay rides INSIDE _sprite (full rect) so it inherits every
+	# position/scale tween already in flight, and the outgoing pose fades via
+	# self_modulate — which does not drag the overlay down with it.
+	var incoming := TextureRect.new()
+	incoming.texture = _idle_texture
+	incoming.expand_mode = _sprite.expand_mode
+	incoming.stretch_mode = _sprite.stretch_mode
+	incoming.set_anchors_preset(Control.PRESET_FULL_RECT)
+	incoming.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	incoming.modulate.a = 0.0
+	_sprite.add_child(incoming)
+
+	var blend := create_tween()
+	blend.set_parallel(true)
+	blend.tween_property(incoming, "modulate:a", 1.0, 0.18)
+	blend.tween_property(_sprite, "self_modulate:a", 0.0, 0.18)
+	blend.chain().tween_callback(func() -> void:
+		_sprite.texture = _idle_texture
+		_sprite.self_modulate.a = 1.0
+		incoming.queue_free())
 
 
 ## Facing multiplier: heroes lunge toward +x (enemies stand to their right);
@@ -608,14 +706,25 @@ func sprite_center() -> Vector2:
 	return _sprite.global_position + _sprite.size * 0.5
 
 
-## Steps the HP bar down by exactly this hit's amount (patch 0.17): the sim
-## resolves every instance of a multi-hit attack synchronously, so a plain
-## refresh() would jump straight to the final HP before the later hits even
-## finish animating. This keeps the bar in lockstep with each landed hit.
-func apply_damage_display(amount: int) -> void:
-	var shown := maxi(0, int(_hp_bar.value) - amount)
+## Steps the readout down by ONE landed hit — the sim resolves every instance
+## of a multi-hit attack synchronously, so a plain refresh() would jump to the
+## final HP before the later hits even animate (patch 0.17).
+##
+## `hp_lost` is what actually came off HP, `blocked` what the shield ate.
+## Patch 0.18: the bar used to drop
+## by the raw damage even when Block soaked it, so the next refresh() popped
+## the HP back up and Block read as a heal. Block is spent here instead, and
+## only the leftover reaches the HP bar.
+func apply_damage_display(hp_lost: int, blocked: int = 0) -> void:
+	if blocked > 0:
+		_shown_block = maxi(0, _shown_block - blocked)
+		_block_label.text = ("  🛡 %d" % _shown_block) if _shown_block > 0 else ""
+	if hp_lost <= 0:
+		return
+	var shown := maxi(0, int(_hp_bar.value) - hp_lost)
 	_hp_bar.value = shown
 	_hp_label.text = "%d / %d" % [shown, actor.max_hp]
+
 
 
 ## Impact: white shader flash, knockback, and a feet-anchored squash that

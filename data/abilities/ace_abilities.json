@@ -84,7 +84,7 @@
       "exclusive": true,
       "effects": [{"op": "gain_block", "amount": 20, "condition": "solo_ability_this_round"}],
       "keywords": ["block"],
-      "description": "If this is the only ability used this turn, gain 20 Block. Locks your other abilities for the turn."
+      "description": "If this is the only ability used this turn, gain 20 Block. No other ability can be used this turn."
     },
     {
       "id": "house_edge",

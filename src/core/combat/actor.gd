@@ -12,6 +12,10 @@ var max_hp: int
 var block: int = 0
 var is_hero: bool
 var statuses: Dictionary = {}  # status id -> stacks
+## How much Block absorbed on the most recent take_damage() call. Presenters
+## need the split so a blocked hit reads as "the shield ate it" rather than
+## the HP bar dropping and springing back (patch 0.18).
+var last_absorbed: int = 0
 
 
 func _init(actor_id: StringName, definition_id: StringName, name_text: String,
@@ -31,7 +35,8 @@ func is_alive() -> bool:
 ## Applies already-modified damage: block absorbs, remainder hits HP.
 ## Returns the HP actually lost.
 func take_damage(amount: int) -> int:
-	var absorbed: int = mini(block, amount)
+	var absorbed: int = mini(block, maxi(0, amount))
+	last_absorbed = absorbed
 	block -= absorbed
 	var hp_loss: int = mini(hp, amount - absorbed)
 	hp -= hp_loss

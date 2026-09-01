@@ -894,6 +894,38 @@
       "transparent": true,
       "quality": "medium",
       "prompt": "A game UI element on a fully transparent background: a bold red circular rubber-stamp mark with a thick grungy double ring and a big cross through the middle, slightly rotated, distressed ink texture. No letters or words — just the ring and cross shape. Centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "intent_summon",
+      "out": "assets/icons/intent_summon.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game intent icon on a fully transparent background: a cartoon summoning symbol — a glowing green magic circle seen at a slight angle with a small silhouetted figure rising out of it in a puff of teal smoke, two upward sparkles. Thick dark outline, chunky readable shape that works at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "mr_moneybags_throw_windup",
+      "out": "assets/characters/mr_moneybags_throw_windup.png",
+      "base": "assets/characters/boss_mr_moneybags.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same rotund casino tycoon build, same black top hat with gold band and spade emblem, same monocle and huge waxed black mustache, same maroon gold-trimmed tailcoat over a cream patterned waistcoat with gold watch chain, same pinstriped trousers and spade-buckled shoes, same green spade money bag and diamond-topped cane, identical art style and colours — in a MONEY-HURLING WIND-UP pose: the heavy green money bag swung back high behind his shoulder in his raised hand, torso twisted away to load the throw, cane planted wide for balance, weight sunk into his back foot, sneering down at his target, facing slightly left. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "mr_moneybags_throw_release",
+      "out": "assets/characters/mr_moneybags_throw_release.png",
+      "base": "assets/characters/boss_mr_moneybags.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same rotund casino tycoon build, same black top hat with gold band and spade emblem, same monocle and huge waxed black mustache, same maroon gold-trimmed tailcoat over a cream patterned waistcoat with gold watch chain, same pinstriped trousers and spade-buckled shoes, same green spade money bag and diamond-topped cane, identical art style and colours — at the RELEASE INSTANT of hurling his money: arm snapped fully forward and slightly left, a spray of gold coins and banknotes bursting from the open green bag with sharp motion streaks behind them, body leaning hard into the throw, tailcoat flaring, top hat tilting from the force. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "mr_moneybags_throw_follow",
+      "out": "assets/characters/mr_moneybags_throw_follow.png",
+      "base": "assets/characters/boss_mr_moneybags.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same rotund casino tycoon build, same black top hat with gold band and spade emblem, same monocle and huge waxed black mustache, same maroon gold-trimmed tailcoat over a cream patterned waistcoat with gold watch chain, same pinstriped trousers and spade-buckled shoes, same green spade money bag and diamond-topped cane, identical art style and colours — in a MONEY-HURLING FOLLOW-THROUGH pose: the throw has finished, his throwing arm swung down and across his belly, the emptied green bag dangling, weight settled onto his front foot, cane back under his other hand, a smug satisfied grin under the mustache, coat settling from the motion. Full body, three-quarter view. Same scale and framing as the original."
     }
   ]
 }

@@ -2,7 +2,11 @@ extends Control
 ## Combat screen presenter: owns a CombatSim, forwards player input as sim
 ## commands, and animates the sim's event queue. All rules live in the sim.
 
-const ENEMY_GAP := 24
+const ENEMY_GAP := 16
+## Doc "Behavior -> Unit Positioning": each side of the field has exactly four
+## fixed slots. Index 0 is the slot nearest the centre of the screen, 3 the
+## furthest out — the same order the sim keeps `enemies` in.
+const ENEMY_SLOTS := 4
 
 ## Per-ability attack animations from the design doc's Animations table.
 ## card_fling = a razor card flies at the target (flaming when it Marks),
@@ -42,6 +46,7 @@ var _round_label: Label
 var _banner: Label
 var _hero_view: UnitView
 var _enemy_views: Dictionary = {}   # actor id -> UnitView
+var _enemy_slot_of: Dictionary = {} # actor id -> slot index (0 = nearest centre)
 var _enemies_row: HBoxContainer
 var _reel_strip: ReelStrip
 var _tray_view: ChipTrayView
@@ -58,9 +63,6 @@ func _ready() -> void:
 		# Standalone debug launch: a fixed fight with everything unlocked.
 		# CB_DEBUG_ENEMIES="dealer,dealer,..." overrides the lineup.
 		var enemies: Array = ["bouncer", "server"]
-		var override := OS.get_environment("CB_DEBUG_ENEMIES")
-		if override != "":
-			enemies = override.split(",")
 		setup({
 			"hero": "ace",
 			"abilities": ["card_sling", "quick_maneuvers", "color_up",
@@ -68,18 +70,28 @@ func _ready() -> void:
 			"enemies": enemies,
 			"seed": randi(),
 		})
-		# CB_DEBUG_AUTOFIRE=1: fire card_sling automatically (animation review).
-		if OS.get_environment("CB_DEBUG_AUTOFIRE") != "":
+		# CB_DEBUG_AUTOFIRE=N: fire the Nth listed ability automatically
+		# (1 = card_sling, 2 = quick_maneuvers, ...) for animation review.
+		var autofire := OS.get_environment("CB_DEBUG_AUTOFIRE").to_int()
+		if autofire > 0:
 			await get_tree().create_timer(4.0).timeout
 			sim.tray.add(&"spade", 1)
-			_on_chip_dropped(0, 0, &"spade")
-		# CB_DEBUG_ENDTURN=1: auto-end the turn so enemy attacks play out too.
-		if OS.get_environment("CB_DEBUG_ENDTURN") != "":
+			_on_chip_dropped(autofire - 1, 0, &"spade")
+		# CB_DEBUG_ENDTURN=N: auto-end N turns so enemy attacks play out too.
+		var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
+		for i in end_turns:
 			await get_tree().create_timer(6.5).timeout
 			_on_end_turn()
 
 
 func setup(config: Dictionary) -> void:
+	# CB_DEBUG_ENEMIES="dealer,dealer,..." forces a lineup from anywhere in the
+	# flow, so a crowded field can be screenshot-reviewed without hunting for
+	# the encounter that rolls it.
+	var override := OS.get_environment("CB_DEBUG_ENEMIES")
+	if override != "":
+		config = config.duplicate()
+		config["enemies"] = Array(override.split(","))
 	run_mode = config.get("run_mode", false)
 	sim = CombatSim.new(Db.content, config)
 	_spawn_units()
@@ -105,39 +117,30 @@ func _build_layout() -> void:
 
 	_round_label = Label.new()
 	_round_label.theme_type_variation = &"SubtitleLabel"
-	_round_label.position = Vector2(40, 24)
+	# Clear of the persistent run header bar, which draws above this screen.
+	_round_label.position = Vector2(40, HeaderHud.BAR_HEIGHT + 16)
 	add_child(_round_label)
 
-	if Game.run != null:
-		# The Relics display now lives in the persistent header (HeaderHud,
-		# doc's Screen UI spec) — this row is just the coins/encounter tally.
-		var hud := HBoxContainer.new()
-		hud.anchor_left = 0.55
-		hud.anchor_right = 0.99
-		hud.anchor_top = 0.06
-		hud.anchor_bottom = 0.11
-		hud.alignment = BoxContainer.ALIGNMENT_END
-		hud.add_theme_constant_override("separation", 10)
-		add_child(hud)
-		var coins := Label.new()
-		coins.theme_type_variation = &"SubtitleLabel"
-		coins.text = "🪙 %d   Encounter %d/10" % [Game.run.coins, Game.run.history.size()]
-		hud.add_child(coins)
+	# Gold and the encounter number are part of the run header now (patch
+	# 0.18: "placed on the same row as the other UI elements in this area"),
+	# so the combat screen no longer draws its own tally.
 
 	_enemies_row = HBoxContainer.new()
 	_enemies_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_enemies_row.add_theme_constant_override("separation", ENEMY_GAP)
-	_enemies_row.anchor_left = 0.42
-	_enemies_row.anchor_right = 0.99
-	_enemies_row.anchor_top = 0.03
-	_enemies_row.anchor_bottom = 0.645
+	_enemies_row.anchor_left = 0.40
+	_enemies_row.anchor_right = 0.98
+	_enemies_row.anchor_top = 0.02
+	# Patch 0.18: the enemy band stops well above the End Turn strip, so a
+	# full four-unit line can never sit under the button.
+	_enemies_row.anchor_bottom = 0.60
 	add_child(_enemies_row)
 
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
 	bottom.anchor_right = 0.99
-	bottom.anchor_top = 0.67
-	bottom.anchor_bottom = 0.93   # patch 0.17: more breathing room below the cards
+	bottom.anchor_top = 0.663
+	bottom.anchor_bottom = 0.955  # patch 0.18: a taller band, so ability text fits
 	bottom.add_theme_constant_override("separation", 10)
 	add_child(bottom)
 
@@ -156,15 +159,16 @@ func _build_layout() -> void:
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	# End Turn sits in its own strip clearly ABOVE the skill line, with no
-	# vertical overlap with it (patch 0.17 fix: the bands used to overlap).
+	# End Turn sits in its own strip between the enemy band and the skill
+	# line, overlapping neither (patch 0.18: both were shrunk so the two can
+	# never collide, however many enemies are on the field).
 	_end_turn = Button.new()
 	_end_turn.text = "End Turn ▶"
 	_end_turn.pressed.connect(_on_end_turn)
-	_end_turn.anchor_left = 0.85
-	_end_turn.anchor_right = 0.99
-	_end_turn.anchor_top = 0.60
-	_end_turn.anchor_bottom = 0.655
+	_end_turn.anchor_left = 0.878
+	_end_turn.anchor_right = 0.98
+	_end_turn.anchor_top = 0.608
+	_end_turn.anchor_bottom = 0.652
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
@@ -177,10 +181,13 @@ func _build_layout() -> void:
 
 func _spawn_units() -> void:
 	_hero_view = UnitView.new()
-	_hero_view.anchor_left = 0.05
-	_hero_view.anchor_right = 0.28
+	# Doc "Unit Positioning": a lone unit stands in the third slot out from the
+	# middle — and every character keeps the same fixed size, so the hero's
+	# panel is exactly as wide as an enemy's (patch 0.18).
+	_hero_view.anchor_left = 0.108
+	_hero_view.anchor_right = 0.222
 	_hero_view.anchor_top = 0.04
-	_hero_view.anchor_bottom = 0.66
+	_hero_view.anchor_bottom = 0.62
 	add_child(_hero_view)
 	move_child(_banner, get_child_count() - 1)
 	_hero_view.setup(sim.hero)
@@ -192,7 +199,49 @@ func _spawn_units() -> void:
 		view.setup(enemy)
 		view.clicked.connect(_on_unit_clicked)
 		_enemy_views[enemy.id] = view
+	_rebuild_enemy_row()
 	_update_target_markers()
+
+
+## Doc "Unit Positioning", counted outward from the middle of the screen:
+## 1 unit takes the third slot out, 2 the two central slots, 3 everything but
+## the outermost, 4 the lot.
+static func initial_slots(count: int) -> Array:
+	match count:
+		0: return []
+		1: return [2]
+		2: return [0, 1]
+		3: return [0, 1, 2]
+	return [0, 1, 2, 3]
+
+
+## Lays the four slots out left to right (slot 0 nearest the centre) from the
+## sim's own centre-outward ordering, filling unoccupied slots with a
+## same-width spacer. Corpses keep their place in that ordering, so nobody
+## slides sideways when a neighbour dies (patch 0.17) — only a summon or a
+## cleared-away corpse re-seats the line.
+func _rebuild_enemy_row() -> void:
+	for child in _enemies_row.get_children():
+		if not (child is UnitView):
+			_enemies_row.remove_child(child)
+			child.queue_free()
+	_enemy_slot_of.clear()
+	var slots := initial_slots(sim.enemies.size())
+	var occupant := {}
+	for index in sim.enemies.size():
+		var actor_id: StringName = sim.enemies[index].id
+		var slot: int = slots[index]
+		_enemy_slot_of[actor_id] = slot
+		if _enemy_views.has(actor_id):
+			occupant[slot] = _enemy_views[actor_id]
+	for slot in ENEMY_SLOTS:
+		var node: Control = occupant.get(slot)
+		if node == null:
+			node = Control.new()
+			node.custom_minimum_size = Vector2(UnitView.UNIT_WIDTH, 0)
+			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_enemies_row.add_child(node)
+		_enemies_row.move_child(node, slot)
 
 
 func _spawn_abilities() -> void:
@@ -291,6 +340,18 @@ func _add_enemy_view(actor_id: StringName) -> void:
 			view.modulate.a = 0.0
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.4)
 			_enemy_views[actor_id] = view
+			_rebuild_enemy_row()
+
+
+## A corpse whose slot the sim handed to someone else leaves the field.
+func _remove_enemy_view(actor_id: StringName) -> void:
+	var view: UnitView = _enemy_views.get(actor_id)
+	_enemy_views.erase(actor_id)
+	_enemy_slot_of.erase(actor_id)
+	if view != null:
+		_enemies_row.remove_child(view)
+		view.queue_free()
+	_rebuild_enemy_row()
 
 
 func _play_events(events: Array[CombatEvent]) -> void:
@@ -339,6 +400,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_add_enemy_view(event.data.actor)
 				Fx.shake(8.0)
 				await get_tree().create_timer(0.35).timeout
+			&"actor_removed":
+				_remove_enemy_view(event.data.actor)
 			&"encore":
 				var encore_view := _view_of(event.data.actor)
 				if encore_view != null:
@@ -367,14 +430,24 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					# Step the bar down by this hit alone (patch 0.17) — a
 					# full refresh() would already show every instance of a
 					# multi-hit attack landed, before the rest even animate.
-					target.apply_damage_display(amount)
+					# Block is spent first, and only what got through touches
+					# HP (patch 0.18: blocked hits used to drop the bar and
+					# then spring back, reading as a heal).
+					target.apply_damage_display(int(event.data.get("hp_lost", amount)),
+						int(event.data.get("blocked", 0)))
 					# Damage (doc animation): a small explosion icon on the hit.
 					_burst(target.sprite_center(), "res://assets/icons/fx_explosion.png",
 						Color(1.0, 0.75, 0.3))
 					_vfx.shockwave(target.sprite_center(),
 						Color(1.0, 0.85, 0.5) if amount < 20 else Color(1.0, 0.6, 0.3),
 						90.0 + amount * 3.0)
-					Fx.spawn_number(target.sprite_center(), str(amount))
+					var hp_lost := int(event.data.get("hp_lost", amount))
+					var blocked := int(event.data.get("blocked", 0))
+					if hp_lost <= 0 and blocked > 0:
+						Fx.spawn_number(target.sprite_center(), "BLOCKED",
+							Color(0.6, 0.85, 1.0))
+					else:
+						Fx.spawn_number(target.sprite_center(), str(hp_lost))
 					if amount >= 25:
 						Fx.hitstop(0.12)
 						Fx.punch_zoom(0.05)

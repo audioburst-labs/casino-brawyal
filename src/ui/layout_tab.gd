@@ -5,6 +5,8 @@ extends Control
 ## reachable any time via the header icon, without leaving the current screen.
 
 var _zones := {}   # zone id -> slot container
+var _held_sticker: StringName = &""   # the sticker awaiting a reel slot
+var _machine_column: VBoxContainer
 
 
 class AbilityChit:
@@ -98,25 +100,112 @@ func _build_slot_machine_section(column: VBoxContainer) -> void:
 	header.theme_type_variation = &"SubtitleLabel"
 	column.add_child(header)
 
+	_machine_column = VBoxContainer.new()
+	_machine_column.add_theme_constant_override("separation", 10)
+	column.add_child(_machine_column)
+	_refresh_machine_section()
+
+
+## Doc "Sticker Applying Screen": stickers won outside the shop are held until
+## the player clicks the reel symbol they should replace. Without this they had
+## nowhere to go but the shop, so a Casino-won sticker was a dead reward
+## (patch 0.18).
+func _refresh_machine_section() -> void:
+	for child in _machine_column.get_children():
+		_machine_column.remove_child(child)
+		child.queue_free()
+	if Game.run == null:
+		return
+
+	if not Game.run.sticker_inventory.is_empty():
+		var tray := HBoxContainer.new()
+		tray.alignment = BoxContainer.ALIGNMENT_CENTER
+		tray.add_theme_constant_override("separation", 10)
+		_machine_column.add_child(tray)
+		var hint := Label.new()
+		var placing_now := _held_sticker != &""
+		hint.text = "Click a reel symbol to place it:" if placing_now else "Pick a sticker, then a symbol:"
+		tray.add_child(hint)
+		for index in Game.run.sticker_inventory.size():
+			var suit: StringName = Game.run.sticker_inventory[index]
+			var chip := _suit_button(suit, Vector2(44, 44))
+			chip.tooltip_text = "%s sticker" % String(suit).capitalize()
+			chip.toggle_mode = true
+			chip.button_pressed = suit == _held_sticker
+			chip.pressed.connect(_on_sticker_picked.bind(suit))
+			tray.add_child(chip)
+		var discard := Button.new()
+		discard.focus_mode = Control.FOCUS_NONE
+		discard.text = "🗑"
+		discard.tooltip_text = "Throw the held sticker away"
+		discard.disabled = _held_sticker == &""
+		discard.pressed.connect(_on_sticker_discarded)
+		tray.add_child(discard)
+
 	var reels_row := HBoxContainer.new()
 	reels_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	reels_row.add_theme_constant_override("separation", 10)
-	column.add_child(reels_row)
-	if Game.run == null:
-		return
-	for reel: Reel in Game.run.machine.reels:
+	_machine_column.add_child(reels_row)
+	var placing := _held_sticker != &""
+	for reel_index in Game.run.machine.reels.size():
+		var reel: Reel = Game.run.machine.reels[reel_index]
 		var reel_box := VBoxContainer.new()
 		reel_box.add_theme_constant_override("separation", 4)
 		reels_row.add_child(reel_box)
-		for suit: StringName in reel.symbols:
-			var icon := TextureRect.new()
-			var texture := SuitAssets.suit_texture(suit)
-			if texture != null:
-				icon.texture = texture
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.custom_minimum_size = Vector2(32, 32)
-			reel_box.add_child(icon)
+		for slot_index in reel.symbols.size():
+			var suit: StringName = reel.symbols[slot_index]
+			var slot := _suit_button(suit, Vector2(40, 40))
+			slot.flat = not placing
+			slot.disabled = not placing
+			slot.focus_mode = Control.FOCUS_NONE
+			slot.tooltip_text = String(suit).capitalize()
+			slot.pressed.connect(_on_reel_slot_clicked.bind(reel_index, slot_index))
+			reel_box.add_child(slot)
+
+
+## A square suit button. The art is 1024px square, so it rides as an inset
+## child TextureRect (the ability card's socket pattern) rather than as
+## Button.icon, which would draw it at native size.
+static func _suit_button(suit: StringName, box: Vector2) -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = box
+	# Focusable buttons make the ScrollContainer jump to whichever one grabs
+	# focus the moment the tab opens; nothing here needs keyboard focus.
+	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var face := TextureRect.new()
+	face.texture = SuitAssets.suit_texture(suit)
+	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	face.set_anchors_preset(Control.PRESET_FULL_RECT)
+	face.offset_left = 5
+	face.offset_top = 5
+	face.offset_right = -5
+	face.offset_bottom = -5
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(face)
+	return button
+
+
+func _on_sticker_picked(suit: StringName) -> void:
+	_held_sticker = &"" if _held_sticker == suit else suit
+	_refresh_machine_section()
+
+
+func _on_sticker_discarded() -> void:
+	Game.run.sticker_inventory.erase(_held_sticker)
+	_held_sticker = &""
+	_refresh_machine_section()
+
+
+func _on_reel_slot_clicked(reel_index: int, slot_index: int) -> void:
+	if _held_sticker == &"":
+		return
+	Game.run.machine.apply_sticker(reel_index, slot_index, _held_sticker)
+	Game.run.sticker_inventory.erase(_held_sticker)
+	_held_sticker = &""
+	_refresh_machine_section()
 
 
 func _build_relics_section(column: VBoxContainer) -> void:
