@@ -93,14 +93,24 @@ static func _ability_order(sim: CombatSim) -> Array:
 
 
 static func _score(def: Defs.AbilityDef, living_enemies: int) -> float:
+	return _score_effects(def.effects, living_enemies) / maxf(1.0, def.cost.size())
+
+
+static func _score_effects(effects: Array[Dictionary], living_enemies: int) -> float:
 	var value := 0.0
-	for effect: Dictionary in def.effects:
+	for effect: Dictionary in effects:
 		match str(effect.get("op", "")):
 			"damage":
 				var hits := int(effect.get("amount", 0)) * int(effect.get("times", 1))
 				value += hits * (living_enemies if str(effect.get("target", "")) == "all_enemies" else 1)
 			"cash_in":
-				value += 5.0
+				# Cash In carries its own payoff now (v0.19); score the branch
+				# it would most likely take rather than a flat guess.
+				var branch: Array = effect.get("effects", effect.get("else_effects", []))
+				var typed: Array[Dictionary] = []
+				for nested in branch:
+					typed.append(nested)
+				value += _score_effects(typed, living_enemies) * 0.75
 			"damage_missing_pct":
 				value += 12.0
 			"add_chips":
@@ -114,6 +124,6 @@ static func _score(def: Defs.AbilityDef, living_enemies: int) -> float:
 				var per := 5.0 if str(effect.get("status", "")) in ["weak", "vulnerable"] else 2.0
 				var targets := living_enemies if str(effect.get("target", "")) == "all_enemies" else 1
 				value += per * stacks * targets
-	return value / maxf(1.0, def.cost.size())
+	return value
 
 

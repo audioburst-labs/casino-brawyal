@@ -16,7 +16,7 @@ const KNOWN_OPS: Array[String] = [
 	"mark_random_unmarked", "block_per_chip",
 ]
 const KNOWN_CONDITIONS: Array[String] = [
-	"no_enemy_marked", "solo_ability_this_round", "spin_has_triple",
+	"no_enemy_marked", "enemy_marked", "solo_ability_this_round", "spin_has_triple",
 ]
 const BOSS_STAGE := 6
 const KNOWN_TRIGGERS: Array[StringName] = [
@@ -210,6 +210,7 @@ func _parse_ability(item: Dictionary) -> void:
 		ability.bonus_effects.append(effect)
 
 	ability.per_turn = int(item.get("per_turn", 0))
+	ability.per_combat = int(item.get("per_combat", 0))
 	ability.passive = bool(item.get("passive", false))
 	ability.exclusive = bool(item.get("exclusive", false))
 	for keyword_id in item.get("keywords", []):
@@ -229,6 +230,14 @@ func _validate_effect(effect: Dictionary, context: String) -> void:
 		errors.append("%s: unknown status '%s'" % [context, effect.get("status", "")])
 	if effect.has("condition") and not KNOWN_CONDITIONS.has(str(effect.condition)):
 		errors.append("%s: unknown condition '%s'" % [context, effect.condition])
+	# cash_in carries its own payoff (and its "instead" fallback) since v0.19 —
+	# those nested ops go through the same linting as any other.
+	for key in ["effects", "else_effects"]:
+		for nested in effect.get(key, []):
+			if nested is Dictionary:
+				_validate_effect(nested, "%s -> %s" % [context, key])
+			else:
+				errors.append("%s: %s must hold effect dictionaries" % [context, key])
 
 
 func _parse_relic(item: Dictionary) -> void:

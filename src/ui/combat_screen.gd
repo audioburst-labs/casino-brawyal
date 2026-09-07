@@ -57,6 +57,45 @@ var _vfx: CombatVfx
 var _busy := false
 
 
+## Ultimate Animation (doc): "a streak of paint appears briefly on the screen".
+## The reference is Persona's torn-paper slash, so the band is drawn as a
+## polygon with a ragged top and bottom edge rather than a clean ColorRect,
+## with a white deckle along each tear.
+class PaintStreak:
+	extends Control
+
+	var streak_color := Color(0.85, 0.15, 0.35)
+	var seed_value := 0
+	## 0.0 draws only the torn white edges — used to lay the same tear back
+	## over the close-up so the portrait sits INSIDE the band, not on top of it.
+	var fill_alpha := 1.0
+	## How far each torn edge can bite into the band, as a fraction of its
+	## height. Anything drawn inside this margin is guaranteed to stay behind
+	## the tear rather than poking through it.
+	var jitter_ratio := 0.22
+
+	func _draw() -> void:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var steps := 26
+		var top := PackedVector2Array()
+		var bottom := PackedVector2Array()
+		for i in steps + 1:
+			var t := float(i) / steps
+			var x := size.x * t
+			top.append(Vector2(x, rng.randf_range(0.0, size.y * jitter_ratio)))
+			bottom.append(Vector2(x, size.y - rng.randf_range(0.0, size.y * jitter_ratio)))
+		var shape := PackedVector2Array(top)
+		for i in range(bottom.size() - 1, -1, -1):
+			shape.append(bottom[i])
+		if fill_alpha > 0.0:
+			draw_colored_polygon(shape, Color(streak_color, fill_alpha))
+		# The white deckle that sells the torn-paper edge.
+		var deckle := Color(1.0, 1.0, 1.0, 0.9)
+		draw_polyline(top, deckle, 5.0, true)
+		draw_polyline(bottom, deckle, 5.0, true)
+
+
 func _ready() -> void:
 	_build_layout()
 	if get_tree().current_scene == self:
@@ -72,11 +111,27 @@ func _ready() -> void:
 		})
 		# CB_DEBUG_AUTOFIRE=N: fire the Nth listed ability automatically
 		# (1 = card_sling, 2 = quick_maneuvers, ...) for animation review.
+		# Every socket is filled, so multi-chip abilities fire too.
 		var autofire := OS.get_environment("CB_DEBUG_AUTOFIRE").to_int()
 		if autofire > 0:
 			await get_tree().create_timer(4.0).timeout
-			sim.tray.add(&"spade", 1)
-			_on_chip_dropped(autofire - 1, 0, &"spade")
+			var state := sim.abilities[autofire - 1]
+			for slot in state.def.cost.size():
+				var suit: StringName = state.def.cost[slot]
+				if suit == &"any":
+					suit = &"spade"
+				sim.tray.add(suit, 1)
+				_on_chip_dropped(autofire - 1, slot, suit)
+		# CB_DEBUG_HERO_HP=N: start Ace on N hp, to reach a death quickly.
+		var hero_hp := OS.get_environment("CB_DEBUG_HERO_HP").to_int()
+		if hero_hp > 0:
+			sim.hero.hp = hero_hp
+			_hero_view.refresh()
+		# CB_DEBUG_BANNER=victory|defeat: pop the end-of-combat banner.
+		var banner := OS.get_environment("CB_DEBUG_BANNER")
+		if banner != "":
+			await get_tree().create_timer(1.0).timeout
+			_show_banner("VICTORY!" if banner == "victory" else "DEFEAT")
 		# CB_DEBUG_ENDTURN=N: auto-end N turns so enemy attacks play out too.
 		var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
 		for i in end_turns:
@@ -128,12 +183,15 @@ func _build_layout() -> void:
 	_enemies_row = HBoxContainer.new()
 	_enemies_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_enemies_row.add_theme_constant_override("separation", ENEMY_GAP)
-	_enemies_row.anchor_left = 0.40
-	_enemies_row.anchor_right = 0.98
-	_enemies_row.anchor_top = 0.02
-	# Patch 0.18: the enemy band stops well above the End Turn strip, so a
-	# full four-unit line can never sit under the button.
-	_enemies_row.anchor_bottom = 0.60
+	# Patch 0.19: the band starts well right of screen centre, so even the
+	# doc's "two central slots" pair still reads as standing on the right,
+	# and it reaches lower down the felt so the fighters aren't floating in
+	# the top half of the frame. End Turn has moved out of this column
+	# entirely, which is what frees the vertical room.
+	_enemies_row.anchor_left = 0.52
+	_enemies_row.anchor_right = 0.985
+	_enemies_row.anchor_top = 0.06
+	_enemies_row.anchor_bottom = 0.655
 	add_child(_enemies_row)
 
 	var bottom := HBoxContainer.new()
@@ -159,22 +217,29 @@ func _build_layout() -> void:
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	# End Turn sits in its own strip between the enemy band and the skill
-	# line, overlapping neither (patch 0.18: both were shrunk so the two can
-	# never collide, however many enemies are on the field).
+	# End Turn lives on the player's side now, above the slot machine
+	# (patch 0.19). It shared a column with the enemy line for two patches
+	# and collided with it twice; out here it cannot, at any enemy count,
+	# and the enemy band gets the height it needed.
 	_end_turn = Button.new()
 	_end_turn.text = "End Turn ▶"
 	_end_turn.pressed.connect(_on_end_turn)
-	_end_turn.anchor_left = 0.878
-	_end_turn.anchor_right = 0.98
-	_end_turn.anchor_top = 0.608
-	_end_turn.anchor_bottom = 0.652
+	_end_turn.anchor_left = 0.012
+	_end_turn.anchor_right = 0.145
+	_end_turn.anchor_top = 0.578
+	_end_turn.anchor_bottom = 0.642
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
 	_banner = Label.new()
 	_banner.theme_type_variation = &"TitleLabel"
-	_banner.set_anchors_preset(Control.PRESET_CENTER)
+	# Patch 0.19: PRESET_CENTER on an empty Label bakes zero-size offsets, so
+	# the text started at screen centre and ran off to the right. Spanning the
+	# full width and centring the text inside it is size-independent.
+	_banner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_banner.visible = false
 	add_child(_banner)
 
@@ -184,10 +249,10 @@ func _spawn_units() -> void:
 	# Doc "Unit Positioning": a lone unit stands in the third slot out from the
 	# middle — and every character keeps the same fixed size, so the hero's
 	# panel is exactly as wide as an enemy's (patch 0.18).
-	_hero_view.anchor_left = 0.108
-	_hero_view.anchor_right = 0.222
-	_hero_view.anchor_top = 0.04
-	_hero_view.anchor_bottom = 0.62
+	_hero_view.anchor_left = 0.150
+	_hero_view.anchor_right = 0.244
+	_hero_view.anchor_top = 0.06
+	_hero_view.anchor_bottom = 0.655
 	add_child(_hero_view)
 	move_child(_banner, get_child_count() - 1)
 	_hero_view.setup(sim.hero)
@@ -321,6 +386,18 @@ func _view_of(actor_id: StringName) -> UnitView:
 	if actor_id == sim.hero.id:
 		return _hero_view
 	return _enemy_views.get(actor_id)
+
+
+## True when this enemy's announced move actually throws a punch at the hero —
+## a summon, a heal or a pure buff should not animate like one.
+func _intent_strikes(actor_id: StringName) -> bool:
+	var entry := sim.intent_display(actor_id)
+	if entry.is_empty():
+		return false
+	var intent: Dictionary = entry.get("intent", {})
+	if intent.get("blackjack", false):
+		return not entry.get("bust", false)
+	return int(intent.get("instances", 0)) > 0
 
 
 func _card_of(ability_id: StringName) -> AbilityCard:
@@ -487,15 +564,31 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var healed_view := _view_of(event.data.actor)
 				if healed_view != null:
 					healed_view.refresh()
+					# A heal has to read AS a heal on the unit receiving it
+					# (patch 0.19): green burst on the ally, plus a beat, so a
+					# three-ally heal no longer pops every number on one frame.
+					_burst(healed_view.sprite_center(),
+						"res://assets/icons/fx_heal.png", Color(0.5, 0.95, 0.55))
+					_vfx.shockwave(healed_view.sprite_center(),
+						Color(0.5, 0.95, 0.55), 90.0)
 					Fx.spawn_number(healed_view.sprite_center(),
 						"+%d" % event.data.amount, Color(0.5, 0.95, 0.55))
+					await get_tree().create_timer(0.16).timeout
 			&"actor_died":
 				var dead_view := _view_of(event.data.actor)
+				var hero_died: bool = event.data.actor == sim.hero.id
 				if dead_view != null:
-					# Enemies cash out: a burst of house chips and a shockwave.
-					_vfx.shockwave(dead_view.sprite_center(), Color(1.0, 0.7, 0.4), 170.0)
-					_vfx.confetti(dead_view.sprite_center(), 18)
-					_sparks(dead_view.sprite_center(), Color(1.0, 0.85, 0.4), 20)
+					if hero_died:
+						# Ace going down is not a payout — no chips, no
+						# confetti. The screen darkens and he drops, on the
+						# same beat as the hit that killed him (patch 0.19).
+						_vfx.vignette(0.6, 1.4)
+						_impact(dead_view.sprite_center())
+					else:
+						# Enemies cash out: a burst of house chips and a shockwave.
+						_vfx.shockwave(dead_view.sprite_center(), Color(1.0, 0.7, 0.4), 170.0)
+						_vfx.confetti(dead_view.sprite_center(), 18)
+						_sparks(dead_view.sprite_center(), Color(1.0, 0.85, 0.4), 20)
 					dead_view.play_death()
 					dead_view.clear_intent()
 				Fx.hitstop(0.1)
@@ -504,7 +597,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# The dead unit keeps its slot in the row (patch 0.17: no more
 				# auto-recentering the survivors) — it's already invisible
 				# from play_death()'s fade, so it just stops being a target.
-				if dead_view != null:
+				if dead_view != null and not hero_died:
 					_enemy_views.erase(event.data.actor)
 					dead_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				_update_target_markers()
@@ -513,7 +606,15 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if mover != null and not event.data.get("skipped", false):
 					mover.play_telegraph()  # menace first...
 					await get_tree().create_timer(0.32).timeout
-					await mover.play_attack()  # ...then strike (pose art if it has any)
+					# Only a move that actually hits the hero plays the attack
+					# pose. Mr. Moneybags heals his crew with the same
+					# money-hurling art otherwise, which read as an attack on
+					# Ace (patch 0.19).
+					if _intent_strikes(event.data.actor):
+						await mover.play_attack()
+					else:
+						mover.play_lunge()
+						await get_tree().create_timer(0.22).timeout
 					mover.clear_intent()
 					await get_tree().create_timer(0.2).timeout
 			&"chips_discarded":
@@ -572,10 +673,10 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 			"go_again":
 				await _go_again_flourish()
 			"ultimate":
+				# _ultimate_flourish already lands the flash, the hitstop and
+				# the shockwaves — doing them again here fired everything
+				# twice (patch 0.19).
 				await _ultimate_flourish()
-				Fx.hitstop(0.1)
-				for view: UnitView in _enemy_views.values():
-					_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
 
 
 ## True when the ability's animation list drives the hero's own pose frames.
@@ -751,13 +852,16 @@ func _go_again_flourish() -> void:
 ## multi-hit flurry (lights dim, time slows, five cuts land, detonation).
 func _ultimate_flourish() -> void:
 	await _paint_streak_closeup()
-	_vfx.vignette(0.5, 1.1)
+	_vfx.vignette(0.6, 1.3)
 	Engine.time_scale = 0.65
-	Fx.shake(20.0)
+	Fx.shake(22.0)
 	await _hero_view.play_slash()
 	for view: UnitView in _enemy_views.values():
+		if not is_instance_valid(view):
+			continue
 		await _dagger_slash(view.sprite_center())
 		await _dagger_slash(view.sprite_center() + Vector2(20, -10))
+	# Restored unconditionally: a slow-mo leak would drag the whole run.
 	Engine.time_scale = 1.0
 	_vfx.screen_flash(0.4)
 	Fx.punch_zoom(0.06)
@@ -768,47 +872,84 @@ func _ultimate_flourish() -> void:
 
 func _paint_streak_closeup() -> void:
 	var viewport_size := get_viewport_rect().size
-	var streak := ColorRect.new()
-	streak.color = Color(0.85, 0.15, 0.35, 0.0)
-	streak.size = Vector2(viewport_size.x * 1.6, 240)
-	streak.rotation = -0.18
-	streak.z_index = 95
-	streak.position = Vector2(-viewport_size.x * 0.3, viewport_size.y * 0.5 - 120)
-	add_child(streak)
+	var layer := Control.new()
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.z_index = 95
+	add_child(layer)
 
-	# Crop the top of Ace's idle art down to a face-focused close-up window.
+	var band_size := Vector2(viewport_size.x * 2.0, 340)
+	# The tear can bite this far in from either edge, so the close-up is inset
+	# by exactly that much and is never cut by it — the band frames the face.
+	var tear_bite := band_size.y * 0.22
+	var band_pos := Vector2(-viewport_size.x, viewport_size.y * 0.40)
+	var tear_seed := 21
+
+	# Behind: a wider purple tear, offset, so the slash has depth.
+	var band_back := PaintStreak.new()
+	band_back.streak_color = Color(0.48, 0.20, 0.85)
+	band_back.seed_value = 7
+	band_back.size = band_size + Vector2(0, 80)
+	band_back.pivot_offset = band_back.size * 0.5
+	band_back.rotation = -0.20
+	band_back.position = band_pos - Vector2(0, 40)
+	layer.add_child(band_back)
+
+	var band := PaintStreak.new()
+	band.streak_color = Color(0.10, 0.42, 0.38)
+	band.seed_value = tear_seed
+	band.size = band_size
+	band.pivot_offset = band_size * 0.5
+	band.rotation = -0.17
+	band.position = band_pos
+	layer.add_child(band)
+
+	# The close-up and the edge overlay are CHILDREN of the band, so they
+	# inherit its rotation and pivot exactly. Rotating them independently put
+	# their corners outside the tear (they rotate about their own centres).
 	var clip := Control.new()
 	clip.clip_contents = true
-	clip.custom_minimum_size = Vector2(260, 210)
-	clip.size = Vector2(260, 210)
-	clip.z_index = 96
-	clip.pivot_offset = clip.size * 0.5
-	clip.position = viewport_size * 0.5 - clip.size * 0.5
+	clip.size = Vector2(viewport_size.x * 0.34, band_size.y - tear_bite * 2.0)
+	clip.position = Vector2(viewport_size.x * 0.735, tear_bite)
 	clip.modulate.a = 0.0
-	add_child(clip)
-	if ResourceLoader.exists("res://assets/characters/ace_idle.png"):
+	band.add_child(clip)
+	var portrait_path := "res://assets/characters/ace_portrait.png"
+	if not ResourceLoader.exists(portrait_path):
+		portrait_path = "res://assets/characters/ace_idle.png"
+	if ResourceLoader.exists(portrait_path):
 		var portrait := TextureRect.new()
-		portrait.texture = load("res://assets/characters/ace_idle.png")
+		portrait.texture = load(portrait_path)
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		portrait.size = Vector2(260, 390)  # native 1024x1536 aspect at width 260
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		# Blown up well past the window and pulled up, so the slice showing
+		# through the tear is his eyes — the reference's framing.
+		var blown := clip.size.x * 2.2
+		portrait.size = Vector2(blown, blown)
+		portrait.position = Vector2(-blown * 0.30, -blown * 0.22)
 		clip.add_child(portrait)
 
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(streak, "modulate:a", 1.0, 0.06)
-	tween.tween_property(streak, "position:x", viewport_size.x * 0.3, 0.22) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(clip, "modulate:a", 1.0, 0.08)
-	tween.tween_property(clip, "scale", Vector2(1.06, 1.06), 0.22) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	await tween.finished
+	# The same tear, edges only, laid back over the portrait.
+	var edge := PaintStreak.new()
+	edge.streak_color = Color(0.10, 0.42, 0.38)
+	edge.seed_value = tear_seed
+	edge.fill_alpha = 0.0
+	edge.size = band_size
+	band.add_child(edge)
+
+	Fx.shake(16.0)
+	Fx.punch_zoom(0.05)
+	_vfx.screen_flash(0.5)
+	var sweep := create_tween()
+	sweep.set_parallel(true)
+	sweep.tween_property(band_back, "position:x", -viewport_size.x * 0.52, 0.30) 		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	sweep.tween_property(band, "position:x", -viewport_size.x * 0.5, 0.26) 		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	sweep.tween_property(clip, "modulate:a", 1.0, 0.12).set_delay(0.08)
+	await sweep.finished
+	await get_tree().create_timer(0.18).timeout   # hold on his face
 	var fade := create_tween()
-	fade.set_parallel(true)
-	fade.tween_property(streak, "modulate:a", 0.0, 0.14)
-	fade.tween_property(clip, "modulate:a", 0.0, 0.14)
+	fade.tween_property(layer, "modulate:a", 0.0, 0.16)
 	await fade.finished
-	streak.queue_free()
-	clip.queue_free()
+	layer.queue_free()
 
 
 ## Balatro rule: never pay the total at once. Each landed symbol's chip flies
@@ -895,9 +1036,12 @@ func _impact(at: Vector2) -> void:
 func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner.visible = true
-	_banner.scale = Vector2(0.3, 0.3)
-	_banner.pivot_offset = _banner.size * 0.5
 	var center := get_viewport_rect().size * 0.5
+	# The pivot has to be read after the layout pass that setting .text kicks
+	# off, or the pop-in scales around the wrong point.
+	await get_tree().process_frame
+	_banner.pivot_offset = _banner.size * 0.5
+	_banner.scale = Vector2(0.3, 0.3)
 	if text.begins_with("VICTORY"):
 		_vfx.ray_burst(center, Color(1.0, 0.9, 0.5, 0.5), 320.0, 1.2)
 		_vfx.confetti(center + Vector2(-220, -60), 30)

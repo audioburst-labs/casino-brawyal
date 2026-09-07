@@ -3,11 +3,17 @@ extends RefCounted
 ## Generates the next encounter choice lazily from the run history.
 ## Placement rules (design doc + patch 0.1 "Ori fixes"):
 ##   #1 always Combat (auto-start) - #10 always Boss
-##   Rest offered only at #4 and #9 - the final Shop option appears at #9
+##   Rest offered only at #3, #6 and #9 - the final Shop appears at #8 (v0.19)
 ##   Shop: max 3 visits, never right after a visited shop, never at #2,
 ##   and at least 2 shop OFFERS per run (forced late if needed)
 ##   Treasure: max 2 visits, only after #2, never right after a treasure
 ##   Hard Combat: only after #3 - the two options always differ in type
+
+
+## Doc v0.19: rest is offered at these encounters and nowhere else.
+const REST_ENCOUNTERS: Array[int] = [3, 6, 9]
+## Doc v0.19: the run's guaranteed final Shop option (was #9).
+const FINAL_SHOP_ENCOUNTER := 8
 
 
 static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dictionary]:
@@ -16,19 +22,19 @@ static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dic
 		return [{"type": &"combat"}]
 	if encounter == 10:
 		return [{"type": &"boss"}]
-	if encounter == 4 or encounter == 9:
-		# Rest slots. #9 pairs Rest with the guaranteed final Shop when allowed.
-		var partner: Dictionary
-		if encounter == 9 and _shop_allowed(run):
-			partner = {"type": &"shop"}
-			run.shop_offers += 1
-		else:
-			partner = _roll_option(run, rng, [&"rest"])
-		return [partner, {"type": &"rest"}]
+	# The guaranteed final Shop. It gets its own slot now that #9 is a rest
+	# encounter, so the two no longer have to share one pair of options.
+	if encounter == FINAL_SHOP_ENCOUNTER and _shop_allowed(run):
+		run.shop_offers += 1
+		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
 
-	# At least 2 shop offers per run: if only #9's guaranteed shop is left,
-	# force one now (encounters 6-8 qualify).
-	if encounter >= 6 and encounter <= 8 and run.shop_offers < 1 and _shop_allowed(run):
+	if REST_ENCOUNTERS.has(encounter):
+		return [_roll_option(run, rng, [&"rest"]), {"type": &"rest"}]
+
+	# At least 2 shop offers per run: if only the guaranteed one is left,
+	# force an earlier one into a free slot (#4, #5 and #7 qualify).
+	if encounter >= 4 and encounter < FINAL_SHOP_ENCOUNTER \
+			and run.shop_offers < 1 and _shop_allowed(run):
 		run.shop_offers += 1
 		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
 

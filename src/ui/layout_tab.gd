@@ -55,7 +55,7 @@ func _ready() -> void:
 	backdrop.size = vp
 	backdrop.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed:
-			queue_free())
+			_close())
 	add_child(backdrop)
 
 	var panel_size := Vector2(1080, minf(820, vp.y - 80))
@@ -90,7 +90,7 @@ func _ready() -> void:
 	column.add_child(close_row)
 	var close_button := Button.new()
 	close_button.text = "Done"
-	close_button.pressed.connect(queue_free)
+	close_button.pressed.connect(_close)
 	close_row.add_child(close_button)
 
 
@@ -230,15 +230,13 @@ func _build_relics_section(column: VBoxContainer) -> void:
 		var relic := Db.content.get_relic(relic_id)
 		if relic == null:
 			continue
-		var icon_path := "res://assets/icons/relic_%s.png" % relic_id
-		if ResourceLoader.exists(icon_path):
-			var icon := TextureRect.new()
-			icon.texture = load(icon_path)
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.custom_minimum_size = Vector2(52, 52)
-			icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
-			row.add_child(icon)
+		var icon := TextureRect.new()
+		icon.texture = SuitAssets.relic_texture(relic_id)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(52, 52)
+		icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
+		row.add_child(icon)
 
 
 func _build_abilities_section(column: VBoxContainer) -> void:
@@ -349,3 +347,16 @@ func _on_dropped(zone: StringName, id: StringName) -> void:
 		&"trash":
 			run.move_to_trash(id)
 	_refresh()
+
+
+func _close() -> void:
+	queue_free()
+
+
+## Esc closes the tab (patch 0.19). Handled as *unhandled* input and marked
+## consumed, so with both overlays somehow open only the topmost one closes,
+## and Esc never leaks through to the screen underneath.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_close()

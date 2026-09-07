@@ -136,16 +136,14 @@ func _refresh_relics() -> void:
 		var relic := Db.content.get_relic(relic_id)
 		if relic == null:
 			continue
-		var icon_path := "res://assets/icons/relic_%s.png" % relic_id
-		if ResourceLoader.exists(icon_path):
-			var icon := TextureRect.new()
-			icon.texture = load(icon_path)
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
-			icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
-			icon.mouse_filter = Control.MOUSE_FILTER_STOP
-			_relics_row.add_child(icon)
+		var icon := TextureRect.new()
+		icon.texture = SuitAssets.relic_texture(relic_id)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
+		icon.tooltip_text = "%s — %s" % [relic.name, relic.description]
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		_relics_row.add_child(icon)
 
 
 func _open_layout_tab() -> void:

@@ -15,19 +15,18 @@
         "door_check": {
           "intent": {
             "instances": 1,
-            "per_hit": 8,
+            "per_hit": 6,
             "debuffs": [],
             "self_status": [{"status": "taunt", "stacks": 2}]
           }
         },
-        "double_jab": {"intent": {"instances": 2, "per_hit": 5, "debuffs": []}},
+        "double_jab": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
         "pump_up": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
             "debuffs": [],
-            "self_status": [{"status": "strength", "stacks": 3}],
-            "self_heal": 10
+            "self_status": [{"status": "strength", "stacks": 2}]
           }
         }
       }
@@ -83,12 +82,15 @@
         "loop": ["clipboard_strike", "performance_review"]
       },
       "moves": {
-        "clipboard_strike": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
+        "clipboard_strike": {"intent": {"instances": 1, "per_hit": 12, "debuffs": []}},
         "performance_review": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
-            "debuffs": [{"status": "vulnerable", "stacks": 3}]
+            "debuffs": [
+              {"status": "vulnerable", "stacks": 1},
+              {"status": "weak", "stacks": 1}
+            ]
           }
         },
         "call_staff": {
@@ -110,11 +112,11 @@
         "call_bouncers": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 2}}
         },
-        "money_barrage": {"intent": {"instances": 3, "per_hit": 8, "debuffs": []}},
+        "money_barrage": {"intent": {"instances": 3, "per_hit": 4, "debuffs": []}},
         "call_server": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
         },
-        "big_hit": {"intent": {"instances": 1, "per_hit": 20, "debuffs": []}},
+        "big_hit": {"intent": {"instances": 1, "per_hit": 15, "debuffs": []}},
         "bonuses": {
           "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20}
         }

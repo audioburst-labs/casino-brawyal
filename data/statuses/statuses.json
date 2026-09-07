@@ -41,7 +41,7 @@
       "id": "mark",
       "name": "Mark",
       "stack_mode": "intensity",
-      "description": "Marked by Ace. Cash In removes a Mark to deal 20 bonus damage. Marks persist until cashed in."
+      "description": "Marked by Ace. Cash In removes a Mark for a bonus effect. Marks persist until cashed in."
     }
   ]
 }

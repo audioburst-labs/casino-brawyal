@@ -14,6 +14,7 @@ class AbilityDef:
 	var bonus_mode: String = "extra"          # "extra" adds bonus_effects; "replace" swaps them in
 	var bonus_effects: Array[Dictionary] = []
 	var per_turn: int = 0                     # max activations per round; 0 = unlimited
+	var per_combat: int = 0                   # max activations per combat; 0 = unlimited
 	var passive: bool = false                 # once fired, effects recur at every round start
 	var exclusive: bool = false               # firing this locks all other abilities this round
 	var keywords: Array[StringName] = []      # keyword ids shown as hover bubbles

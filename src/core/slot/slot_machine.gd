@@ -4,7 +4,7 @@ extends RefCounted
 ## upgradeable to MAX_REELS. Reels resolve left to right.
 
 const START_REELS := 3
-const MAX_REELS := 8
+const MAX_REELS := 6   # doc v0.19 (was 8)
 
 var reels: Array[Reel] = []
 

@@ -47,14 +47,15 @@ func test_machine_spin_returns_symbol_per_reel_with_matching_payout() -> void:
 		assert_eq(result.payout, Payout.compute(result.symbols))
 
 
-func test_add_reel_appends_default_reel_up_to_eight() -> void:
+func test_add_reel_appends_default_reel_up_to_the_cap() -> void:
 	var machine := SlotMachine.new()
 	for i in SlotMachine.MAX_REELS - SlotMachine.START_REELS:
 		assert_true(machine.add_reel())
-	assert_eq(machine.reels.size(), 8)
+	assert_eq(machine.reels.size(), SlotMachine.MAX_REELS)
 	assert_false(machine.add_reel())
-	assert_eq(machine.reels.size(), 8)
-	assert_eq(machine.reels[7].symbols, [S, C, H, D] as Array[StringName])
+	assert_eq(machine.reels.size(), SlotMachine.MAX_REELS)
+	assert_eq(machine.reels[SlotMachine.MAX_REELS - 1].symbols,
+		[S, C, H, D] as Array[StringName])
 
 
 func test_machine_spin_is_deterministic_for_a_seed() -> void:
@@ -71,9 +72,10 @@ func test_apply_sticker_changes_targeted_reel_slot() -> void:
 
 
 ## Doc "Behavior -> Combat -> Slot Machine": each reel draws from its own pool
-## of three copies of every symbol on it, without replacement, refilling only
-## once the pool runs dry — so streaks and droughts both stay bounded.
-func test_reel_draws_without_replacement_from_a_three_deep_pool() -> void:
+## of POOL_COPIES copies of every symbol on it (two since v0.19), without
+## replacement, refilling only once the pool runs dry — so streaks and
+## droughts both stay bounded.
+func test_reel_draws_without_replacement_from_its_pool() -> void:
 	var reel := Reel.new()
 	var rng := _rng()
 	var counts := {}

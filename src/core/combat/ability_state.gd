@@ -7,10 +7,15 @@ extends RefCounted
 var def: Defs.AbilityDef
 var filled: Array[StringName] = []  # one entry per cost slot; &"" = empty
 var uses_this_round := 0            # for per_turn-limited abilities
+var uses_this_combat := 0           # for per_combat-limited abilities
 
 
+## Spent for this round, either way: per_turn resets at the round start,
+## per_combat never does (sheet v0.19 — House Edge and Face Reader).
 func exhausted() -> bool:
-	return def.per_turn > 0 and uses_this_round >= def.per_turn
+	if def.per_turn > 0 and uses_this_round >= def.per_turn:
+		return true
+	return def.per_combat > 0 and uses_this_combat >= def.per_combat
 
 
 func _init(ability_def: Defs.AbilityDef) -> void:

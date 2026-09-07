@@ -2,6 +2,9 @@ extends ScreenBase
 ## Casino encounter: a rewards slot machine. Pay 10 coins per spin, collect
 ## every landed prize; three of a kind earns a free extra spin.
 
+## Every face here has to be the icon the player already knows that prize by
+## from the rest of the UI (patch 0.19) — a reel showing a different picture
+## for the same thing reads as a different prize.
 const PRIZE_TEXTURES := {
 	&"coins": "res://assets/icons/coin.png",
 	&"money_sack": "res://assets/props/treasure_chest.png",
@@ -12,7 +15,7 @@ const PRIZE_TEXTURES := {
 	&"sticker_club": "res://assets/icons/suit_club.png",
 	&"sticker_diamond": "res://assets/icons/suit_diamond.png",
 	&"relic": "res://assets/icons/relic_house_chip.png",
-	&"extra_reel": "res://assets/icons/suit_any.png",
+	&"extra_reel": "res://assets/props/slot_cabinet.png",
 }
 
 var _paid_spin_used := false
@@ -101,21 +104,21 @@ func _on_spin() -> void:
 	if not free:
 		_paid_spin_used = true
 	_spin_button.disabled = true
-	await _animate(result.symbols)
+	await _animate(result.symbols, result.get("relics", []))
 	if result.free_respin:
 		_free_spins += 1
 	_result.text = "\n".join(result.lines)
 	_refresh()
 
 
-func _animate(symbols: Array) -> void:
+func _animate(symbols: Array, relics: Array = []) -> void:
 	var pool := CasinoGame.PRIZES.map(func(p: Dictionary) -> StringName: return p.id)
 	for tick in 10:
 		for face in _faces:
 			_show(face, pool[randi() % pool.size()])
 		await get_tree().create_timer(0.06).timeout
 	for i in 3:
-		_show(_faces[i], symbols[i])
+		_show(_faces[i], symbols[i], relics[i] if i < relics.size() else &"")
 		_faces[i].scale = Vector2(1.35, 1.35)
 		_faces[i].pivot_offset = _faces[i].size * 0.5
 		_faces[i].create_tween().tween_property(_faces[i], "scale", Vector2.ONE, 0.25) \
@@ -123,8 +126,13 @@ func _animate(symbols: Array) -> void:
 		await get_tree().create_timer(0.2).timeout
 
 
-func _show(face: TextureRect, symbol: StringName) -> void:
+## `relic_id` names the relic this reel actually landed, so each one shows its
+## own art instead of every relic sharing the generic house chip (patch 0.19).
+func _show(face: TextureRect, symbol: StringName, relic_id: StringName = &"") -> void:
+	if symbol == &"relic" and relic_id != &"":
+		face.texture = SuitAssets.relic_texture(relic_id)
+		face.modulate = Color.WHITE
+		return
 	var path: String = PRIZE_TEXTURES.get(symbol, "")
 	face.texture = load(path) if ResourceLoader.exists(path) else null
-	# coin_big is the same coin, drawn golden-hot to read as the bigger prize
-	face.modulate = Color(1.4, 1.2, 0.6) if symbol == &"coin_big" else Color.WHITE
+	face.modulate = Color.WHITE

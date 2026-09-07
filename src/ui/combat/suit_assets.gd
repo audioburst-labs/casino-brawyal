@@ -32,6 +32,16 @@ static func character_texture(def_id: StringName, is_hero: bool) -> Texture2D:
 	return _load("res://assets/characters/enemy_%s.png" % def_id)
 
 
+## Relic art, with a generic house chip standing in for anything missing —
+## the two relic UIs used to build this path by hand and silently render
+## nothing when the file was absent (patch 0.19).
+static func relic_texture(relic_id: StringName) -> Texture2D:
+	var art := _load("res://assets/icons/relic_%s.png" % relic_id)
+	if art != null:
+		return art
+	return _load("res://assets/icons/relic_house_chip.png")
+
+
 static func status_texture(status_id: StringName) -> Texture2D:
 	return _load("res://assets/icons/status_%s.png" % status_id)
 

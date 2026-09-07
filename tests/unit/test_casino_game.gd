@@ -79,3 +79,37 @@ func test_broken_heart_never_kills() -> void:
 	for seed_value in 100:
 		CasinoGame.spin(_db, run, _rng(seed_value))
 		assert_gte(run.hp, 1, "casino misfortune leaves at least 1 HP")
+
+## Patch 0.19: the reel has to draw the relic it actually awarded, so `spin`
+## reports the winning id alongside the generic &"relic" symbol. Without this
+## every relic showed the same stand-in chip.
+func test_spin_reports_which_relic_each_reel_awarded() -> void:
+	var checked := 0
+	for seed_value in 60:
+		var run := RunState.new()
+		run.record_visit(&"combat")
+		run.coins = 999
+		var result := CasinoGame.spin(_db, run, _rng(seed_value))
+		if result.is_empty():
+			continue
+		assert_eq(result.relics.size(), result.symbols.size(),
+			"one entry per reel, relic or not")
+		for i in result.symbols.size():
+			var relic_id: StringName = result.relics[i]
+			if result.symbols[i] == &"relic" and relic_id != &"":
+				assert_not_null(_db.get_relic(relic_id),
+					"a real relic id, not a placeholder")
+				assert_not_null(SuitAssets.relic_texture(relic_id),
+					"every relic resolves to some art")
+				checked += 1
+			else:
+				assert_eq(relic_id, &"", "non-relic reels report no relic")
+	assert_gt(checked, 0, "60 spins should land at least one relic")
+
+
+func test_every_shipped_relic_has_art() -> void:
+	for relic_id: StringName in _db.all_relic_ids():
+		var art := SuitAssets.relic_texture(relic_id)
+		assert_not_null(art, "%s renders something" % relic_id)
+		assert_true(ResourceLoader.exists("res://assets/icons/relic_%s.png" % relic_id),
+			"%s has its own icon, not the fallback chip" % relic_id)

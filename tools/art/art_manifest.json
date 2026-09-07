@@ -794,12 +794,12 @@
       "prompt": "A game status icon on a fully transparent background: a playing-card spade symbol blazing with green, teal and purple magical flames, hovering like a curse mark. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
     },
     {
-      "id": "relic_gamblers_pass",
-      "out": "assets/icons/relic_gamblers_pass.png",
+      "id": "relic_gamblers_confidence",
+      "out": "assets/icons/relic_gamblers_confidence.png",
       "size": "1024x1024",
       "transparent": true,
       "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: an exclusive gold-trimmed maroon VIP membership card with a spade emblem and a gold clip, small sparkle. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+      "prompt": "A square game relic icon on a fully transparent background: a polished gold-trimmed maroon shield shaped like a casino chip, a bold spade embossed dead centre, a soft blue barrier glow rimming its edge and two small sparkles. Reads instantly as protection. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
     },
     {
       "id": "relic_bounty_list",
@@ -842,12 +842,12 @@
       "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a sapphire-blue diamond (lozenge) symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
     },
     {
-      "id": "relic_high_stakes",
-      "out": "assets/icons/relic_high_stakes.png",
+      "id": "relic_winners_aura",
+      "out": "assets/icons/relic_winners_aura.png",
       "size": "1024x1024",
       "transparent": true,
       "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a towering precarious stack of casino chips with flames flickering at its top, one chip mid-fall, dramatic red-gold lighting. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+      "prompt": "A square game relic icon on a fully transparent background: a golden laurel-wreathed winner's crown radiating a wide teal-green aura, with three small cowering shadow wisps shrinking away beneath it. Reads instantly as intimidation. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
     },
     {
       "id": "relic_high_roller",

@@ -48,7 +48,7 @@ func test_full_ability_auto_fires_with_suit_bonus() -> void:
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
 	assert_true(sim.assign_chip(&"spade", 0, 0))  # card_sling: 8 dmg, spade -> Mark
-	assert_eq(enemy.hp, hp_before - 8)
+	assert_eq(enemy.hp, hp_before - 6)
 	assert_true(enemy.has_status(&"mark"))
 	assert_has(_types(sim.drain_events()), &"ability_fired")
 
@@ -60,7 +60,7 @@ func test_off_suit_chip_skips_the_bonus() -> void:
 	var enemy := sim.enemies[0]
 	var hp_before := enemy.hp
 	sim.assign_chip(&"heart", 0, 0)  # card_sling without the spade bonus
-	assert_eq(enemy.hp, hp_before - 8)
+	assert_eq(enemy.hp, hp_before - 6)
 	assert_false(enemy.has_status(&"mark"))
 
 
@@ -88,8 +88,8 @@ func test_enemy_phase_executes_intent_on_hero() -> void:
 	var sim := _sim()
 	sim.begin_round()
 	sim.tray.discard_all()
-	sim.end_assignment()  # bouncer round 1: door check = 1x8 (+ self taunt)
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 8)
+	sim.end_assignment()  # bouncer round 1: door check = 1x6 (+ self taunt)
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 6)
 	assert_true(sim.enemies[0].has_status(&"taunt"))
 
 
@@ -98,8 +98,9 @@ func test_block_absorbs_damage() -> void:
 	sim.begin_round()
 	sim.hero.gain_block(6)
 	sim.tray.discard_all()
-	sim.end_assignment()  # 8 vs 6 block -> 2 hp lost
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 2)
+	sim.end_assignment()  # 6 vs 6 block -> nothing gets through
+	assert_eq(sim.hero.hp, sim.hero.max_hp)
+	assert_eq(sim.hero.block, 0, "the shield is spent absorbing it")
 
 
 func test_weak_enemy_deals_less() -> void:
@@ -107,8 +108,8 @@ func test_weak_enemy_deals_less() -> void:
 	sim.begin_round()
 	sim.enemies[0].apply_status(&"weak", 1)
 	sim.tray.discard_all()
-	sim.end_assignment()  # 8 * 0.75 = 6 (half-up)
-	assert_eq(sim.hero.hp, sim.hero.max_hp - 6)
+	sim.end_assignment()  # 6 * 0.75 = 5 (half-up)
+	assert_eq(sim.hero.hp, sim.hero.max_hp - 5)
 
 
 func test_stunned_enemy_skips_its_move() -> void:
@@ -150,19 +151,19 @@ func test_ability_hits_the_selected_target() -> void:
 	var hp_b := sim.enemies[1].hp
 	sim.tray.add(&"spade", 1)
 	sim.assign_chip(&"spade", 0, 0)
-	assert_eq(sim.enemies[0].hp, hp_a - 8)
+	assert_eq(sim.enemies[0].hp, hp_a - 6)
 	assert_eq(sim.enemies[1].hp, hp_b)
 
 
 func test_enemy_debuff_is_applied_to_hero() -> void:
-	# Manager: call_staff (summon, round 1), clipboard_strike (1x20, round 2),
+	# Manager: call_staff (summon, round 1), clipboard_strike (1x12, round 2),
 	# then performance_review (Vulnerable 3, round 3) — intro_loop brain.
 	# The round-1 summon also acts from round 2 onward, so this checks the
 	# Manager's own events rather than pinning total hero hp/vulnerable stacks
 	# (which the summoned Server's own random move would otherwise perturb).
 	var sim := _sim(["manager"])
 	var manager_id: StringName = sim.enemies[0].id
-	var dealt_twenty := false
+	var dealt_twelve := false
 	var applied_vulnerable := false
 	for i in 3:
 		sim.begin_round()
@@ -170,10 +171,10 @@ func test_enemy_debuff_is_applied_to_hero() -> void:
 		sim.end_assignment()
 		for event: CombatEvent in sim.drain_events():
 			if event.type == &"damage_dealt" and event.data.get("source") == manager_id \
-					and int(event.data.get("amount", 0)) == 20:
-				dealt_twenty = true
+					and int(event.data.get("amount", 0)) == 12:
+				dealt_twelve = true
 			if event.type == &"status_applied" and event.data.get("actor") == &"hero" \
 					and event.data.get("status") == &"vulnerable":
 				applied_vulnerable = true
-	assert_true(dealt_twenty, "clipboard_strike deals 20 to the hero")
+	assert_true(dealt_twelve, "clipboard_strike deals 12 to the hero")
 	assert_true(applied_vulnerable, "performance_review applies Vulnerable to the hero")

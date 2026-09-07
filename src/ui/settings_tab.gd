@@ -171,3 +171,12 @@ func _leave_game() -> void:
 
 func _close() -> void:
 	queue_free()
+
+
+## Esc closes the tab (patch 0.19). Handled as *unhandled* input and marked
+## consumed, so with both overlays somehow open only the topmost one closes,
+## and Esc never leaks through to the screen underneath.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_close()

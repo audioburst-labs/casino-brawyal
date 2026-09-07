@@ -15,6 +15,10 @@ func _ready() -> void:
 		# the Layout Tab's sticker-placing flow can be reviewed.
 		for suit in OS.get_environment("CB_DEBUG_STICKERS").split(",", false):
 			Game.run.sticker_inventory.append(StringName(suit))
+		# CB_DEBUG_RELICS="gamblers_confidence,winners_aura": start holding
+		# relics, to review the relic strip and the Layout Tab.
+		for relic in OS.get_environment("CB_DEBUG_RELICS").split(",", false):
+			Game.run.relic_ids.append(StringName(relic))
 		# CB_DEBUG_OPEN_SETTINGS / CB_DEBUG_OPEN_LAYOUT=1: pop the matching
 		# header overlay open for review.
 		if OS.get_environment("CB_DEBUG_OPEN_SETTINGS") != "":

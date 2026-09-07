@@ -6,10 +6,14 @@ extends VBoxContainer
 signal clicked(actor_id: StringName)
 
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
-const UNIT_HEIGHT := 330.0
-## Patch 0.18: narrower units, so a full 4-slot line stays clear of the
-## End Turn button no matter how many fighters are on the field.
-const UNIT_WIDTH := 214.0
+## Patch 0.19: smaller again, so the four-slot line can sit further right and
+## lower in the frame without running out of room.
+const UNIT_HEIGHT := 286.0
+const UNIT_WIDTH := 180.0
+## The sprite's own minimum width, as a fraction of its height. It has to stay
+## under UNIT_WIDTH or an occupied slot measures wider than an empty spacer
+## and the line stops lining up (it was 0.66 of 330 = 217.8 vs a 214 slot).
+const SPRITE_WIDTH_RATIO := 0.60
 
 ## Local "flame origin" point inside the Mark's wrapper (bottom-center
 ## anchored to _mark_row — see _build_mark).
@@ -75,7 +79,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# further down), and one that's a sibling of _sprite rather than a
 	# child of it — so hit-squash/lunge/sway transforms never distort it.
 	_mark_row = Control.new()
-	_mark_row.custom_minimum_size = Vector2(0, 70)
+	_mark_row.custom_minimum_size = Vector2(0, 60)
 	_mark_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mark_row)
 	_build_mark(_mark_row)
@@ -97,13 +101,13 @@ func setup(combat_actor: CombatActor) -> void:
 	_sprite = TextureRect.new()
 	_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_sprite.custom_minimum_size = Vector2(sprite_height * 0.66, sprite_height)
+	_sprite.custom_minimum_size = Vector2(sprite_height * SPRITE_WIDTH_RATIO, sprite_height)
 	if texture != null:
 		_sprite.texture = texture
 		_idle_texture = texture
 	_load_poses()
 	# Feet-anchored pivot: squash & stretch reads as weight, not levitation.
-	_sprite.pivot_offset = Vector2(sprite_height * 0.33, sprite_height)
+	_sprite.pivot_offset = Vector2(sprite_height * SPRITE_WIDTH_RATIO * 0.5, sprite_height)
 	if ResourceLoader.exists("res://assets/shaders/flash.gdshader"):
 		var flash_material := ShaderMaterial.new()
 		flash_material.shader = load("res://assets/shaders/flash.gdshader")
@@ -173,7 +177,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# Fixed size reserved whether or not any statuses are showing — an icon
 	# appearing/disappearing must not change size or reflow the sprite
 	# (that reflow was pushing the whole unit upward: designer note).
-	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 36)
+	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 32)
 	_status_row.clip_contents = true
 	add_child(_status_row)
 
@@ -391,8 +395,10 @@ func show_intent(entry: Dictionary) -> void:
 		_add_intent_chunk(StringName(str(debuff.get("status", ""))),
 			"%d" % int(debuff.get("stacks", 1)))
 	for buff: Dictionary in intent.get("self_status", []):
+		# No "+" in front of the number (patch 0.19): the icon already says
+		# which way the buff goes, so the sign only added noise.
 		_add_intent_chunk(StringName(str(buff.get("status", ""))),
-			"+%d" % int(buff.get("stacks", 1)))
+			"%d" % int(buff.get("stacks", 1)))
 	if not intent.get("summon", {}).is_empty():
 		# Patch 0.18: a summon reads as an icon like every other intent, not
 		# as bare text in the middle of the icon row.

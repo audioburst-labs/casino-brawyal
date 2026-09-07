@@ -76,15 +76,16 @@ func test_spade_card_sling_marks_and_cash_in_pays_bonus() -> void:
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 8 dmg + Mark (spade bonus)
-	assert_eq(enemy.hp, hp_start - 8)
+	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 6 dmg + Mark (spade bonus)
+	assert_eq(enemy.hp, hp_start - 6)
 	assert_eq(enemy.status_stacks(&"mark"), 1)
-	assert_true(_fire(sim, 1, [&"club", &"spade"]))  # double_down: 10 dmg + Cash In (20)
-	assert_eq(enemy.hp, hp_start - 8 - 10 - 20)
+	# double_down: "Deal 10 damage. Cash In: Deal 20 instead." (sheet v0.19)
+	assert_true(_fire(sim, 1, [&"club", &"spade"]))
+	assert_eq(enemy.hp, hp_start - 6 - 20)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")
 
 
-func test_cash_in_without_mark_deals_no_bonus() -> void:
+func test_cash_in_without_mark_falls_back_to_the_plain_damage() -> void:
 	var sim := _sim(["bouncer"], ["double_down"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
@@ -160,49 +161,6 @@ func test_per_turn_limit_blocks_reuse_until_next_round() -> void:
 	sim.end_assignment()
 	sim.begin_round()
 	assert_true(_fire(sim, 0, [&"heart"]), "usable again next round")
-
-
-func test_solo_ability_condition() -> void:
-	var solo := _sim(["bouncer"], ["slow_playing", "card_sling"])
-	solo.begin_round()
-	_fire(solo, 0, [&"heart", &"diamond"])
-	assert_eq(solo.hero.block, 20, "alone this round -> 20 block")
-
-	var crowded := _sim(["bouncer"], ["slow_playing", "card_sling"])
-	crowded.begin_round()
-	_fire(crowded, 1, [&"club"])
-	crowded.hero.block = 0
-	_fire(crowded, 0, [&"heart", &"diamond"])
-	assert_eq(crowded.hero.block, 0, "not the only ability -> no block")
-
-
-func test_slow_playing_locks_out_other_abilities_for_the_round() -> void:
-	var sim := _sim(["bouncer"], ["slow_playing", "card_sling"])
-	sim.begin_round()
-	assert_true(_fire(sim, 0, [&"heart", &"diamond"]))
-	assert_eq(sim.hero.block, 20)
-	sim.tray.add(&"spade", 1)
-	assert_false(sim.assign_chip(&"spade", 1, 0),
-		"other abilities are disabled after Slow Playing")
-	sim.tray.discard_all()
-	sim.end_assignment()
-	sim.begin_round()
-	sim.tray.add(&"spade", 1)
-	assert_true(sim.assign_chip(&"spade", 1, 0), "lock lifts next round")
-
-
-func test_no_enemy_marked_condition() -> void:
-	var sim := _sim(["bouncer"], ["bad_beat"])
-	sim.begin_round()
-	_fire(sim, 0, [&"club", &"diamond"])
-	assert_eq(sim.hero.block, 15)
-	sim.enemies[0].apply_status(&"mark", 1)
-	sim.tray.discard_all()
-	sim.end_assignment()
-	sim.begin_round()
-	sim.hero.block = 0
-	_fire(sim, 0, [&"club", &"diamond"])
-	assert_eq(sim.hero.block, 0, "a marked enemy voids the condition")
 
 
 func test_replace_bonus_swaps_effects() -> void:
@@ -303,13 +261,13 @@ func test_pocket_rockets_repeats_when_both_chips_are_spades() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	assert_true(_fire(sim, 0, [&"spade", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 32, "16 damage, repeated once for double spades")
+	assert_eq(enemy.hp, hp_start - 30, "15 damage, repeated once for double spades")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
 	var hp_mid := enemy.hp
 	_fire(sim, 0, [&"spade", &"heart"])
-	assert_eq(enemy.hp, hp_mid - 16, "mixed chips deal the base 16 only")
+	assert_eq(enemy.hp, hp_mid - 15, "mixed chips deal the base 15 only")
 
 
 func test_intent_display_includes_strength_buff() -> void:
@@ -369,16 +327,17 @@ func test_flush_hits_all_enemies() -> void:
 	var hp_a := sim.enemies[0].hp
 	var hp_b := sim.enemies[1].hp
 	_fire(sim, 0, [&"spade", &"spade", &"spade", &"spade"])
-	assert_eq(sim.enemies[0].hp, hp_a - 40)
-	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 40))
+	assert_eq(sim.enemies[0].hp, hp_a - 30)
+	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 30))
 
 
-func test_bust_cashes_in_and_deals_flat_damage() -> void:
+func test_bust_is_cash_in_only() -> void:
+	# Sheet v0.19: "Cash In: Deal 30 damage." — no base damage of its own.
 	var sim := _sim(["bouncer"], ["bust"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	enemy.apply_status(&"mark", 1)
 	_fire(sim, 0, [&"spade", &"club"])
-	assert_eq(enemy.hp, hp_start - 20 - 20, "cash in (20) + flat 20 damage")
+	assert_eq(enemy.hp, hp_start - 30)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")

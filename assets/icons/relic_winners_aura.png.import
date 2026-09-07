@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnurcgv0pp84l"
-path="res://.godot/imported/relic_gamblers_pass.png-c8234da090eb0c9d308523194f5d635d.ctex"
+uid="uid://crei04jkj0tr7"
+path="res://.godot/imported/relic_winners_aura.png-b9b829c644b2ae32200064877c47a9ed.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_gamblers_pass.png"
-dest_files=["res://.godot/imported/relic_gamblers_pass.png-c8234da090eb0c9d308523194f5d635d.ctex"]
+source_file="res://assets/icons/relic_winners_aura.png"
+dest_files=["res://.godot/imported/relic_winners_aura.png-b9b829c644b2ae32200064877c47a9ed.ctex"]
 
 [params]
 

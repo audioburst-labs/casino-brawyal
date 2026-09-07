@@ -12,7 +12,6 @@ extends RefCounted
 
 enum Phase { ROUND_START, ASSIGNMENT, ENDED }
 
-const CASH_IN_BONUS := 20   # sheet v0.13
 const MAX_ENEMIES := 4      # patch 0.13: the field holds at most 4 fighters
 const EMBLEM_MULTIPLIER := 1.3
 const LUCKY_FOOT_CHANCE := 0.1
@@ -401,6 +400,7 @@ func _fire_passives() -> void:
 
 func _fire_ability(ability: AbilityState) -> void:
 	ability.uses_this_round += 1
+	ability.uses_this_combat += 1
 	abilities_fired_this_round += 1
 	if ability.def.exclusive:
 		_exclusive_lock = ability
@@ -517,7 +517,13 @@ func _hit_hero(enemy: CombatActor, base: int) -> void:
 	})
 
 
+## The hero dies like anyone else: `actor_died` first, so the presenter can
+## play the death animation on the same beat as the killing blow, and only
+## then `combat_lost` (patch 0.19 — the defeat banner used to land while Ace
+## was still standing, because he never got a death event at all).
 func _check_hero_death() -> void:
-	if not hero.is_alive():
-		emit_event(&"combat_lost", {})
-		phase = Phase.ENDED
+	if hero.is_alive() or phase == Phase.ENDED:
+		return
+	emit_event(&"actor_died", {"actor": hero.id})
+	emit_event(&"combat_lost", {})
+	phase = Phase.ENDED

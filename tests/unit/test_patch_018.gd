@@ -103,10 +103,3 @@ func test_field_never_holds_more_than_four_slots() -> void:
 	sim.drain_events()
 	sim._spawn_enemy(&"server", true, sim.enemies[3])
 	assert_lte(sim.enemies.size(), CombatSim.MAX_ENEMIES)
-
-
-func test_slow_playing_text_explains_the_lock() -> void:
-	# Patch 0.18 request: the card must read as self-explanatory.
-	var ability := _db.get_ability(&"slow_playing")
-	assert_string_contains(ability.description.to_lower(), "only ability")
-	assert_string_contains(ability.description.to_lower(), "no other")

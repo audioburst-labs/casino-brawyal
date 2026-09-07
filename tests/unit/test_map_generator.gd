@@ -50,7 +50,7 @@ func test_property_all_placement_rules_hold_across_many_runs() -> void:
 			for type: StringName in types:
 				match type:
 					&"rest":
-						assert_true(encounter_number in [4, 9],
+						assert_true(MapGenerator.REST_ENCOUNTERS.has(encounter_number),
 							"rest offered at enc %d" % encounter_number)
 					&"shop":
 						assert_lt(run.count_visited(&"shop"), 3, "shop cap is 3")
@@ -66,10 +66,12 @@ func test_property_all_placement_rules_hold_across_many_runs() -> void:
 					&"hard_combat":
 						assert_gt(encounter_number, 3, "hard combat only after enc 3")
 
-			if encounter_number == 9:
+			if encounter_number == MapGenerator.FINAL_SHOP_ENCOUNTER:
 				var has_shop_or_capped: bool = types.has(&"shop") \
 					or run.count_visited(&"shop") >= 3 or run.last_visited() == &"shop"
-				assert_true(has_shop_or_capped, "enc 9 offers the final shop when allowed")
+				assert_true(has_shop_or_capped,
+					"enc %d offers the final shop when allowed"
+						% MapGenerator.FINAL_SHOP_ENCOUNTER)
 
 			for option: Dictionary in options:
 				if option.type == &"hard_combat":

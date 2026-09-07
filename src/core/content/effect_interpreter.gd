@@ -24,7 +24,7 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 					var base := int(floor(missing * float(effect.get("pct", 0.0)) + 0.5))
 					_deal_flat_damage(base, sim, source, target)
 			"cash_in":
-				_op_cash_in(sim, source, target)
+				_op_cash_in(effect, sim, source, target)
 			"apply_status":
 				_op_apply_status(effect, sim, source, target)
 			"gain_block":
@@ -72,6 +72,9 @@ static func _condition_met(effect: Dictionary, sim: CombatSim) -> bool:
 		"no_enemy_marked":
 			return sim.enemies.all(func(e: CombatActor) -> bool:
 				return not e.is_alive() or not e.has_status(&"mark"))
+		"enemy_marked":
+			return sim.enemies.any(func(e: CombatActor) -> bool:
+				return e.is_alive() and e.has_status(&"mark"))
 		"solo_ability_this_round":
 			return sim.abilities_fired_this_round == 1
 		"spin_has_triple":
@@ -126,14 +129,35 @@ static func _deal_flat_damage(base: int, sim: CombatSim,
 	sim.check_death(target)
 
 
-static func _op_cash_in(sim: CombatSim, source: CombatActor, target: CombatActor) -> void:
-	if target == null or not target.is_alive() or not target.has_status(&"mark"):
-		return
-	target.statuses[&"mark"] -= 1
-	if target.statuses[&"mark"] <= 0:
-		target.statuses.erase(&"mark")
-	sim.emit_event(&"mark_cashed", {"actor": target.id})
-	_deal_damage(CombatSim.CASH_IN_BONUS, 1, sim, source, target)
+## Cash In (sheet v0.19): "If an enemy is marked, Remove it to gain a bonus
+## effect." The payoff is no longer a global constant — each ability carries
+## its own `effects`, plus optional `else_effects` for the "Deal X instead"
+## wording (Double Down, On a Roll). An ability with no `else_effects` simply
+## does nothing when the target is unmarked (Bust).
+##
+## The Mark has to be on the SELECTED target: the player chooses who to hit,
+## so cashing a mark off some other enemy would move the damage somewhere they
+## did not aim it.
+static func _op_cash_in(effect: Dictionary, sim: CombatSim,
+		source: CombatActor, target: CombatActor) -> void:
+	var cashed := target != null and target.is_alive() and target.has_status(&"mark")
+	if cashed:
+		target.statuses[&"mark"] -= 1
+		if target.statuses[&"mark"] <= 0:
+			target.statuses.erase(&"mark")
+		sim.emit_event(&"mark_cashed", {"actor": target.id})
+	var payoff := _effect_list(effect, "effects" if cashed else "else_effects")
+	if not payoff.is_empty():
+		execute(payoff, sim, source, target)
+
+
+## Nested effect arrays arrive from JSON as an untyped Array; execute() wants
+## Array[Dictionary].
+static func _effect_list(effect: Dictionary, key: String) -> Array[Dictionary]:
+	var typed: Array[Dictionary] = []
+	for entry in effect.get(key, []):
+		typed.append(entry)
+	return typed
 
 
 static func _op_apply_status(effect: Dictionary, sim: CombatSim,

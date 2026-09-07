@@ -5,14 +5,14 @@ extends RefCounted
 
 const DEFAULT_SYMBOLS: Array[StringName] = [&"spade", &"club", &"heart", &"diamond"]
 ## Doc "Behavior -> Combat -> Slot Machine": the reel's internal pool holds
-## three instances of every symbol assigned to it.
-const POOL_COPIES := 3
+## two instances of every symbol assigned to it (v0.19 — was three).
+const POOL_COPIES := 2
 
 var symbols: Array[StringName] = []
 
 ## Draws come out of this pool without replacement; it refills the moment it
-## empties. A reel with two Spades, a Heart and a Diamond therefore raffles a
-## 12-item pool of 6 Spades, 3 Hearts and 3 Diamonds — weighted like the
+## empties. A reel with two Spades, a Heart and a Diamond therefore raffles an
+## 8-item pool of 4 Spades, 2 Hearts and 2 Diamonds — weighted like the
 ## reel's face, but with bounded streaks and droughts.
 var _pool: Array[StringName] = []
 

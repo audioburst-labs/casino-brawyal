@@ -36,12 +36,19 @@ static func spin(db: ContentDB, run: RunState, rng: RandomNumberGenerator,
 	for i in 3:
 		symbols.append(_draw(rng))
 	var lines: Array[String] = []
+	# Which relic each reel actually landed, parallel to `symbols` (&"" where
+	# the prize was not a relic). Patch 0.19: the presenter needs this to draw
+	# the relic that was won instead of one stand-in chip for all of them.
+	var relics: Array[StringName] = []
 	for symbol in symbols:
+		var before := run.relic_ids.size()
 		lines.append(_award(symbol, db, run, rng))
+		relics.append(run.relic_ids[-1] if run.relic_ids.size() > before else &"")
 	var free_respin := symbols[0] == symbols[1] and symbols[1] == symbols[2]
 	if free_respin:
 		lines.append("THREE OF A KIND — free spin!")
-	return {"symbols": symbols, "lines": lines, "free_respin": free_respin, "cost": cost}
+	return {"symbols": symbols, "relics": relics, "lines": lines,
+		"free_respin": free_respin, "cost": cost}
 
 
 static func _draw(rng: RandomNumberGenerator) -> StringName:
