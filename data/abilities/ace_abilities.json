@@ -6,178 +6,888 @@
       "name": "Card Sling",
       "pool": "starter",
       "rarity": "starter",
-      "cost": [{"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 6, "times": 1}],
+      "cost": [
+        {
+          "suit": "any"
+        }
+      ],
+      "effects": [
+        {
+          "op": "damage",
+          "amount": 6,
+          "times": 1
+        }
+      ],
       "bonus_suit": "spade",
       "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "apply_status", "status": "mark", "stacks": 1, "target": "enemy"}],
-      "keywords": ["mark"],
-      "description": "Deal 6 damage. If Spade - Mark."
+      "bonus_effects": [
+        {
+          "op": "apply_status",
+          "status": "mark",
+          "stacks": 1,
+          "target": "enemy"
+        }
+      ],
+      "keywords": [
+        "mark"
+      ],
+      "description": "Deal 6 damage. If Spade - Mark.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 9,
+              "times": 1
+            }
+          ],
+          "description": "Deal 9 damage. If Spade - Mark."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 12,
+              "times": 1
+            }
+          ],
+          "description": "Deal 12 damage. If Spade - Mark."
+        }
+      ]
     },
     {
       "id": "quick_maneuvers",
       "name": "Quick Maneuvers",
       "pool": "starter",
       "rarity": "starter",
-      "cost": [{"suit": "any"}],
-      "effects": [{"op": "gain_block", "amount": 5}],
+      "cost": [
+        {
+          "suit": "any"
+        }
+      ],
+      "effects": [
+        {
+          "op": "gain_block",
+          "amount": 5
+        }
+      ],
       "bonus_suit": "diamond",
       "bonus_condition": "all_slots_bonus_suit",
       "bonus_mode": "replace",
-      "bonus_effects": [{"op": "gain_block", "amount": 8}],
-      "keywords": ["block"],
-      "description": "Gain 5 Block. If Diamond - Gain 8 instead."
+      "bonus_effects": [
+        {
+          "op": "gain_block",
+          "amount": 8
+        }
+      ],
+      "keywords": [
+        "block"
+      ],
+      "description": "Gain 5 Block. If Diamond - Gain 8 instead.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 8
+            }
+          ],
+          "bonus_effects": [
+            {
+              "op": "gain_block",
+              "amount": 11
+            }
+          ],
+          "description": "Gain 8 Block. If Diamond - Gain 11 instead."
+        },
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 11
+            }
+          ],
+          "bonus_effects": [
+            {
+              "op": "gain_block",
+              "amount": 14
+            }
+          ],
+          "description": "Gain 11 Block. If Diamond - Gain 14 instead."
+        }
+      ]
     },
     {
       "id": "color_up",
       "name": "Color Up",
       "pool": "starter",
       "rarity": "starter",
-      "cost": [{"suit": "any"}],
+      "cost": [
+        {
+          "suit": "any"
+        }
+      ],
       "per_turn": 1,
-      "effects": [{"op": "add_chips", "suit": "spade", "count": 1}],
+      "effects": [
+        {
+          "op": "add_chips",
+          "suit": "spade",
+          "count": 1
+        }
+      ],
       "keywords": [],
-      "description": "Gain a Spade."
+      "description": "Gain a Spade.",
+      "tiers": [
+        {
+          "per_turn": 2,
+          "description": "Gain a Spade. Usable twice per turn."
+        },
+        {
+          "per_turn": 0,
+          "description": "Gain a Spade. Usable any number of times per turn."
+        }
+      ]
     },
     {
       "id": "double_down",
       "name": "Double Down",
       "rarity": "common",
-      "cost": [{"suit": "any"}, {"suit": "spade"}],
+      "cost": [
+        {
+          "suit": "any"
+        },
+        {
+          "suit": "spade"
+        }
+      ],
       "effects": [
         {
           "op": "cash_in",
-          "effects": [{"op": "damage", "amount": 20, "times": 1}],
-          "else_effects": [{"op": "damage", "amount": 10, "times": 1}]
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 20,
+              "times": 1
+            }
+          ],
+          "else_effects": [
+            {
+              "op": "damage",
+              "amount": 10,
+              "times": 1
+            }
+          ]
         }
       ],
-      "keywords": ["cash_in", "mark"],
-      "description": "Deal 10 damage. Cash In: Deal 20 instead."
+      "keywords": [
+        "cash_in",
+        "mark"
+      ],
+      "description": "Deal 10 damage. Cash In: Deal 20 instead.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 26,
+                  "times": 1
+                }
+              ],
+              "else_effects": [
+                {
+                  "op": "damage",
+                  "amount": 13,
+                  "times": 1
+                }
+              ]
+            }
+          ],
+          "description": "Deal 13 damage. Cash In: Deal 26 instead."
+        },
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 32,
+                  "times": 1
+                }
+              ],
+              "else_effects": [
+                {
+                  "op": "damage",
+                  "amount": 16,
+                  "times": 1
+                }
+              ]
+            }
+          ],
+          "description": "Deal 16 damage. Cash In: Deal 32 instead."
+        }
+      ]
     },
     {
       "id": "heartsteal",
       "name": "HeartSteal",
       "rarity": "common",
-      "cost": [{"suit": "any"}, {"suit": "heart"}],
-      "effects": [
-        {"op": "gain_block", "amount": 10},
-        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "all_enemies"}
+      "cost": [
+        {
+          "suit": "any"
+        },
+        {
+          "suit": "heart"
+        }
       ],
-      "keywords": ["weak", "block"],
-      "description": "Gain 10 Block. Apply Weak 1 to all enemies."
+      "effects": [
+        {
+          "op": "gain_block",
+          "amount": 10
+        },
+        {
+          "op": "apply_status",
+          "status": "weak",
+          "stacks": 1,
+          "target": "all_enemies"
+        }
+      ],
+      "keywords": [
+        "weak",
+        "block"
+      ],
+      "description": "Gain 10 Block. Apply Weak 1 to all enemies.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 13
+            },
+            {
+              "op": "apply_status",
+              "status": "weak",
+              "stacks": 1,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Gain 13 Block. Apply Weak 1 to all enemies."
+        },
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 15
+            },
+            {
+              "op": "apply_status",
+              "status": "weak",
+              "stacks": 2,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Gain 15 Block. Apply Weak 2 to all enemies."
+        }
+      ]
     },
     {
       "id": "pocket_rockets",
       "name": "Pocket Rockets",
       "rarity": "common",
-      "cost": [{"suit": "any"}, {"suit": "any"}],
-      "effects": [{"op": "damage", "amount": 15, "times": 1}],
+      "cost": [
+        {
+          "suit": "any"
+        },
+        {
+          "suit": "any"
+        }
+      ],
+      "effects": [
+        {
+          "op": "damage",
+          "amount": 15,
+          "times": 1
+        }
+      ],
       "bonus_suit": "spade",
       "bonus_condition": "all_slots_bonus_suit",
-      "bonus_effects": [{"op": "damage", "amount": 15, "times": 1}],
-      "keywords": ["repeat"],
-      "description": "Deal 15 damage. If both are Spades, Repeat 1."
+      "bonus_effects": [
+        {
+          "op": "damage",
+          "amount": 15,
+          "times": 1
+        }
+      ],
+      "keywords": [
+        "repeat"
+      ],
+      "description": "Deal 15 damage. If both are Spades, Repeat 1.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 17,
+              "times": 1
+            }
+          ],
+          "bonus_effects": [
+            {
+              "op": "damage",
+              "amount": 17,
+              "times": 1
+            }
+          ],
+          "description": "Deal 17 damage. If both are Spades, Repeat 1."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 20,
+              "times": 1
+            }
+          ],
+          "bonus_effects": [
+            {
+              "op": "damage",
+              "amount": 20,
+              "times": 1
+            }
+          ],
+          "description": "Deal 20 damage. If both are Spades, Repeat 1."
+        }
+      ]
     },
     {
       "id": "slow_playing",
       "name": "Slow Playing",
       "rarity": "uncommon",
-      "cost": [{"suit": "heart"}, {"suit": "diamond"}],
+      "cost": [
+        {
+          "suit": "heart"
+        },
+        {
+          "suit": "diamond"
+        }
+      ],
       "per_turn": 1,
-      "effects": [{"op": "gain_block", "amount": 20}],
-      "keywords": ["block"],
-      "description": "Gain 20 Block."
+      "effects": [
+        {
+          "op": "gain_block",
+          "amount": 20
+        }
+      ],
+      "keywords": [
+        "block"
+      ],
+      "description": "Gain 20 Block.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 25
+            }
+          ],
+          "description": "Gain 25 Block."
+        },
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 30
+            }
+          ],
+          "description": "Gain 30 Block."
+        }
+      ]
     },
     {
       "id": "house_edge",
       "name": "House Edge",
       "rarity": "uncommon",
-      "cost": [{"suit": "spade"}],
+      "cost": [
+        {
+          "suit": "spade"
+        }
+      ],
       "per_combat": 1,
       "passive": true,
-      "effects": [{"op": "mark_random_unmarked"}],
-      "keywords": ["mark"],
-      "description": "At the start of your turn, Mark a random unmarked enemy."
+      "effects": [
+        {
+          "op": "mark_random_unmarked"
+        }
+      ],
+      "keywords": [
+        "mark"
+      ],
+      "description": "At the start of your turn, Mark a random unmarked enemy.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "mark_random_unmarked",
+              "count": 2
+            }
+          ],
+          "description": "At the start of your turn, Mark 2 random unmarked enemies."
+        },
+        {
+          "effects": [
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "At the start of your turn, Mark all enemies."
+        }
+      ]
     },
     {
       "id": "bust",
       "name": "Bust",
       "rarity": "uncommon",
-      "cost": [{"suit": "spade"}, {"suit": "club"}],
-      "effects": [
-        {"op": "cash_in", "effects": [{"op": "damage", "amount": 30, "times": 1}]}
+      "cost": [
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "club"
+        }
       ],
-      "keywords": ["cash_in", "mark"],
-      "description": "Cash In: Deal 30 damage."
+      "effects": [
+        {
+          "op": "cash_in",
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 30,
+              "times": 1
+            }
+          ]
+        }
+      ],
+      "keywords": [
+        "cash_in",
+        "mark"
+      ],
+      "description": "Cash In: Deal 30 damage.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 40,
+                  "times": 1
+                }
+              ]
+            }
+          ],
+          "description": "Cash In: Deal 40 damage."
+        },
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 50,
+                  "times": 1
+                }
+              ]
+            }
+          ],
+          "description": "Cash In: Deal 50 damage."
+        }
+      ]
     },
     {
       "id": "dazzling_personality",
       "name": "Dazzling Personality",
       "rarity": "uncommon",
-      "cost": [{"suit": "heart"}, {"suit": "club"}],
-      "effects": [
-        {"op": "apply_status", "status": "mark", "stacks": 1, "target": "all_enemies"},
-        {"op": "apply_status", "status": "weak", "stacks": 1, "target": "all_enemies"}
+      "cost": [
+        {
+          "suit": "heart"
+        },
+        {
+          "suit": "club"
+        }
       ],
-      "keywords": ["mark", "weak"],
-      "description": "Mark and apply Weak 1 to all enemies."
+      "effects": [
+        {
+          "op": "apply_status",
+          "status": "mark",
+          "stacks": 1,
+          "target": "all_enemies"
+        },
+        {
+          "op": "apply_status",
+          "status": "weak",
+          "stacks": 1,
+          "target": "all_enemies"
+        }
+      ],
+      "keywords": [
+        "mark",
+        "weak"
+      ],
+      "description": "Mark and apply Weak 1 to all enemies.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "all_enemies"
+            },
+            {
+              "op": "apply_status",
+              "status": "weak",
+              "stacks": 2,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Mark and apply Weak 2 to all enemies."
+        },
+        {
+          "effects": [
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "all_enemies"
+            },
+            {
+              "op": "apply_status",
+              "status": "weak",
+              "stacks": 3,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Mark and apply Weak 3 to all enemies."
+        }
+      ]
     },
     {
       "id": "face_reader",
       "name": "Face Reader",
       "rarity": "uncommon",
-      "cost": [{"suit": "any"}, {"suit": "diamond"}],
+      "cost": [
+        {
+          "suit": "any"
+        },
+        {
+          "suit": "diamond"
+        }
+      ],
       "per_combat": 1,
       "passive": true,
-      "effects": [{"op": "block_per_enemy", "amount": 2}],
-      "keywords": ["block"],
-      "description": "At the start of your turn, gain 2 Block per enemy."
+      "effects": [
+        {
+          "op": "block_per_enemy",
+          "amount": 2
+        }
+      ],
+      "keywords": [
+        "block"
+      ],
+      "description": "At the start of your turn, gain 2 Block per enemy.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "block_per_enemy",
+              "amount": 3
+            }
+          ],
+          "description": "At the start of your turn, gain 3 Block per enemy."
+        },
+        {
+          "effects": [
+            {
+              "op": "block_per_enemy",
+              "amount": 4
+            }
+          ],
+          "description": "At the start of your turn, gain 4 Block per enemy."
+        }
+      ]
     },
     {
       "id": "bad_beat",
       "name": "Bad Beat",
       "rarity": "common",
-      "cost": [{"suit": "club"}, {"suit": "diamond"}],
-      "effects": [{"op": "gain_block", "amount": 10, "condition": "enemy_marked"}],
-      "keywords": ["mark", "block"],
-      "description": "If an enemy is marked, gain 10 Block."
+      "cost": [
+        {
+          "suit": "club"
+        },
+        {
+          "suit": "diamond"
+        }
+      ],
+      "effects": [
+        {
+          "op": "gain_block",
+          "amount": 10,
+          "condition": "enemy_marked"
+        }
+      ],
+      "keywords": [
+        "mark",
+        "block"
+      ],
+      "description": "If an enemy is marked, gain 10 Block.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 15,
+              "condition": "enemy_marked"
+            }
+          ],
+          "description": "If an enemy is marked, gain 15 Block."
+        },
+        {
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 20,
+              "condition": "enemy_marked"
+            }
+          ],
+          "description": "If an enemy is marked, gain 20 Block."
+        }
+      ]
     },
     {
       "id": "on_a_roll",
       "name": "On a Roll",
       "rarity": "uncommon",
-      "cost": [{"suit": "any"}, {"suit": "spade"}, {"suit": "club"}],
+      "cost": [
+        {
+          "suit": "any"
+        },
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "club"
+        }
+      ],
       "effects": [
         {
           "op": "cash_in",
-          "effects": [{"op": "damage", "amount": 40, "times": 1}],
-          "else_effects": [{"op": "damage", "amount": 20, "times": 1}]
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 40,
+              "times": 1
+            }
+          ],
+          "else_effects": [
+            {
+              "op": "damage",
+              "amount": 20,
+              "times": 1
+            }
+          ]
         },
-        {"op": "apply_status", "status": "mark", "stacks": 1, "target": "enemy"}
+        {
+          "op": "apply_status",
+          "status": "mark",
+          "stacks": 1,
+          "target": "enemy"
+        }
       ],
-      "keywords": ["mark", "cash_in"],
-      "description": "Deal 20. Cash In: Deal 40 instead. Mark."
+      "keywords": [
+        "mark",
+        "cash_in"
+      ],
+      "description": "Deal 20. Cash In: Deal 40 instead. Mark.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 50,
+                  "times": 1
+                }
+              ],
+              "else_effects": [
+                {
+                  "op": "damage",
+                  "amount": 25,
+                  "times": 1
+                }
+              ]
+            },
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "enemy"
+            }
+          ],
+          "description": "Deal 25. Cash In: Deal 50 instead. Mark."
+        },
+        {
+          "effects": [
+            {
+              "op": "cash_in",
+              "effects": [
+                {
+                  "op": "damage",
+                  "amount": 60,
+                  "times": 1
+                }
+              ],
+              "else_effects": [
+                {
+                  "op": "damage",
+                  "amount": 30,
+                  "times": 1
+                }
+              ]
+            },
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "enemy"
+            }
+          ],
+          "description": "Deal 30. Cash In: Deal 60 instead. Mark."
+        }
+      ]
     },
     {
       "id": "pay_line",
       "name": "Pay Line",
       "rarity": "rare",
-      "cost": [{"suit": "spade"}, {"suit": "diamond"}, {"suit": "heart"}, {"suit": "club"}],
-      "effects": [
-        {"op": "damage", "amount": 20, "times": 1},
-        {"op": "respin_reel"}
+      "cost": [
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "diamond"
+        },
+        {
+          "suit": "heart"
+        },
+        {
+          "suit": "club"
+        }
       ],
-      "keywords": ["go_again"],
-      "description": "Deal 20. Go Again."
+      "effects": [
+        {
+          "op": "damage",
+          "amount": 20,
+          "times": 1
+        },
+        {
+          "op": "respin_reel"
+        }
+      ],
+      "keywords": [
+        "go_again"
+      ],
+      "description": "Deal 20. Go Again.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 30,
+              "times": 1
+            },
+            {
+              "op": "respin_reel"
+            }
+          ],
+          "description": "Deal 30. Go Again."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 40,
+              "times": 1
+            },
+            {
+              "op": "respin_reel"
+            }
+          ],
+          "description": "Deal 40. Go Again."
+        }
+      ]
     },
     {
       "id": "flush",
       "name": "Flush",
       "rarity": "rare",
-      "cost": [{"suit": "spade"}, {"suit": "spade"}, {"suit": "spade"}, {"suit": "spade"}],
-      "effects": [{"op": "damage", "amount": 30, "times": 1, "target": "all_enemies"}],
+      "cost": [
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "spade"
+        },
+        {
+          "suit": "spade"
+        }
+      ],
+      "effects": [
+        {
+          "op": "damage",
+          "amount": 30,
+          "times": 1,
+          "target": "all_enemies"
+        }
+      ],
       "keywords": [],
-      "description": "Deal 30 to all enemies."
+      "description": "Deal 30 to all enemies.",
+      "tiers": [
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 40,
+              "times": 1,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Deal 40 to all enemies."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 50,
+              "times": 1,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Deal 50 to all enemies."
+        }
+      ]
     }
   ]
 }

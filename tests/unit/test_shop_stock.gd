@@ -65,15 +65,18 @@ func test_relic_offers_are_unowned_distinct_and_priced_per_sheet() -> void:
 		seen.append(offer.id)
 
 
-func test_ability_offers_exclude_owned_and_starters() -> void:
+## v0.19: the shelf stocks anything that can still improve, new or owned, at
+## one 30-50 band either way. Starters are in the pool like everything else.
+func test_ability_offers_cover_new_and_upgrades_at_one_price() -> void:
 	var run := RunState.new()
 	run.ability_ids = [&"card_sling", &"quick_maneuvers", &"color_up", &"double_down"]
 	var stock := ShopStock.generate(_db, run, _rng())
 	assert_between(stock.abilities.size(), 1, 4)
 	for offer: Dictionary in stock.abilities:
 		assert_between(offer.price, 30, 50)
-		assert_does_not_have(run.ability_ids, offer.id)
-		assert_ne(_db.get_ability(offer.id).pool, "starter")
+		assert_true(run.can_upgrade(offer.id), "%s can still improve" % offer.id)
+		assert_eq(bool(offer.upgrade), run.ability_ids.has(offer.id),
+			"the shelf knows whether it is selling an upgrade")
 
 
 func test_exhausted_pools_leave_slots_empty() -> void:
@@ -82,6 +85,7 @@ func test_exhausted_pools_leave_slots_empty() -> void:
 		run.relic_ids.append(id)
 	for id in _db.all_ability_ids():
 		run.ability_ids.append(id)
+		run.ability_tiers[id] = ContentDB.MAX_TIER  # nothing left to improve
 	var stock := ShopStock.generate(_db, run, _rng())
 	assert_eq(stock.relics.size(), 0)
 	assert_eq(stock.abilities.size(), 0)

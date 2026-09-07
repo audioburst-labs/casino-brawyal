@@ -45,7 +45,7 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 					source.gain_block(gained)
 					sim.emit_event(&"block_gained", {"actor": source.id, "amount": gained})
 			"mark_random_unmarked":
-				_op_mark_random(sim)
+				_op_mark_random(sim, int(effect.get("count", 1)))
 			"heal_pct":
 				var amount := int(ceil(source.max_hp * float(effect.get("pct", 0.0))))
 				source.heal(amount)
@@ -180,14 +180,19 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 			{"actor": recipient.id, "status": status, "stacks": stacks})
 
 
-static func _op_mark_random(sim: CombatSim) -> void:
+## `count` marks that many distinct unmarked enemies — House Edge's silver tier
+## marks two (v0.19); its gold tier marks everyone and uses apply_status instead.
+static func _op_mark_random(sim: CombatSim, count: int = 1) -> void:
 	var unmarked := sim.enemies.filter(func(e: CombatActor) -> bool:
 		return e.is_alive() and not e.has_status(&"mark"))
-	if unmarked.is_empty():
-		return
-	var chosen: CombatActor = unmarked[sim.rng.stream(&"combat").randi_range(0, unmarked.size() - 1)]
-	chosen.apply_status(&"mark", 1)
-	sim.emit_event(&"status_applied", {"actor": chosen.id, "status": &"mark", "stacks": 1})
+	for i in count:
+		if unmarked.is_empty():
+			return
+		var index := sim.rng.stream(&"combat").randi_range(0, unmarked.size() - 1)
+		var chosen: CombatActor = unmarked[index]
+		unmarked.remove_at(index)
+		chosen.apply_status(&"mark", 1)
+		sim.emit_event(&"status_applied", {"actor": chosen.id, "status": &"mark", "stacks": 1})
 
 
 static func _op_convert_chips(effect: Dictionary, sim: CombatSim) -> void:

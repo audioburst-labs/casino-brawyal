@@ -110,8 +110,15 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	chit.zone = zone
 	chit.screen = self
 	chit.custom_minimum_size = Vector2(120, 84)
-	var def := Db.content.get_ability(id)
-	chit.tooltip_text = "%s\n%s" % [def.name, def.description] if def else String(id)
+	# Drawn at the tier the run owns, so a chit matches the card it becomes
+	# in combat (v0.19).
+	var tier := Game.run.ability_tier(id) if Game.run != null else 0
+	var def := Db.content.get_ability(id, tier)
+	chit.tooltip_text = "%s%s\n%s" % [def.name,
+		" — %s" % TierStyle.label(tier) if tier > 0 else "",
+		def.description] if def else String(id)
+	if tier > 0:
+		chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	chit.add_child(box)

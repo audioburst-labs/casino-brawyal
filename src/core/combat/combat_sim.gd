@@ -64,8 +64,11 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 	if config.has("hero_hp"):
 		hero.hp = int(config["hero_hp"])
 
+	# Each equipped ability enters at the tier the run owns it at (v0.19).
+	var tiers: Dictionary = config.get("ability_tiers", {})
 	for ability_id in config.get("abilities", []):
-		abilities.append(AbilityState.new(db.get_ability(StringName(str(ability_id)))))
+		var id := StringName(str(ability_id))
+		abilities.append(AbilityState.new(db.get_ability(id, int(tiers.get(id, 0)))))
 
 	for relic_id in config.get("relics", []):
 		var relic := db.get_relic(StringName(str(relic_id)))

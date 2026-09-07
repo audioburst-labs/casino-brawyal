@@ -18,6 +18,10 @@ var machine := SlotMachine.new()
 var ability_ids: Array[StringName] = []
 var equipped_ids: Array[StringName] = []
 var trash_id: StringName = &""
+## Ability id -> owned tier (0 base, 1 silver, 2 gold). Absent means base.
+## Kept beside `ability_ids` rather than encoded into the id, because the id is
+## the ability's identity everywhere else in the run and combat layers.
+var ability_tiers: Dictionary = {}
 var needs_loadout := false
 var relic_ids: Array[StringName] = []
 var seed_value := 0
@@ -59,9 +63,25 @@ func stored_ids() -> Array[StringName]:
 	return stored
 
 
+func ability_tier(id: StringName) -> int:
+	return int(ability_tiers.get(id, 0))
+
+
+## True while this ability still has somewhere to go (doc "Ability Upgrades":
+## a gold ability leaves the pool until the player trashes it).
+func can_upgrade(id: StringName) -> bool:
+	return ability_tier(id) < ContentDB.MAX_TIER
+
+
 ## Auto-funnel (doc v0.11): Equipped first, then Storage, then the Trash slot
 ## (replacing and deleting its previous occupant), never displacing others.
+##
+## A duplicate upgrades instead of stacking (doc v0.19) — the hero never holds
+## two copies of the same ability.
 func acquire_ability(id: StringName) -> void:
+	if ability_ids.has(id):
+		ability_tiers[id] = mini(ability_tier(id) + 1, ContentDB.MAX_TIER)
+		return
 	if equipped_ids.size() < EQUIP_CAP:
 		ability_ids.append(id)
 		equipped_ids.append(id)
@@ -71,7 +91,7 @@ func acquire_ability(id: StringName) -> void:
 		needs_loadout = true
 		return
 	if trash_id != &"":
-		ability_ids.erase(trash_id)
+		_forget(trash_id)
 	ability_ids.append(id)
 	trash_id = id
 	needs_loadout = true
@@ -96,7 +116,7 @@ func move_to_trash(id: StringName) -> bool:
 	if not ability_ids.has(id) or id == trash_id:
 		return false
 	if trash_id != &"":
-		ability_ids.erase(trash_id)  # old occupant is deleted for good
+		_forget(trash_id)  # old occupant is deleted for good
 	equipped_ids.erase(id)
 	trash_id = id
 	return true
@@ -116,9 +136,16 @@ func restore_from_trash() -> bool:
 ## The trash empties for good when the next combat begins (doc v0.11).
 func process_trash() -> void:
 	if trash_id != &"":
-		ability_ids.erase(trash_id)
+		_forget(trash_id)
 		trash_id = &""
 	needs_loadout = false
+
+
+## Removes an ability for good, tier included — a trashed gold ability returns
+## to the offer pool at base, per the doc.
+func _forget(id: StringName) -> void:
+	ability_ids.erase(id)
+	ability_tiers.erase(id)
 
 
 func to_dict() -> Dictionary:
@@ -134,6 +161,7 @@ func to_dict() -> Dictionary:
 		"ability_ids": ability_ids.map(func(s: StringName) -> String: return String(s)),
 		"equipped_ids": equipped_ids.map(func(s: StringName) -> String: return String(s)),
 		"trash_id": String(trash_id),
+		"ability_tiers": _tiers_to_dict(),
 		"needs_loadout": needs_loadout,
 		"relic_ids": relic_ids.map(func(s: StringName) -> String: return String(s)),
 		"sticker_inventory": sticker_inventory.map(func(s: StringName) -> String: return String(s)),
@@ -142,6 +170,14 @@ func to_dict() -> Dictionary:
 		"reels": reels,
 		"shop_offers": shop_offers,
 	}
+
+
+## StringName keys do not survive JSON; write them as plain strings.
+func _tiers_to_dict() -> Dictionary:
+	var out := {}
+	for id: StringName in ability_tiers:
+		out[String(id)] = int(ability_tiers[id])
+	return out
 
 
 static func from_dict(data: Dictionary) -> RunState:
@@ -156,6 +192,10 @@ static func from_dict(data: Dictionary) -> RunState:
 	for id in data.get("equipped_ids", []):
 		run.equipped_ids.append(StringName(str(id)))
 	run.trash_id = StringName(str(data.get("trash_id", "")))
+	# Saves written before v0.19 have no tiers; everything defaults to base.
+	var tiers: Dictionary = data.get("ability_tiers", {})
+	for id in tiers:
+		run.ability_tiers[StringName(str(id))] = int(tiers[id])
 	run.needs_loadout = bool(data.get("needs_loadout", false))
 	for id in data.get("relic_ids", []):
 		run.relic_ids.append(StringName(str(id)))

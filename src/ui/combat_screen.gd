@@ -147,6 +147,15 @@ func setup(config: Dictionary) -> void:
 	if override != "":
 		config = config.duplicate()
 		config["enemies"] = Array(override.split(","))
+	# CB_DEBUG_TIERS=1|2: bring every equipped ability in at that upgrade tier,
+	# to review the silver/gold cards without playing a run up to them.
+	var forced_tier := OS.get_environment("CB_DEBUG_TIERS").to_int()
+	if forced_tier > 0:
+		config = config.duplicate()
+		var tiers := {}
+		for ability_id in config.get("abilities", []):
+			tiers[StringName(str(ability_id))] = forced_tier
+		config["ability_tiers"] = tiers
 	run_mode = config.get("run_mode", false)
 	sim = CombatSim.new(Db.content, config)
 	_spawn_units()

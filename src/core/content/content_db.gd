@@ -19,6 +19,10 @@ const KNOWN_CONDITIONS: Array[String] = [
 	"no_enemy_marked", "enemy_marked", "solo_ability_this_round", "spin_has_triple",
 ]
 const BOSS_STAGE := 6
+## Doc "Ability Upgrades": base, silver, gold. An ability's `tiers` array holds
+## the silver and gold entries as SPARSE overrides of the base item.
+const MAX_TIER := 2
+const TIER_NAMES: Array[String] = ["Base", "Silver", "Gold"]
 const KNOWN_TRIGGERS: Array[StringName] = [
 	&"combat_started", &"round_started", &"spin_resolved", &"chips_generated",
 	&"ability_activated", &"damage_dealt", &"damage_taken", &"enemy_killed",
@@ -87,8 +91,12 @@ func load_all(root: String) -> bool:
 	return errors.is_empty()
 
 
-func get_ability(id: StringName) -> Defs.AbilityDef:
-	return _abilities.get(id)
+## `tier` is clamped, so a save that outlived a content change still resolves.
+func get_ability(id: StringName, tier: int = 0) -> Defs.AbilityDef:
+	var variants: Array = _abilities.get(id, [])
+	if variants.is_empty():
+		return null
+	return variants[clampi(tier, 0, variants.size() - 1)]
 
 
 func get_enemy(id: StringName) -> Defs.EnemyDef:
@@ -175,38 +183,70 @@ func _parse_status(item: Dictionary) -> void:
 	_statuses[status.id] = status
 
 
+## One ability becomes MAX_TIER + 1 definitions: the base item, then the base
+## merged with each sparse override in `tiers` (doc "Ability Upgrades").
 func _parse_ability(item: Dictionary) -> void:
+	var base := _build_ability(item, 0)
+	if base == null:
+		return
+	# Each tier is built from a fresh merge, so every tier is its own object.
+	# AbilityState holds its def by reference — one shared, mutated def would
+	# leak an upgrade into every later run.
+	var variants: Array[Defs.AbilityDef] = [base]
+	var overrides: Array = item.get("tiers", [])
+	if overrides.size() != MAX_TIER:
+		errors.append("ability %s: expected %d tier overrides, found %d"
+			% [base.id, MAX_TIER, overrides.size()])
+	for index in overrides.size():
+		if not (overrides[index] is Dictionary):
+			errors.append("ability %s: tier %d is not an object" % [base.id, index + 1])
+			continue
+		var merged: Dictionary = item.duplicate(true)
+		var override: Dictionary = overrides[index]
+		for key in override:
+			merged[key] = override[key]
+		merged.erase("tiers")
+		var variant := _build_ability(merged, index + 1)
+		if variant != null:
+			variants.append(variant)
+	_abilities[base.id] = variants
+
+
+func _build_ability(item: Dictionary, tier: int) -> Defs.AbilityDef:
 	var ability := Defs.AbilityDef.new()
 	ability.id = StringName(item.get("id", ""))
 	if ability.id == &"":
 		errors.append("ability with missing id")
-		return
+		return null
+	ability.tier = tier
 	ability.name = item.get("name", "")
 	ability.description = item.get("description", "")
 	ability.rarity = item.get("rarity", "common")
 	ability.pool = item.get("pool", "reward")
 
+	var context := "ability %s" % ability.id if tier == 0 		else "ability %s (%s)" % [ability.id, TIER_NAMES[tier]]
+
 	for slot: Dictionary in item.get("cost", []):
 		var suit := StringName(str(slot.get("suit", "")))
 		if not COST_SUITS.has(suit):
-			errors.append("ability %s: unknown suit '%s' in cost" % [ability.id, suit])
+			errors.append("%s: unknown suit '%s' in cost" % [context, suit])
 		ability.cost.append(suit)
 	if ability.cost.is_empty():
-		errors.append("ability %s: empty cost" % ability.id)
+		errors.append("%s: empty cost" % context)
 
 	for effect: Dictionary in item.get("effects", []):
-		_validate_effect(effect, "ability %s" % ability.id)
+		_validate_effect(effect, context)
 		ability.effects.append(effect)
 	if ability.effects.is_empty():
-		errors.append("ability %s: no effects" % ability.id)
+		errors.append("%s: no effects" % context)
 
 	ability.bonus_suit = StringName(str(item.get("bonus_suit", "")))
 	ability.bonus_condition = item.get("bonus_condition", "")
 	ability.bonus_mode = item.get("bonus_mode", "extra")
 	if ability.bonus_suit != &"" and not SUITS.has(ability.bonus_suit):
-		errors.append("ability %s: unknown bonus_suit '%s'" % [ability.id, ability.bonus_suit])
+		errors.append("%s: unknown bonus_suit '%s'" % [context, ability.bonus_suit])
 	for effect: Dictionary in item.get("bonus_effects", []):
-		_validate_effect(effect, "ability %s (bonus)" % ability.id)
+		_validate_effect(effect, "%s (bonus)" % context)
 		ability.bonus_effects.append(effect)
 
 	ability.per_turn = int(item.get("per_turn", 0))
@@ -216,10 +256,9 @@ func _parse_ability(item: Dictionary) -> void:
 	for keyword_id in item.get("keywords", []):
 		var id := StringName(str(keyword_id))
 		if not _keywords.has(id):
-			errors.append("ability %s: unknown keyword '%s'" % [ability.id, id])
+			errors.append("%s: unknown keyword '%s'" % [context, id])
 		ability.keywords.append(id)
-
-	_abilities[ability.id] = ability
+	return ability
 
 
 func _validate_effect(effect: Dictionary, context: String) -> void:

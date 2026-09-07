@@ -92,6 +92,23 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_description)
 
+	# Upgrade tier (v0.19): the card re-trims silver or gold and carries a pip.
+	# The tier comes from the def the sim resolved, so the card cannot disagree
+	# with what the ability actually does this combat.
+	if _state.def.tier > 0:
+		add_theme_stylebox_override("panel", TierStyle.panel(_state.def.tier))
+		var pip := Label.new()
+		pip.text = TierStyle.pips(_state.def.tier)
+		pip.add_theme_font_size_override("font_size", 15)
+		pip.add_theme_color_override("font_color", TierStyle.color(_state.def.tier))
+		pip.tooltip_text = "%s tier" % TierStyle.label(_state.def.tier)
+		pip.mouse_filter = Control.MOUSE_FILTER_PASS
+		pip.position = Vector2(9, 5)
+		var pip_overlay := Control.new()
+		pip_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(pip_overlay)
+		pip_overlay.add_child(pip)
+
 	# Once-per-turn indicator badge (patch 0.13), explained on hover.
 	# Wrapped in a plain Control overlay so the PanelContainer can't stretch it.
 	if _state.def.per_turn > 0 and ResourceLoader.exists("res://assets/icons/badge_per_turn.png"):

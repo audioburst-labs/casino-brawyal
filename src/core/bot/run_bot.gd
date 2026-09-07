@@ -81,8 +81,12 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 static func _equip_best(db: ContentDB, run: RunState) -> void:
 	var owned := run.ability_ids.filter(
 		func(id: StringName) -> bool: return id != run.trash_id)
+	# Scored at the tier the run actually owns each one at (v0.19), so an
+	# upgraded ability is valued for what it does now, not its base form.
 	owned.sort_custom(func(a: StringName, b: StringName) -> bool:
-		return GreedyBot._score(db.get_ability(a), 2) > GreedyBot._score(db.get_ability(b), 2))
+		var score_a := GreedyBot._score(db.get_ability(a, run.ability_tier(a)), 2)
+		var score_b := GreedyBot._score(db.get_ability(b, run.ability_tier(b)), 2)
+		return score_a > score_b)
 	run.equipped_ids.clear()
 	for id: StringName in owned.slice(0, RunState.EQUIP_CAP):
 		run.equipped_ids.append(id)

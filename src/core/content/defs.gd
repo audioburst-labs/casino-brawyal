@@ -21,6 +21,7 @@ class AbilityDef:
 	var description: String
 	var rarity: String = "common"
 	var pool: String = "reward"               # "starter" | "reward" | "shop_only"
+	var tier: int = 0                         # 0 base, 1 silver, 2 gold (doc "Ability Upgrades")
 
 
 class EnemyDef:
