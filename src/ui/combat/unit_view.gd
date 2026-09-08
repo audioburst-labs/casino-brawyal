@@ -6,10 +6,10 @@ extends VBoxContainer
 signal clicked(actor_id: StringName)
 
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
-## Patch 0.19: smaller again, so the four-slot line can sit further right and
-## lower in the frame without running out of room.
-const UNIT_HEIGHT := 286.0
-const UNIT_WIDTH := 180.0
+## Patch 0.20: every unit 10% larger. The four-slot line still fits — 4 x 198
+## + 3 x 16 gap = 840 px inside a 893 px band.
+const UNIT_HEIGHT := 315.0
+const UNIT_WIDTH := 198.0
 ## The sprite's own minimum width, as a fraction of its height. It has to stay
 ## under UNIT_WIDTH or an occupied slot measures wider than an empty spacer
 ## and the line stops lining up (it was 0.66 of 330 = 217.8 vs a 214 slot).
@@ -17,7 +17,7 @@ const SPRITE_WIDTH_RATIO := 0.60
 
 ## Local "flame origin" point inside the Mark's wrapper (bottom-center
 ## anchored to _mark_row — see _build_mark).
-const MARK_ORIGIN := Vector2(50.0, 48.0)
+const MARK_ORIGIN := Vector2(55.0, 53.0)
 
 var actor: CombatActor
 var sprite_height := UNIT_HEIGHT
@@ -79,7 +79,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# further down), and one that's a sibling of _sprite rather than a
 	# child of it — so hit-squash/lunge/sway transforms never distort it.
 	_mark_row = Control.new()
-	_mark_row.custom_minimum_size = Vector2(0, 60)
+	_mark_row.custom_minimum_size = Vector2(0, 66)
 	_mark_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mark_row)
 	_build_mark(_mark_row)
@@ -89,7 +89,7 @@ func setup(combat_actor: CombatActor) -> void:
 	_intent_row.add_theme_constant_override("separation", 6)
 	# Fixed height: clearing the intent must not reflow the sprite upward
 	# (patch 0.1: "opponent moves slightly up when first attacking").
-	_intent_row.custom_minimum_size = Vector2(0, 42)
+	_intent_row.custom_minimum_size = Vector2(0, 46)
 	add_child(_intent_row)
 
 	_sprite_holder = CenterContainer.new()
@@ -153,7 +153,7 @@ func setup(combat_actor: CombatActor) -> void:
 		_name_font_size(name_label, actor.display_name))
 
 	_hp_bar = ProgressBar.new()
-	_hp_bar.custom_minimum_size = Vector2(0, 26)
+	_hp_bar.custom_minimum_size = Vector2(0, 29)
 	_hp_bar.show_percentage = false
 	hp_box.add_child(_hp_bar)
 
@@ -177,7 +177,7 @@ func setup(combat_actor: CombatActor) -> void:
 	# Fixed size reserved whether or not any statuses are showing — an icon
 	# appearing/disappearing must not change size or reflow the sprite
 	# (that reflow was pushing the whole unit upward: designer note).
-	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 32)
+	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 35)
 	_status_row.clip_contents = true
 	add_child(_status_row)
 
@@ -214,7 +214,7 @@ func refresh() -> void:
 			rect.texture = icon
 			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			rect.custom_minimum_size = Vector2(30, 30)
+			rect.custom_minimum_size = Vector2(33, 33)
 			rect.tooltip_text = status_tooltip(status_id, stacks)
 			rect.mouse_filter = Control.MOUSE_FILTER_PASS
 			_status_row.add_child(rect)
@@ -260,9 +260,9 @@ func _build_mark(row: Control) -> void:
 	wrapper.anchor_right = 0.5
 	wrapper.anchor_top = 1.0
 	wrapper.anchor_bottom = 1.0
-	wrapper.offset_left = -50.0
-	wrapper.offset_right = 50.0
-	wrapper.offset_top = -70.0
+	wrapper.offset_left = -55.0
+	wrapper.offset_right = 55.0
+	wrapper.offset_top = -77.0
 	wrapper.offset_bottom = 0.0
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(wrapper)
@@ -275,7 +275,7 @@ func _build_mark(row: Control) -> void:
 	# even before the particles add their own cycling hues.
 	_mark_glow_outer = CombatVfx.Glow.new()
 	_mark_glow_outer.glow_color = Color(0.6, 0.35, 1.0, 0.4)
-	_mark_glow_outer.reach = 52.0
+	_mark_glow_outer.reach = 57.0
 	_mark_glow_outer.material = additive
 	_mark_glow_outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark_glow_outer.position = MARK_ORIGIN
@@ -284,7 +284,7 @@ func _build_mark(row: Control) -> void:
 
 	_mark_glow = CombatVfx.Glow.new()
 	_mark_glow.glow_color = Color(0.4, 1.0, 0.8, 0.65)
-	_mark_glow.reach = 36.0
+	_mark_glow.reach = 40.0
 	_mark_glow.material = additive
 	_mark_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark_glow.position = MARK_ORIGIN
@@ -314,9 +314,9 @@ func _build_mark(row: Control) -> void:
 		_mark_icon.texture = load("res://assets/icons/status_mark.png")
 	_mark_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_mark_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_mark_icon.size = Vector2(54, 54)
-	_mark_icon.position = MARK_ORIGIN - Vector2(27.0, 27.0)
-	_mark_icon.pivot_offset = Vector2(27, 27)
+	_mark_icon.size = Vector2(59, 59)
+	_mark_icon.position = MARK_ORIGIN - Vector2(29.5, 29.5)
+	_mark_icon.pivot_offset = Vector2(29.5, 29.5)
 	_mark_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mark_icon.visible = false
 	wrapper.add_child(_mark_icon)
@@ -451,7 +451,7 @@ func _add_intent_chunk(status_id: StringName, label_text: String) -> void:
 		icon.texture = texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(30, 30)
+		icon.custom_minimum_size = Vector2(33, 33)
 		icon.tooltip_text = hint
 		icon.mouse_filter = Control.MOUSE_FILTER_PASS
 		_intent_row.add_child(icon)
@@ -750,7 +750,7 @@ func play_hit() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(target, "scale", Vector2.ONE, 0.3) \
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(target, "position:x", _base_sprite_position.x + 20.0 * direction, 0.06)
+	tween.tween_property(target, "position:x", _base_sprite_position.x + 22.0 * direction, 0.06)
 	tween.chain().tween_property(target, "position:x", _base_sprite_position.x, 0.22) \
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
@@ -778,11 +778,11 @@ func play_lunge() -> void:
 	var tween := create_tween()
 	# Wind-up: pull away and crouch...
 	tween.set_parallel(true)
-	tween.tween_property(_sprite, "position:x", origin.x - 22.0 * direction, 0.14) \
+	tween.tween_property(_sprite, "position:x", origin.x - 24.0 * direction, 0.14) \
 		.set_ease(Tween.EASE_OUT)
 	tween.tween_property(_sprite, "scale", Vector2(0.94, 1.05), 0.14)
 	# ...snap forward...
-	tween.chain().tween_property(_sprite, "position:x", origin.x + 70.0 * direction, 0.08) \
+	tween.chain().tween_property(_sprite, "position:x", origin.x + 77.0 * direction, 0.08) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(_sprite, "scale", Vector2(1.08, 0.94), 0.08)
 	# ...and settle home with follow-through.

@@ -174,6 +174,9 @@ func _build_layout() -> void:
 	_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	if ResourceLoader.exists("res://assets/backgrounds/bg_casino_floor.png"):
 		_background.texture = load("res://assets/backgrounds/bg_casino_floor.png")
+	# Held back so the fighters and the cards read against it (patch 0.20).
+	# Combat had no dim at all, unlike every ScreenBase screen.
+	_background.modulate = Color(0.9, 0.9, 0.9)
 	add_child(_background)
 
 	_vfx = CombatVfx.new()
@@ -205,7 +208,7 @@ func _build_layout() -> void:
 
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
-	bottom.anchor_right = 0.99
+	bottom.anchor_right = 0.878
 	bottom.anchor_top = 0.663
 	bottom.anchor_bottom = 0.955  # patch 0.18: a taller band, so ability text fits
 	bottom.add_theme_constant_override("separation", 10)
@@ -222,21 +225,20 @@ func _build_layout() -> void:
 
 	_ability_row = HBoxContainer.new()
 	_ability_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_ability_row.add_theme_constant_override("separation", 8)
+	_ability_row.add_theme_constant_override("separation", 6)
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	# End Turn lives on the player's side now, above the slot machine
-	# (patch 0.19). It shared a column with the enemy line for two patches
-	# and collided with it twice; out here it cannot, at any enemy count,
-	# and the enemy band gets the height it needed.
+	# "Pass", back on the right (patch 0.20). It gets a column of its own to
+	# the right of the ability row — the row's band stops short of it — so it
+	# cannot cover the sixth card the way a floating button did.
 	_end_turn = Button.new()
-	_end_turn.text = "End Turn ▶"
+	_end_turn.text = "Pass"
 	_end_turn.pressed.connect(_on_end_turn)
-	_end_turn.anchor_left = 0.012
-	_end_turn.anchor_right = 0.145
-	_end_turn.anchor_top = 0.578
-	_end_turn.anchor_bottom = 0.642
+	_end_turn.anchor_left = 0.897
+	_end_turn.anchor_right = 0.985
+	_end_turn.anchor_top = 0.755
+	_end_turn.anchor_bottom = 0.828
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
@@ -459,11 +461,16 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_tray_view.refresh()
 			&"chip_assigned":
 				# Paint the chip into its socket immediately so the final chip
-				# is visible before the ability fires (patch 0.1).
+				# is visible before the ability fires (patch 0.1). The TRAY is
+				# deliberately not refreshed here: by now the sim has already
+				# run the whole ability, so a Go Again's new chips would pop
+				# into the tray a couple of seconds before the reels are seen
+				# to spin for them (patch 0.20). `spin_resolved` reveals a
+				# payout, at round start and on a re-spin alike.
 				var assigned_card := _card_of(event.data.ability)
 				if assigned_card != null:
 					assigned_card.show_chip(event.data.slot, event.data.suit)
-				_tray_view.refresh()
+				_tray_view.spend(event.data.suit)
 			&"chip_unassigned":
 				_tray_view.refresh()
 			&"ability_fired":
@@ -842,7 +849,7 @@ func _go_again_flourish() -> void:
 	_end_turn.pivot_offset = _end_turn.size * 0.5
 	var flip := create_tween()
 	flip.tween_property(_end_turn, "scale:x", 0.0, 0.08).set_ease(Tween.EASE_IN)
-	flip.tween_callback(func() -> void: _end_turn.text = "Go Again! ▶")
+	flip.tween_callback(func() -> void: _end_turn.text = "Go Again!")
 	flip.tween_property(_end_turn, "scale:x", 1.0, 0.1) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await flip.finished

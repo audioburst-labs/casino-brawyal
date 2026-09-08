@@ -47,9 +47,10 @@ func _ready() -> void:
 			Game.run.acquire_ability(id)
 	build_screen("Choose Your Hand", "res://assets/backgrounds/bg_rest.png")
 	add_info_label("Drag abilities between zones. Only Equipped abilities are usable in combat.\nWhatever sits in the Trash is destroyed when the next combat begins.", 18)
+	# Two zones only (doc "Ability Choosing Screen"); the Storage tier was
+	# removed in v0.20 — a 7th ability goes straight to the Trash.
 	for config in [
 		[&"equipped", "Equipped (max %d)" % RunState.EQUIP_CAP],
-		[&"storage", "Storage (max %d)" % RunState.STORAGE_CAP],
 		[&"trash", "Trash"],
 	]:
 		var zone := DropZone.new()
@@ -80,7 +81,6 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	_fill_zone(&"equipped", Game.run.equipped_ids)
-	_fill_zone(&"storage", Game.run.stored_ids())
 	var trash: Array[StringName] = []
 	if Game.run.trash_id != &"":
 		trash.append(Game.run.trash_id)
@@ -93,8 +93,7 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 		child.queue_free()
 	for id: StringName in ids:
 		slots.add_child(_build_chit(id, zone))
-	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" \
-		else (RunState.STORAGE_CAP if zone == &"storage" else 1)
+	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" else 1
 	for i in capacity - ids.size():
 		var empty := Panel.new()
 		empty.custom_minimum_size = Vector2(120, 84)
@@ -147,11 +146,6 @@ func _on_dropped(zone: StringName, id: StringName) -> void:
 				run.restore_from_trash()
 			else:
 				run.equip(id)
-		&"storage":
-			if id == run.trash_id:
-				run.restore_from_trash()
-			else:
-				run.unequip(id)
 		&"trash":
 			run.move_to_trash(id)
 	_refresh()

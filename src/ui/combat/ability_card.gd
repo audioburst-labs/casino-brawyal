@@ -11,7 +11,7 @@ signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 ## Patch 0.18: a taller, slightly wider constant frame, and a description
 ## band of a FIXED height whose font shrinks to fit — the old card clipped
 ## longer ability text against its own border.
-const CARD_SIZE := Vector2(214, 300)
+const CARD_SIZE := Vector2(190, 300)
 const SOCKET_SIZE := 46.0
 const DESC_HEIGHT := 64.0
 const DESC_FONT_MAX := 17
@@ -211,6 +211,31 @@ static func _socket_rows(count: int) -> Array:
 	return rows
 
 
+## Every damage figure an ability can print, in the order it prints them.
+##
+## Since the v0.19 Cash In rework a damage op can sit NESTED inside `cash_in`
+## (its payoff and its "instead" fallback), and a suit bonus keeps its own copy
+## in `bonus_effects` — Double Down, Bust and On a Roll live entirely in those
+## branches, so a top-level-only walk previewed nothing for them (patch 0.20).
+static func damage_amounts(def: Defs.AbilityDef) -> Array[int]:
+	var amounts: Array[int] = []
+	_collect_damage(def.effects, amounts)
+	_collect_damage(def.bonus_effects, amounts)
+	return amounts
+
+
+static func _collect_damage(effects: Array, into: Array[int]) -> void:
+	for effect: Dictionary in effects:
+		match str(effect.get("op", "")):
+			"damage":
+				var amount := int(effect.get("amount", 0))
+				if amount > 0 and not into.has(amount):
+					into.append(amount)
+			"cash_in":
+				_collect_damage(effect.get("effects", []), into)
+				_collect_damage(effect.get("else_effects", []), into)
+
+
 ## Live numbers (patch 0.12): damage figures reflect the hero's current
 ## Strength/Weak modifiers, colored red when lowered and green when raised
 ## (patch 0.17). Keyword icons render on enemy intents instead — inline
@@ -218,17 +243,60 @@ static func _socket_rows(count: int) -> Array:
 func _refresh_description() -> void:
 	var text := _state.def.description
 	if _sim != null:
-		for effect: Dictionary in _state.def.effects:
-			if str(effect.get("op", "")) != "damage":
-				continue
-			var base := int(effect.get("amount", 0))
+		# Largest first: replacing "10" before "100" would corrupt the longer
+		# number, and every match is bounded to a whole number so a figure
+		# already wrapped in a colour tag is never re-matched.
+		var amounts := damage_amounts(_state.def)
+		amounts.sort()
+		amounts.reverse()
+		for base: int in amounts:
 			var modified := _sim.preview_damage(base, _state)
-			if modified > base:
-				text = text.replace(str(base), "[color=#6ee06e]%d[/color]" % modified)
-			elif modified < base:
-				text = text.replace(str(base), "[color=#e06e6e]%d[/color]" % modified)
-	_fit_description_font(_state.def.description)
+			if modified == base:
+				continue
+			var tint := "#6ee06e" if modified > base else "#e06e6e"
+			text = _replace_number(text, base, "[color=%s]%d[/color]" % [tint, modified])
+	# Measured against what actually renders: a buffed figure can be a glyph
+	# wider than the plain one and overflow the fixed band (patch 0.20).
+	_fit_description_font(_plain_text(text))
 	_description.text = "[center]%s[/center]" % text
+
+
+## Swaps whole numbers only, so "10" never matches inside "100" and never
+## touches digits that are already part of a colour tag.
+static func _replace_number(text: String, number: int, with: String) -> String:
+	var needle := str(number)
+	var out := ""
+	var i := 0
+	while i < text.length():
+		if text.substr(i, needle.length()) == needle \
+				and not _is_digit(text, i - 1) and not _is_digit(text, i + needle.length()):
+			out += with
+			i += needle.length()
+		else:
+			out += text[i]
+			i += 1
+	return out
+
+
+static func _is_digit(text: String, index: int) -> bool:
+	if index < 0 or index >= text.length():
+		return false
+	return text[index] >= "0" and text[index] <= "9"
+
+
+## The description as the player reads it, with the bbcode stripped back out.
+static func _plain_text(text: String) -> String:
+	var out := ""
+	var inside := false
+	for i in text.length():
+		var glyph := text[i]
+		if glyph == "[":
+			inside = true
+		elif glyph == "]":
+			inside = false
+		elif not inside:
+			out += glyph
+	return out
 
 
 ## Picks the largest font size at which the whole description still fits the

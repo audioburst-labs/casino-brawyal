@@ -12,13 +12,19 @@ const REEL_BASE_PRICE := 50
 const REEL_PRICE_STEP := 50
 
 
-static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -> Dictionary:
+## The Extra Reel's current price and availability, on its own — buying one
+## re-prices the reel without disturbing the rest of the shelf (patch 0.20).
+static func reel_offer(run: RunState) -> Dictionary:
 	var reels_bought := run.machine.reels.size() - SlotMachine.START_REELS
+	return {
+		"price": REEL_BASE_PRICE + REEL_PRICE_STEP * reels_bought,
+		"available": run.machine.reels.size() < SlotMachine.MAX_REELS,
+	}
+
+
+static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -> Dictionary:
 	var stock := {
-		"reel": {
-			"price": REEL_BASE_PRICE + REEL_PRICE_STEP * reels_bought,
-			"available": run.machine.reels.size() < SlotMachine.MAX_REELS,
-		},
+		"reel": reel_offer(run),
 		"stickers": [],
 		"relics": [],
 		"abilities": [],

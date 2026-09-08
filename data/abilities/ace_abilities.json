@@ -630,12 +630,10 @@
       "rarity": "common",
       "cost": [
         {
-          "suit": "club"
-        },
-        {
-          "suit": "diamond"
+          "suit": "any"
         }
       ],
+      "per_turn": 1,
       "effects": [
         {
           "op": "gain_block",

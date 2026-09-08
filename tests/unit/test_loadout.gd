@@ -1,7 +1,8 @@
 extends GutTest
-## Ability loadout (doc v0.11): max 6 equipped, 6 stored, 1 trash slot.
-## New abilities funnel Equipped -> Stored -> Trash without displacing others;
-## whatever sits in the trash is deleted when the next combat begins.
+## Ability loadout (doc "Ability Choosing Screen"): max 6 equipped plus a
+## single trash slot — no storage tier since v0.20. New abilities funnel
+## Equipped -> Trash without displacing others; whatever sits in the trash is
+## deleted when the next combat begins.
 
 
 func _run_with(count: int) -> RunState:
@@ -14,42 +15,40 @@ func _run_with(count: int) -> RunState:
 func test_acquisitions_fill_equipped_first() -> void:
 	var run := _run_with(4)
 	assert_eq(run.equipped_ids.size(), 4)
-	assert_eq(run.stored_ids().size(), 0)
 	assert_eq(run.trash_id, &"")
 
 
-func test_overflow_goes_to_storage_then_trash() -> void:
-	var run := _run_with(13)  # 6 equipped + 6 stored + 1 trash
+func test_overflow_goes_straight_to_the_trash() -> void:
+	var run := _run_with(7)  # 6 equipped + 1 trash
 	assert_eq(run.equipped_ids.size(), 6)
-	assert_eq(run.stored_ids().size(), 6)
-	assert_eq(run.trash_id, &"ability_12")
+	assert_eq(run.ability_ids.size(), 7)
+	assert_eq(run.trash_id, &"ability_6")
 	assert_true(run.needs_loadout, "overflow flags the loadout screen")
 
 
 func test_trash_replacement_deletes_the_old_occupant() -> void:
-	var run := _run_with(13)
+	var run := _run_with(7)
 	run.acquire_ability(&"newcomer")
 	assert_eq(run.trash_id, &"newcomer")
-	assert_false(run.ability_ids.has(&"ability_12"), "old trash is gone")
+	assert_false(run.ability_ids.has(&"ability_6"), "old trash is gone")
 
 
 func test_trash_is_emptied_when_combat_begins() -> void:
-	var run := _run_with(13)
+	var run := _run_with(7)
 	run.process_trash()
 	assert_eq(run.trash_id, &"")
-	assert_false(run.ability_ids.has(&"ability_12"))
-	assert_eq(run.ability_ids.size(), 12)
+	assert_false(run.ability_ids.has(&"ability_6"))
+	assert_eq(run.ability_ids.size(), 6)
 
 
-func test_equip_and_unequip_moves() -> void:
-	var run := _run_with(8)  # 6 equipped, 2 stored
-	var stored: StringName = run.stored_ids()[0]
-	var equipped: StringName = run.equipped_ids[0]
-	assert_false(run.equip(stored), "equipped is full")
-	assert_true(run.unequip(equipped))
-	assert_true(run.equip(stored))
-	assert_has(run.equipped_ids, stored)
-	assert_has(run.stored_ids(), equipped)
+func test_the_trash_is_the_only_way_out_of_the_battle_line() -> void:
+	var run := _run_with(7)          # 6 equipped, 1 in the trash
+	var waiting: StringName = run.trash_id
+	assert_false(run.equip(waiting), "equipped is full")
+	assert_true(run.move_to_trash(run.equipped_ids[0]),
+		"trashing the incumbent is what frees the slot")
+	assert_false(run.ability_ids.has(waiting), "the old trash occupant is gone")
+	assert_eq(run.equipped_ids.size(), 5)
 
 
 func test_trash_move_and_restore() -> void:
@@ -64,8 +63,8 @@ func test_trash_move_and_restore() -> void:
 
 
 func test_save_roundtrip_preserves_loadout() -> void:
-	var run := _run_with(13)
+	var run := _run_with(7)
 	var restored := RunState.from_dict(run.to_dict())
 	assert_eq(restored.equipped_ids, run.equipped_ids)
+	assert_eq(restored.ability_ids, run.ability_ids)
 	assert_eq(restored.trash_id, run.trash_id)
-	assert_eq(restored.stored_ids(), run.stored_ids())

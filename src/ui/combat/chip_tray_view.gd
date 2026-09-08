@@ -6,6 +6,13 @@ extends PanelContainer
 
 var _tray: ChipTray
 var _row: HBoxContainer
+## What the player has actually been SHOWN, which is not always what the tray
+## holds. The sim resolves an ability the instant its last socket fills, so a
+## Go Again's new chips are already in `_tray` before the reels are seen to
+## spin for them — the tray would jump ahead of its own animation (patch 0.20).
+## `spend()` steps this down as chips leave; `refresh()` re-syncs it, and the
+## presenter only calls that once a payout has been animated.
+var _shown: Dictionary = {}
 
 
 class ChipButton:
@@ -52,13 +59,31 @@ func bind(tray: ChipTray) -> void:
 	refresh()
 
 
+## Catches the display up with the tray. Called when a payout has finished
+## animating, and after discards and un-assignments.
 func refresh() -> void:
-	for child in _row.get_children():
-		child.queue_free()
 	if _tray == null:
 		return
+	_shown.clear()
 	for suit: StringName in ContentDB.SUITS:
-		var count := _tray.count(suit)
+		_shown[suit] = _tray.count(suit)
+	_redraw()
+
+
+## One chip of `suit` has left the tray for a socket. Stepping the display
+## down directly, rather than re-reading the tray, is what keeps a Go Again's
+## winnings hidden until the reels have shown them arriving.
+func spend(suit: StringName) -> void:
+	_shown[suit] = maxi(0, int(_shown.get(suit, 0)) - 1)
+	_redraw()
+
+
+func _redraw() -> void:
+	for child in _row.get_children():
+		_row.remove_child(child)
+		child.queue_free()
+	for suit: StringName in ContentDB.SUITS:
+		var count := int(_shown.get(suit, 0))
 		if count > 0:
 			_row.add_child(_build_stack(suit, count))
 

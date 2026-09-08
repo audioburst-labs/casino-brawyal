@@ -4,7 +4,10 @@ extends RefCounted
 ## Taunt overrides (choosable among multiple taunters) > living manual
 ## target > lowest-HP living enemy. The manual choice persists across
 ## rounds until changed or the target dies — including once a Taunt that
-## was forcing the pick wears off (patch 0.17: no surprise re-target).
+## was forcing the pick wears off (patch 0.17: no surprise re-target) and
+## when a summon joins the field (patch 0.20). Every branch that resolves a
+## target records it, so the choice is only ever re-made when the current
+## one dies.
 
 var manual_target_id: StringName = &""
 
@@ -30,15 +33,23 @@ func effective_target(enemies: Array[CombatActor]) -> CombatActor:
 		manual_target_id = chosen.id
 		return chosen
 
-	if living.size() == 1:
-		return living[0]
-
+	# A living target is kept, whatever else joins the field. Summons used to
+	# steal the marker (patch 0.20) because a lone enemy was returned here
+	# WITHOUT being recorded, so `manual_target_id` stayed empty and the
+	# lowest-HP fallback below re-ran the moment a second enemy appeared.
 	for enemy: CombatActor in living:
 		if enemy.id == manual_target_id:
 			return enemy
+
+	if living.size() == 1:
+		manual_target_id = living[0].id
+		return living[0]
 
 	var lowest: CombatActor = living[0]
 	for enemy: CombatActor in living:
 		if enemy.hp < lowest.hp:
 			lowest = enemy
+	# Remembered, so the fallback runs once per target rather than every time
+	# the roster changes underneath it.
+	manual_target_id = lowest.id
 	return lowest

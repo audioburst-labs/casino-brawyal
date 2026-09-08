@@ -1,7 +1,7 @@
 class_name LayoutTab
 extends Control
 ## Layout Tab overlay (doc): Slot Machine reels+symbols, Relics collected,
-## and Abilities split into Equipped / Unequipped / Trash for management —
+## and Abilities split into Equipped / Trash for management —
 ## reachable any time via the header icon, without leaving the current screen.
 
 var _zones := {}   # zone id -> slot container
@@ -251,9 +251,10 @@ func _build_abilities_section(column: VBoxContainer) -> void:
 		column.add_child(empty)
 		return
 
+	# Two zones only (doc "Ability Choosing Screen"); the Unequipped tier was
+	# removed in v0.20 and an owned ability is now always in one of these.
 	for config in [
 		[&"equipped", "Equipped (max %d)" % RunState.EQUIP_CAP],
-		[&"storage", "Unequipped (max %d)" % RunState.STORAGE_CAP],
 		[&"trash", "Trash"],
 	]:
 		var zone := DropZone.new()
@@ -281,7 +282,6 @@ func _build_abilities_section(column: VBoxContainer) -> void:
 func _refresh() -> void:
 	var run: RunState = Game.run
 	_fill_zone(&"equipped", run.equipped_ids)
-	_fill_zone(&"storage", run.stored_ids())
 	var trash: Array[StringName] = []
 	if run.trash_id != &"":
 		trash.append(run.trash_id)
@@ -293,9 +293,8 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 	for child in slots.get_children():
 		child.queue_free()
 	for id: StringName in ids:
-		slots.add_child(_build_chit(id))
-	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" \
-		else (RunState.STORAGE_CAP if zone == &"storage" else 1)
+		slots.add_child(_build_chit(id, zone))
+	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" else 1
 	for i in capacity - ids.size():
 		var empty := Panel.new()
 		empty.custom_minimum_size = Vector2(90, 66)
@@ -304,9 +303,10 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 		slots.add_child(empty)
 
 
-func _build_chit(id: StringName) -> Control:
+func _build_chit(id: StringName, zone: StringName) -> Control:
 	var chit := AbilityChit.new()
 	chit.ability_id = id
+	chit.zone = zone
 	chit.screen = self
 	chit.custom_minimum_size = Vector2(90, 66)
 	# Drawn at the tier the run owns, so a chit matches the card it becomes
@@ -346,11 +346,6 @@ func _on_dropped(zone: StringName, id: StringName) -> void:
 				run.restore_from_trash()
 			else:
 				run.equip(id)
-		&"storage":
-			if id == run.trash_id:
-				run.restore_from_trash()
-			else:
-				run.unequip(id)
 		&"trash":
 			run.move_to_trash(id)
 	_refresh()

@@ -7,10 +7,12 @@ extends ScreenBase
 ## Abilities on the shelf may be new OR an upgrade of one already owned — the
 ## pool is shared with the reward screen (doc v0.19).
 
-const LOADOUT_WIDTH := 380.0
-const OFFER_SIZE := Vector2(252, 262)
-const SMALL_OFFER := Vector2(166, 152)
-const RELIC_SIZE := Vector2(176, 178)
+const LOADOUT_WIDTH := 404.0
+## Patch 0.20: bigger shelf items — the 0.19 sizes left the lower third of the
+## board empty.
+const OFFER_SIZE := Vector2(286, 320)
+const SMALL_OFFER := Vector2(192, 182)
+const RELIC_SIZE := Vector2(202, 210)
 
 var _stock: Dictionary
 var _sold: Dictionary = {}            # offer key -> true
@@ -155,7 +157,7 @@ func _build_ability_shelf() -> void:
 	_ability_grid.columns = 2
 	_ability_grid.add_theme_constant_override("h_separation", 16)
 	_ability_grid.add_theme_constant_override("v_separation", 16)
-	_ability_grid.position = Vector2(432, 96)
+	_ability_grid.position = Vector2(452, 92)
 	_board.add_child(_ability_grid)
 
 
@@ -164,16 +166,16 @@ func _build_right_column() -> void:
 	_sticker_grid.columns = 2
 	_sticker_grid.add_theme_constant_override("h_separation", 14)
 	_sticker_grid.add_theme_constant_override("v_separation", 14)
-	_sticker_grid.position = Vector2(982, 96)
+	_sticker_grid.position = Vector2(1046, 92)
 	_board.add_child(_sticker_grid)
 
 	_reel_holder = VBoxContainer.new()
-	_reel_holder.position = Vector2(1352, 96)
+	_reel_holder.position = Vector2(1452, 92)
 	_board.add_child(_reel_holder)
 
 	_relic_row = HBoxContainer.new()
 	_relic_row.add_theme_constant_override("separation", 14)
-	_relic_row.position = Vector2(982, 524)
+	_relic_row.position = Vector2(1046, 580)
 	_board.add_child(_relic_row)
 
 
@@ -214,7 +216,7 @@ func _refresh_offers() -> void:
 	if reel.available:
 		var reel_tile := _offer_tile("reel", "Extra Reel",
 			_load_texture("res://assets/props/slot_cabinet.png"),
-			int(reel.price), Vector2(232, 404), _buy_reel)
+			int(reel.price), Vector2(256, 470), _buy_reel)
 		reel_tile.tooltip_text = "Adds a reel with one of each suit (max %d)." \
 			% SlotMachine.MAX_REELS
 		_reel_holder.add_child(reel_tile)
@@ -500,8 +502,10 @@ func _refresh_machine() -> void:
 
 func _buy_reel() -> void:
 	Game.run.machine.add_reel()
-	# Re-priced from ShopStock so the shelf can never disagree with the rule.
-	_stock = ShopStock.generate(Db.content, Game.run, Game.rng.stream(&"shop"))
+	# ONLY the reel is re-priced. Regenerating the whole stock here re-rolled
+	# the abilities, the relics and the sticker prices too, so buying a reel
+	# silently reset the shop (patch 0.20).
+	_stock.reel = ShopStock.reel_offer(Game.run)
 	_sold.erase("reel")
 
 

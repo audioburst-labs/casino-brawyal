@@ -25,7 +25,8 @@ func build_screen(title: String, background_path: String) -> void:
 	add_child(background)
 
 	var dim := ColorRect.new()
-	dim.color = Color(0.05, 0.02, 0.03, 0.35)
+	# Patch 0.20: art held back a further 10% so foreground UI reads cleanly.
+	dim.color = Color(0.05, 0.02, 0.03, 0.42)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 

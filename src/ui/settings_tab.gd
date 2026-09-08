@@ -8,6 +8,7 @@ const FRAME_RATES := [30, 60, 120, 144]
 var _volume_row: HBoxContainer
 var _volume_slider: HSlider
 var _volume_dragging := false
+var _volume_value: Label
 var _mute_button: Button
 var _muted := false
 
@@ -82,6 +83,7 @@ func _ready() -> void:
 
 	_volume_row = HBoxContainer.new()
 	_volume_row.add_theme_constant_override("separation", 12)
+	_volume_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	column.add_child(_volume_row)
 	_volume_row.add_child(_label("Volume"))
 	_mute_button = Button.new()
@@ -91,8 +93,13 @@ func _ready() -> void:
 	_volume_slider = HSlider.new()
 	_volume_slider.min_value = 0
 	_volume_slider.max_value = 100
+	_muted = AudioServer.is_bus_mute(_master_bus())
 	_volume_slider.value = _current_volume_pct()
-	_volume_slider.custom_minimum_size = Vector2(140, 0)
+	# Fills the row rather than sitting as a 140px stub in a 520px panel, so
+	# the handle can actually reach both ends of its track (patch 0.20).
+	_volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_volume_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_volume_slider.custom_minimum_size = Vector2(200, 24)
 	# Stays visible (and so keeps receiving drag input) at all times — only
 	# its opacity toggles on hover. Toggling `visible` instead (patch 0.17
 	# bug) cut the slider's input off mid-drag the instant the mouse
@@ -103,10 +110,20 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 			_volume_dragging = event.pressed)
 	_volume_row.add_child(_volume_slider)
-	_volume_row.mouse_entered.connect(func() -> void: _volume_slider.modulate.a = 1.0)
-	_volume_row.mouse_exited.connect(func() -> void:
-		if not _volume_dragging:
-			_volume_slider.modulate.a = 0.0)
+
+	_volume_value = Label.new()
+	_volume_value.custom_minimum_size = Vector2(52, 0)
+	_volume_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_volume_row.add_child(_volume_value)
+
+	# The row and the slider each report their own hover. Watching only the
+	# row made the slider vanish under the cursor: a parent emits mouse_exited
+	# the moment the pointer moves onto a child that captures the mouse, and
+	# the slider does (patch 0.20).
+	for control: Control in [_volume_row, _volume_slider, _mute_button]:
+		control.mouse_entered.connect(_show_volume)
+		control.mouse_exited.connect(_hide_volume)
+	_refresh_volume_readout()
 
 	column.add_child(HSeparator.new())
 
@@ -137,6 +154,8 @@ func _master_bus() -> int:
 	return AudioServer.get_bus_index("Master")
 
 
+## Reads the live bus, mute included — reopening the tab while muted used to
+## show a speaker and a full slider (patch 0.20).
 func _current_volume_pct() -> float:
 	var db := AudioServer.get_bus_volume_db(_master_bus())
 	return clampf(db_to_linear(db), 0.0, 1.0) * 100.0
@@ -147,13 +166,37 @@ func _on_volume_changed(value: float) -> void:
 	if value > 0.0 and _muted:
 		_muted = false
 		AudioServer.set_bus_mute(_master_bus(), false)
-		_mute_button.text = "🔊"
+	_refresh_volume_readout()
+
+
+## The slider only shows while the pointer is somewhere in the volume row —
+## the label beside it always reads out the level, muted or not.
+func _show_volume() -> void:
+	_volume_slider.modulate.a = 1.0
+
+
+func _hide_volume() -> void:
+	if _volume_dragging:
+		return
+	# Godot fires mouse_exited on the row as the pointer crosses onto a child,
+	# so re-check the real pointer position before hiding anything.
+	var pointer := _volume_row.get_global_mouse_position()
+	if _volume_row.get_global_rect().grow(6.0).has_point(pointer):
+		return
+	_volume_slider.modulate.a = 0.0
+
+
+func _refresh_volume_readout() -> void:
+	if _volume_value == null:
+		return
+	_volume_value.text = "muted" if _muted else "%d%%" % roundi(_volume_slider.value)
+	_mute_button.text = "🔇" if _muted else "🔊"
 
 
 func _toggle_mute() -> void:
 	_muted = not _muted
 	AudioServer.set_bus_mute(_master_bus(), _muted)
-	_mute_button.text = "🔇" if _muted else "🔊"
+	_refresh_volume_readout()
 
 
 func _exit_to_main_menu() -> void:

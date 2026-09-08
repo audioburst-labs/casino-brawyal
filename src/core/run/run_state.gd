@@ -3,12 +3,12 @@ extends RefCounted
 ## Everything that persists across one run: hero condition, economy, the
 ## machine, owned content, and the encounter history the map generator reads.
 ##
-## Ability loadout (doc v0.11): `ability_ids` is everything owned; at most
-## EQUIP_CAP of them are equipped (used in combat), at most STORAGE_CAP sit in
-## storage, and one can sit in the trash slot — deleted when combat begins.
+## Ability loadout (doc "Ability Choosing Screen"): `ability_ids` is everything
+## owned; at most EQUIP_CAP of them are equipped, and one more can sit in the
+## trash slot, deleted when combat begins. There is no middle tier as of v0.20
+## — an owned ability is either in the battle line or on its way out.
 
 const EQUIP_CAP := 6
-const STORAGE_CAP := 6
 
 var hero_id: StringName = &"ace"
 var hp := 70
@@ -55,14 +55,6 @@ func spend(amount: int) -> bool:
 	return true
 
 
-func stored_ids() -> Array[StringName]:
-	var stored: Array[StringName] = []
-	for id in ability_ids:
-		if not equipped_ids.has(id) and id != trash_id:
-			stored.append(id)
-	return stored
-
-
 func ability_tier(id: StringName) -> int:
 	return int(ability_tiers.get(id, 0))
 
@@ -73,8 +65,10 @@ func can_upgrade(id: StringName) -> bool:
 	return ability_tier(id) < ContentDB.MAX_TIER
 
 
-## Auto-funnel (doc v0.11): Equipped first, then Storage, then the Trash slot
-## (replacing and deleting its previous occupant), never displacing others.
+## Auto-funnel (doc "Ability Choosing Screen"): Equipped first, then the Trash
+## slot — replacing and deleting its previous occupant — never displacing
+## others. There is no third "unequipped" tier as of v0.20: an ability the
+## hero owns is either in the battle line or on its way to the bin.
 ##
 ## A duplicate upgrades instead of stacking (doc v0.19) — the hero never holds
 ## two copies of the same ability.
@@ -85,10 +79,6 @@ func acquire_ability(id: StringName) -> void:
 	if equipped_ids.size() < EQUIP_CAP:
 		ability_ids.append(id)
 		equipped_ids.append(id)
-		return
-	if stored_ids().size() < STORAGE_CAP:
-		ability_ids.append(id)
-		needs_loadout = true
 		return
 	if trash_id != &"":
 		_forget(trash_id)
@@ -105,13 +95,6 @@ func equip(id: StringName) -> bool:
 	return true
 
 
-func unequip(id: StringName) -> bool:
-	if not equipped_ids.has(id) or stored_ids().size() >= STORAGE_CAP:
-		return false
-	equipped_ids.erase(id)
-	return true
-
-
 func move_to_trash(id: StringName) -> bool:
 	if not ability_ids.has(id) or id == trash_id:
 		return false
@@ -125,10 +108,9 @@ func move_to_trash(id: StringName) -> bool:
 func restore_from_trash() -> bool:
 	if trash_id == &"":
 		return false
-	if equipped_ids.size() < EQUIP_CAP:
-		equipped_ids.append(trash_id)
-	elif stored_ids().size() >= STORAGE_CAP:
-		return false
+	if equipped_ids.size() >= EQUIP_CAP:
+		return false   # nowhere to put it back
+	equipped_ids.append(trash_id)
 	trash_id = &""
 	return true
 
