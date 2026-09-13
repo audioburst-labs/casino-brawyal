@@ -33,7 +33,16 @@ static func combat_config(db: ContentDB, run: RunState,
 			dmg_mult = 1.25
 	var lineups := db.lineups_for_stage(lineup_stage)
 	var lineup: Dictionary = lineups[rng.randi_range(0, lineups.size() - 1)]
+	# A resumed encounter names the lineup it was fighting (0.0.111), so the
+	# same fight comes back rather than a fresh roll.
+	var pinned := StringName(str(option.get("lineup", "")))
+	if pinned != &"":
+		for candidate: Dictionary in db.all_lineups():
+			if candidate.id == pinned:
+				lineup = candidate
+				break
 	return {
+		"lineup": lineup.id,
 		"hero": run.hero_id,
 		"hero_hp": run.hp,
 		"abilities": run.equipped_ids,

@@ -39,9 +39,26 @@ func _ready() -> void:
 		for id in ["card_sling", "quick_maneuvers", "color_up", "bust"]:
 			Game.run.acquire_ability(StringName(id))
 		Game.run.acquire_ability(&"bust")   # a silver copy to look at
-	_stock = ShopStock.generate(Db.content, Game.run, Game.rng.stream(&"shop"))
+	# A visit interrupted by an exit to the main menu resumes with the same
+	# shelf and the same SOLD stamps (0.0.111) — the stock rides in the run's
+	# pending encounter rather than being re-rolled.
+	var saved: Variant = Game.run.pending_encounter.get("stock")
+	if saved is Dictionary:
+		_stock = ShopStock.from_json(saved)
+		for key in Game.run.pending_encounter.get("sold", []):
+			_sold[str(key)] = true
+	else:
+		_stock = ShopStock.generate(Db.content, Game.run, Game.rng.stream(&"shop"))
+		_store_stock()
 	_build_board()
 	_refresh()
+
+
+func _store_stock() -> void:
+	if Game.run.pending_encounter.is_empty():
+		return   # standalone debug launch: nothing to resume into
+	Game.run.pending_encounter["stock"] = ShopStock.to_json(_stock)
+	Game.run.pending_encounter["sold"] = _sold.keys()
 
 
 ## The mock is a three-column board, not a centred column, so it replaces
@@ -332,6 +349,7 @@ func _price_button(key: String, price: int, on_buy: Callable) -> Button:
 			return
 		_sold[key] = true
 		on_buy.call()
+		_store_stock()
 		_refresh())
 	return button
 
@@ -460,6 +478,13 @@ func _exit_tree() -> void:
 
 
 ## Drag targets, shared with the Layout tab's chit classes.
+func _on_swapped(dragged: StringName, onto: StringName) -> void:
+	if not Game.run.swap_abilities(dragged, onto):
+		_on_dropped(&"trash" if onto == Game.run.trash_id else &"equipped", dragged)
+		return
+	_refresh()
+
+
 func _on_dropped(zone: StringName, id: StringName) -> void:
 	match zone:
 		&"equipped":

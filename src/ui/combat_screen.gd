@@ -7,6 +7,10 @@ const ENEMY_GAP := 16
 ## fixed slots. Index 0 is the slot nearest the centre of the screen, 3 the
 ## furthest out — the same order the sim keeps `enemies` in.
 const ENEMY_SLOTS := 4
+## 0.0.111: the machine has a FIXED-width area so the ability row never moves
+## as reels are bought; ReelStrip shrinks its reels to fit at 5+ (see
+## ReelStrip.MAX_ROW_WIDTH). 6 cards x 190 + 5 gaps fit in what is left.
+const MACHINE_WIDTH := 640.0
 
 ## Per-ability attack animations from the design doc's Animations table.
 ## card_fling = a razor card flies at the target (flaming when it Marks),
@@ -30,7 +34,6 @@ const ABILITY_ANIMS := {
 	&"pay_line": ["dagger", "go_again"],
 	&"flush": ["ultimate"],
 }
-const FLAME_TINT := Color(0.45, 1.1, 0.95)  # the green/teal/purple mark flame
 ## The doc's "green, teal, and purple flame" — Mark/Cash In/flaming Card
 ## Fling all cycle through these instead of a single flat tint.
 const FLAME_COLORS := [
@@ -45,8 +48,16 @@ var _background: TextureRect
 var _round_label: Label
 var _banner: Label
 var _hero_view: UnitView
-var _enemy_views: Dictionary = {}   # actor id -> UnitView
-var _enemy_slot_of: Dictionary = {} # actor id -> slot index (0 = nearest centre)
+var _enemy_views: Dictionary = {}   # actor id -> UnitView (living)
+## Dead enemies' views, still holding their slot in the line until the sim
+## clears the corpse away (`actor_removed`). Kept apart from `_enemy_views`
+## so nothing targets them, but the row still counts them as occupants —
+## otherwise a spacer was added behind the corpse and the line shifted.
+var _corpse_views: Dictionary = {}
+## actor id -> slot index (0 = nearest centre). Assigned once, when the actor
+## arrives, and never recomputed: the doc's table is an initial seating rule,
+## and nobody moves when a neighbour arrives or dies (0.0.111).
+var _enemy_slot_of: Dictionary = {}
 var _enemies_row: HBoxContainer
 var _reel_strip: ReelStrip
 var _tray_view: ChipTrayView
@@ -96,17 +107,102 @@ class PaintStreak:
 		draw_polyline(bottom, deckle, 5.0, true)
 
 
+## Dagger Slash (doc: "a slash move with his dagger, briefly leaving a teal
+## and purple afterslash"; reference GIF: a hooked crescent, fat through the
+## middle and tapering to points, white-hot core, coloured rim, drybrush
+## filaments). Drawn as three nested tapered bands along a circular arc,
+## additively blended so it reads as light, drawn in along its length by
+## `progress`. Replaces the two rotating rectangles of 0.19–0.20 (0.0.111).
+class SlashArc:
+	extends Control
+
+	var progress := 0.0                      # 0..1, how much of the arc is drawn
+	var fade := 1.0                          # alpha multiplier for the fade-out
+	var radius := 118.0
+	var sweep := 4.3                         # radians of arc (~250 deg)
+	var start_angle := -2.6
+	var thickness := 48.0
+	var seed_value := 3
+	## Outer -> core: purple, teal, white — Ace's Mark-flame palette in the
+	## reference's three-band structure. The core stays narrow so the teal
+	## reads as the body of the cut, not just a fringe on a white bar.
+	var bands := [Color(0.60, 0.28, 1.0, 0.8), Color(0.30, 1.0, 0.86, 0.95), Color(1, 1, 1, 0.9)]
+	var band_widths := [1.0, 0.66, 0.2]
+	var filaments := 11
+
+	func _draw() -> void:
+		if progress <= 0.002:
+			return
+		var steps := 48
+		var shown := int(ceil(steps * clampf(progress, 0.0, 1.0)))
+		# Each band is a RING between its own width and the next band's, not a
+		# stack of overlapping strokes: with additive blending three strokes
+		# piled on each other summed to white and the teal vanished.
+		for band in bands.size():
+			var color: Color = bands[band]
+			color.a *= fade
+			var outer_width := float(band_widths[band])
+			var inner_width := float(band_widths[band + 1]) if band + 1 < band_widths.size() else 0.0
+			for side: float in [1.0, -1.0]:
+				var outer := PackedVector2Array()
+				var inner := PackedVector2Array()
+				for i in shown + 1:
+					var t := float(i) / steps
+					var angle: float = start_angle + sweep * t
+					var normal: Vector2 = Vector2(cos(angle), sin(angle)) * side
+					var centre: Vector2 = Vector2(cos(angle), sin(angle)) * radius
+					# Swells through the middle, tapers to a point at both
+					# tips; the leading tip also thins while still drawing.
+					var taper := sin(t * PI)
+					var head := clampf((progress - t) * 6.0, 0.0, 1.0)
+					var reach := thickness * taper * head * 0.5
+					outer.append(centre + normal * reach * outer_width)
+					inner.append(centre + normal * reach * inner_width)
+				if outer.size() < 3:
+					continue
+				var shape := PackedVector2Array(outer)
+				for i in range(inner.size() - 1, -1, -1):
+					shape.append(inner[i])
+				draw_colored_polygon(shape, color)
+				if inner_width <= 0.0:
+					break   # the core is one solid stroke, drawn once
+		# Drybrush: fine seeded strands feathering off the outer edge, only
+		# along the part already drawn.
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var strand := Color(bands[1])
+		strand.a = 0.55 * fade
+		for k in filaments:
+			var t := rng.randf_range(0.12, 0.92)
+			if t > progress:
+				continue
+			var angle: float = start_angle + sweep * t
+			var normal := Vector2(cos(angle), sin(angle))
+			var tangent := Vector2(-normal.y, normal.x)
+			var edge := normal * (radius + thickness * 0.5 * sin(t * PI))
+			var length := rng.randf_range(14.0, 46.0)
+			var drift := rng.randf_range(-0.35, 0.35)
+			draw_line(edge, edge + (normal * 0.55 + tangent * (0.8 + drift)).normalized() * length,
+				strand, rng.randf_range(1.2, 2.6), true)
+
+
 func _ready() -> void:
 	_build_layout()
 	if get_tree().current_scene == self:
 		# Standalone debug launch: a fixed fight with everything unlocked.
 		# CB_DEBUG_ENEMIES="dealer,dealer,..." overrides the lineup.
 		var enemies: Array = ["bouncer", "server"]
+		# CB_DEBUG_REELS=N: a machine with N reels, to review the fixed-width
+		# machine area shrinking its reels at 5+ (0.0.111).
+		var machine := SlotMachine.new()
+		for i in OS.get_environment("CB_DEBUG_REELS").to_int() - machine.reels.size():
+			machine.add_reel()
 		setup({
 			"hero": "ace",
 			"abilities": ["card_sling", "quick_maneuvers", "color_up",
 				"double_down", "heartsteal", "flush"],
 			"enemies": enemies,
+			"machine": machine,
 			"seed": randi(),
 		})
 		# CB_DEBUG_AUTOFIRE=N: fire the Nth listed ability automatically
@@ -206,21 +302,27 @@ func _build_layout() -> void:
 	_enemies_row.anchor_bottom = 0.655
 	add_child(_enemies_row)
 
+	# The bottom band spans the whole width (0.0.111): a fixed machine area on
+	# the left, the ability row filling the rest — recalibrated so six cards
+	# and a six-reel machine fit side by side. It starts a little lower than
+	# before to leave the Pass strip its own room above.
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
-	bottom.anchor_right = 0.878
-	bottom.anchor_top = 0.663
-	bottom.anchor_bottom = 0.955  # patch 0.18: a taller band, so ability text fits
-	bottom.add_theme_constant_override("separation", 10)
+	bottom.anchor_right = 0.99
+	bottom.anchor_top = 0.70
+	bottom.anchor_bottom = 0.985
+	bottom.add_theme_constant_override("separation", 12)
 	add_child(bottom)
 
 	var machine_box := VBoxContainer.new()
 	machine_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	machine_box.add_theme_constant_override("separation", 10)
+	machine_box.custom_minimum_size = Vector2(MACHINE_WIDTH, 0)
 	bottom.add_child(machine_box)
 	_reel_strip = ReelStrip.new()
 	machine_box.add_child(_reel_strip)
 	_tray_view = ChipTrayView.new()
+	_tray_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	machine_box.add_child(_tray_view)
 
 	_ability_row = HBoxContainer.new()
@@ -229,16 +331,16 @@ func _build_layout() -> void:
 	_ability_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(_ability_row)
 
-	# "Pass", back on the right (patch 0.20). It gets a column of its own to
-	# the right of the ability row — the row's band stops short of it — so it
-	# cannot cover the sixth card the way a floating button did.
+	# "Pass" sits in the strip between the enemies' band and the ability row
+	# (0.0.111), on the right where the designer wants it — a lane of its own,
+	# so no count of reels or cards can ever crowd it off the screen again.
 	_end_turn = Button.new()
 	_end_turn.text = "Pass"
 	_end_turn.pressed.connect(_on_end_turn)
-	_end_turn.anchor_left = 0.897
+	_end_turn.anchor_left = 0.878
 	_end_turn.anchor_right = 0.985
-	_end_turn.anchor_top = 0.755
-	_end_turn.anchor_bottom = 0.828
+	_end_turn.anchor_top = 0.652
+	_end_turn.anchor_bottom = 0.695
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
@@ -269,47 +371,79 @@ func _spawn_units() -> void:
 	_hero_view.setup(sim.hero)
 	_hero_view.set_ghost_layer(_vfx)  # motion smears during pose animations
 
-	for enemy in sim.enemies:
+	var slots := initial_slots(sim.enemies.size())
+	for index in sim.enemies.size():
+		var enemy: CombatActor = sim.enemies[index]
 		var view := UnitView.new()
 		_enemies_row.add_child(view)
 		view.setup(enemy)
 		view.clicked.connect(_on_unit_clicked)
 		_enemy_views[enemy.id] = view
+		_enemy_slot_of[enemy.id] = slots[index]
 	_rebuild_enemy_row()
 	_update_target_markers()
+	_publish_hero_hp()
 
 
-## Doc "Unit Positioning", counted outward from the middle of the screen:
-## 1 unit takes the third slot out, 2 the two central slots, 3 everything but
-## the outermost, 4 the lot.
+## Initial seating, counted outward from the middle of the screen: 1 unit
+## takes the SECOND slot out (designer's call, 0.0.111 — the doc's table says
+## the third, which stood the lone Manager a full slot further from Ace than
+## it ended up after its first summon), 2 the two central slots, 3 everything
+## but the outermost, 4 the lot.
 static func initial_slots(count: int) -> Array:
 	match count:
 		0: return []
-		1: return [2]
+		1: return [1]
 		2: return [0, 1]
 		3: return [0, 1, 2]
 	return [0, 1, 2, 3]
 
 
+## Seats a summon (doc "Unit Positioning"): `order` is the sim's centre-outward
+## roster with the newcomer already inserted, `seats` the persistent slots of
+## everyone else. The newcomer takes the free slot nearest its summoner on the
+## inward side; if there is none, it takes the summoner's slot and every unit
+## from there outward shifts one further out. Returns the updated seats.
+static func seat_summon(order: Array[StringName], seats: Dictionary, new_id: StringName) -> Dictionary:
+	var out := seats.duplicate()
+	var index := order.find(new_id)
+	if index < 0:
+		return out
+	var inner := -1
+	for i in range(index - 1, -1, -1):
+		if out.has(order[i]):
+			inner = int(out[order[i]])
+			break
+	var outer := ENEMY_SLOTS
+	for i in range(index + 1, order.size()):
+		if out.has(order[i]):
+			outer = int(out[order[i]])
+			break
+	if outer - inner > 1:
+		out[new_id] = outer - 1
+		return out
+	out[new_id] = outer
+	for i in range(index + 1, order.size()):
+		if out.has(order[i]):
+			out[order[i]] = int(out[order[i]]) + 1
+	return out
+
+
 ## Lays the four slots out left to right (slot 0 nearest the centre) from the
-## sim's own centre-outward ordering, filling unoccupied slots with a
-## same-width spacer. Corpses keep their place in that ordering, so nobody
-## slides sideways when a neighbour dies (patch 0.17) — only a summon or a
-## cleared-away corpse re-seats the line.
+## persistent `_enemy_slot_of` seating, filling unoccupied slots with a
+## same-width spacer. Corpses keep their slot, so nobody slides sideways when
+## a neighbour dies (patch 0.17) or arrives (0.0.111) — only a cleared-away
+## corpse frees a slot, and only a summon with no room pushes anyone.
 func _rebuild_enemy_row() -> void:
 	for child in _enemies_row.get_children():
 		if not (child is UnitView):
 			_enemies_row.remove_child(child)
 			child.queue_free()
-	_enemy_slot_of.clear()
-	var slots := initial_slots(sim.enemies.size())
 	var occupant := {}
-	for index in sim.enemies.size():
-		var actor_id: StringName = sim.enemies[index].id
-		var slot: int = slots[index]
-		_enemy_slot_of[actor_id] = slot
-		if _enemy_views.has(actor_id):
-			occupant[slot] = _enemy_views[actor_id]
+	for actor_id: StringName in _enemy_slot_of:
+		var view: Control = _enemy_views.get(actor_id, _corpse_views.get(actor_id))
+		if view != null:
+			occupant[int(_enemy_slot_of[actor_id])] = view
 	for slot in ENEMY_SLOTS:
 		var node: Control = occupant.get(slot)
 		if node == null:
@@ -378,6 +512,7 @@ func _on_end_turn() -> void:
 
 func _refresh_all() -> void:
 	_hero_view.refresh()
+	_publish_hero_hp()
 	for view: UnitView in _enemy_views.values():
 		view.refresh()
 	_tray_view.refresh()
@@ -391,6 +526,15 @@ func _update_target_markers() -> void:
 	var target := sim.targeting.effective_target(sim.enemies)
 	for id: StringName in _enemy_views:
 		_enemy_views[id].set_targeted(target != null and id == target.id)
+
+
+## The header's heart reads `Game.live_hp` during a fight (0.0.111): the run's
+## own `hp` is only written back when combat ends, so without this the header
+## and Ace's panel would show two different numbers mid-fight. Published from
+## the panel's SHOWN value, so both step down hit by hit together.
+func _publish_hero_hp() -> void:
+	if run_mode and Game.run != null:
+		Game.live_hp = _hero_view.shown_hp()
 
 
 func _view_of(actor_id: StringName) -> UnitView:
@@ -428,13 +572,18 @@ func _add_enemy_view(actor_id: StringName) -> void:
 			view.modulate.a = 0.0
 			view.create_tween().tween_property(view, "modulate:a", 1.0, 0.4)
 			_enemy_views[actor_id] = view
+			var order: Array[StringName] = []
+			for e in sim.enemies:
+				order.append(e.id)
+			_enemy_slot_of = seat_summon(order, _enemy_slot_of, actor_id)
 			_rebuild_enemy_row()
 
 
 ## A corpse whose slot the sim handed to someone else leaves the field.
 func _remove_enemy_view(actor_id: StringName) -> void:
-	var view: UnitView = _enemy_views.get(actor_id)
+	var view: UnitView = _enemy_views.get(actor_id, _corpse_views.get(actor_id))
 	_enemy_views.erase(actor_id)
+	_corpse_views.erase(actor_id)
 	_enemy_slot_of.erase(actor_id)
 	if view != null:
 		_enemies_row.remove_child(view)
@@ -528,6 +677,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					# then spring back, reading as a heal).
 					target.apply_damage_display(int(event.data.get("hp_lost", amount)),
 						int(event.data.get("blocked", 0)))
+					if event.data.target == sim.hero.id:
+						_publish_hero_hp()
 					# Damage (doc animation): a small explosion icon on the hit.
 					_burst(target.sprite_center(), "res://assets/icons/fx_explosion.png",
 						Color(1.0, 0.75, 0.3))
@@ -580,6 +731,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var healed_view := _view_of(event.data.actor)
 				if healed_view != null:
 					healed_view.refresh()
+					if event.data.actor == sim.hero.id:
+						_publish_hero_hp()
 					# A heal has to read AS a heal on the unit receiving it
 					# (patch 0.19): green burst on the ally, plus a beat, so a
 					# three-ally heal no longer pops every number on one frame.
@@ -615,6 +768,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# from play_death()'s fade, so it just stops being a target.
 				if dead_view != null and not hero_died:
 					_enemy_views.erase(event.data.actor)
+					_corpse_views[event.data.actor] = dead_view
 					dead_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				_update_target_markers()
 			&"enemy_move":
@@ -665,8 +819,11 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				await _fly("res://assets/icons/ability_card_sling.png",
 					_hero_view.sprite_center(), _target_point(target_view), marks)
 			"dagger":
-				# The slash VFX lands on the strike frame.
-				await _hero_view.play_slash()
+				# The slash VFX lands ON the strike frame: play_slash() only
+				# returns once the lunge has finished (0.09 s after the frame
+				# shows), so the arc waits for the pose's own signal instead.
+				_hero_view.play_slash()
+				await _hero_view.strike_landed
 				await _dagger_slash(_target_point(target_view))
 			"cash_in":
 				await _burst_duo(_target_point(target_view),
@@ -768,34 +925,58 @@ func _flame_color_at(t: float) -> Color:
 	return FLAME_COLORS[i].lerp(FLAME_COLORS[i + 1], scaled - i)
 
 
-## Ace's dagger slash with the teal-and-purple afterslash (doc animation).
-func _dagger_slash(at: Vector2) -> void:
-	var streak := ColorRect.new()
-	streak.color = Color(0.4, 1.0, 0.85, 0.85)
-	streak.size = Vector2(10, 150)
-	streak.pivot_offset = Vector2(5, 75)
-	streak.rotation = -0.8
-	streak.z_index = 90
-	add_child(streak)
-	streak.global_position = at - Vector2(5, 75)
-	var after := ColorRect.new()
-	after.color = Color(0.7, 0.4, 1.0, 0.5)
-	after.size = Vector2(18, 150)
-	after.pivot_offset = Vector2(9, 75)
-	after.rotation = -0.8
-	after.z_index = 89
-	add_child(after)
-	after.global_position = at - Vector2(9, 75)
-	_sparks(at, Color(0.4, 1.0, 0.85))
+## Ace's dagger slash: a crescent of light that draws itself in along the
+## cut in a tenth of a second, hangs for a blink, and dissolves outward with
+## a slight turn — angle in radians so a flurry can cut from every side.
+## `palette` swaps the bands (the enemy impact uses it in red).
+func _dagger_slash(at: Vector2, angle := -0.55, palette: Array = [], scale_factor := 1.0) -> void:
+	var arc := SlashArc.new()
+	if not palette.is_empty():
+		arc.bands = palette
+	arc.radius *= scale_factor
+	arc.thickness *= scale_factor
+	arc.seed_value = randi() % 1000
+	arc.material = _vfx._additive
+	arc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arc.z_index = 90
+	arc.rotation = angle
+	add_child(arc)
+	arc.global_position = at
+	# A dim, wider twin behind fakes the bloom the reference's soft edges have.
+	var halo := SlashArc.new()
+	halo.bands = [Color(arc.bands[0], 0.2), Color(arc.bands[1], 0.14)]
+	halo.band_widths = [2.0, 1.25]
+	halo.filaments = 0
+	halo.radius = arc.radius
+	halo.thickness = arc.thickness
+	halo.material = _vfx._additive
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo.z_index = 89
+	halo.rotation = angle
+	add_child(halo)
+	halo.global_position = at
+	_sparks(at, arc.bands[1], 12)
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(streak, "rotation", 0.8, 0.17)
-	tween.tween_property(after, "rotation", 0.8, 0.24)
-	tween.chain().tween_property(streak, "modulate:a", 0.0, 0.15)
-	tween.parallel().tween_property(after, "modulate:a", 0.0, 0.3)
+	var draw_in := func(p: float) -> void:
+		arc.progress = p
+		halo.progress = p
+		arc.queue_redraw()
+		halo.queue_redraw()
+	tween.tween_method(draw_in, 0.0, 1.0, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_interval(0.05)
+	var dissolve := func(f: float) -> void:
+		arc.fade = f
+		halo.fade = f
+		arc.queue_redraw()
+		halo.queue_redraw()
+	tween.chain().tween_method(dissolve, 1.0, 0.0, 0.2).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(arc, "scale", Vector2(1.14, 1.14), 0.2)
+	tween.parallel().tween_property(halo, "scale", Vector2(1.3, 1.3), 0.2)
+	tween.parallel().tween_property(arc, "rotation", angle + 0.16, 0.2)
 	await tween.finished
-	streak.queue_free()
-	after.queue_free()
+	arc.queue_free()
+	halo.queue_free()
 
 
 ## A symbol swelling and fading at a point (Cash In burst, Block gain...).
@@ -865,18 +1046,26 @@ func _go_again_flourish() -> void:
 
 ## Ultimate Animation (doc): Flush leads with a streak of paint crossing the
 ## screen and a close-up of Ace's face, fading quickly — then the actual
-## multi-hit flurry (lights dim, time slows, five cuts land, detonation).
+## multi-hit flurry (lights dim, time slows, the cuts land, detonation).
 func _ultimate_flourish() -> void:
-	await _paint_streak_closeup()
+	await _splash_cut_in()
 	_vfx.vignette(0.6, 1.3)
 	Engine.time_scale = 0.65
 	Fx.shake(22.0)
-	await _hero_view.play_slash()
+	_hero_view.play_slash()
+	await _hero_view.strike_landed
+	# Eight cuts from eight directions, a beat apart, over every living enemy.
+	var angles := [-0.9, 0.75, -0.25, 1.15, -1.45, 0.35, -0.6, 0.95]
+	var cut := 0
 	for view: UnitView in _enemy_views.values():
 		if not is_instance_valid(view):
 			continue
-		await _dagger_slash(view.sprite_center())
-		await _dagger_slash(view.sprite_center() + Vector2(20, -10))
+		for i in 2:
+			var offset := Vector2(randf_range(-26, 26), randf_range(-20, 20))
+			_dagger_slash(view.sprite_center() + offset, angles[cut % angles.size()], [], 1.15)
+			cut += 1
+			await get_tree().create_timer(0.07).timeout
+	await get_tree().create_timer(0.24).timeout
 	# Restored unconditionally: a slow-mo leak would drag the whole run.
 	Engine.time_scale = 1.0
 	_vfx.screen_flash(0.4)
@@ -886,6 +1075,73 @@ func _ultimate_flourish() -> void:
 		_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
 
 
+## The cut-in itself (designer's call, 0.20/0.0.111): a purpose-drawn splash
+## of Ace's eyes inside a torn teal band (`ace_flush_splash.png`), whipped in
+## from the left over a wider purple tear, held on his face, then whipped out.
+## Falls back to the old procedural band and portrait crop if the art is
+## missing, so a fresh checkout without generated art still plays something.
+func _splash_cut_in() -> void:
+	var splash_path := "res://assets/characters/ace_flush_splash.png"
+	if not ResourceLoader.exists(splash_path):
+		await _paint_streak_closeup()
+		return
+	var viewport_size := get_viewport_rect().size
+	var layer := Control.new()
+	layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.z_index = 95
+	add_child(layer)
+
+	# Behind: the purple tear, wider and offset, so the band has depth.
+	var band_back := PaintStreak.new()
+	band_back.streak_color = Color(0.46, 0.18, 0.82)
+	band_back.seed_value = 7
+	band_back.size = Vector2(viewport_size.x * 2.0, 400)
+	band_back.pivot_offset = band_back.size * 0.5
+	band_back.rotation = -0.14
+	band_back.position = Vector2(-viewport_size.x * 1.6, viewport_size.y * 0.5 - 200)
+	layer.add_child(band_back)
+
+	var splash := TextureRect.new()
+	splash.texture = load(splash_path)
+	splash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	splash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	splash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var width := viewport_size.x * 0.92
+	splash.size = Vector2(width, width * 1024.0 / 1536.0)
+	splash.pivot_offset = splash.size * 0.5
+	var rest := (viewport_size - splash.size) * 0.5 + Vector2(0, -20)
+	splash.position = rest - Vector2(viewport_size.x * 1.3, 0)
+	splash.scale = Vector2(1.08, 1.08)
+	layer.add_child(splash)
+
+	Fx.shake(16.0)
+	Fx.punch_zoom(0.05)
+	_vfx.screen_flash(0.5)
+	var sweep := create_tween()
+	sweep.set_parallel(true)
+	sweep.tween_property(band_back, "position:x", -viewport_size.x * 0.5, 0.30) \
+		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	sweep.tween_property(splash, "position:x", rest.x, 0.26).set_delay(0.03) \
+		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	sweep.tween_property(splash, "scale", Vector2.ONE, 0.34).set_delay(0.08) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await sweep.finished
+	_vfx.ray_burst(viewport_size * 0.5, Color(0.35, 1.0, 0.88, 0.35), 520.0, 0.5)
+	await get_tree().create_timer(0.42).timeout   # hold on his eyes
+	var whip := create_tween()
+	whip.set_parallel(true)
+	whip.tween_property(splash, "position:x", rest.x + viewport_size.x * 0.9, 0.16) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	whip.tween_property(band_back, "position:x", viewport_size.x * 0.4, 0.18) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	whip.tween_property(layer, "modulate:a", 0.0, 0.16).set_delay(0.04)
+	await whip.finished
+	layer.queue_free()
+
+
+## Fallback cut-in when the generated splash art is missing: a procedural
+## torn band with the talking-head portrait cropped to the eyes (0.19).
 func _paint_streak_closeup() -> void:
 	var viewport_size := get_viewport_rect().size
 	var layer := Control.new()
@@ -1032,21 +1288,13 @@ func _sparks(at: Vector2, color: Color, amount := 14) -> void:
 	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
 
 
-## Enemy hits land with a visible strike swipe on Ace (patch 0.12).
+## Enemy hits land with a visible strike swipe on Ace (patch 0.12) — the same
+## drawn crescent as the Dagger Slash, in red and orange, smaller and cut the
+## other way, so the two vocabularies match (0.0.111).
 func _impact(at: Vector2) -> void:
-	_sparks(at, Color(1.0, 0.5, 0.4), 10)
-	var swipe := ColorRect.new()
-	swipe.color = Color(1.0, 0.35, 0.3, 0.8)
-	swipe.size = Vector2(8, 110)
-	swipe.pivot_offset = Vector2(4, 55)
-	swipe.rotation = 0.9
-	swipe.z_index = 90
-	add_child(swipe)
-	swipe.global_position = at - Vector2(4, 55)
-	var tween := swipe.create_tween()
-	tween.tween_property(swipe, "rotation", -0.9, 0.1)
-	tween.tween_property(swipe, "modulate:a", 0.0, 0.12)
-	tween.finished.connect(swipe.queue_free)
+	_dagger_slash(at, 2.4 + randf_range(-0.3, 0.3),
+		[Color(1.0, 0.25, 0.2, 0.75), Color(1.0, 0.6, 0.3, 0.95), Color(1.0, 0.95, 0.85, 1.0)],
+		0.68)
 
 
 func _show_banner(text: String) -> void:

@@ -1,5 +1,5 @@
 extends GutTest
-## Casino minigame per doc v0.13: one paid spin costs 5 x encounter number;
+## Casino minigame per doc v0.120: the one spin is free;
 ## each of the 3 reels lands a percentage-weighted prize (including the
 ## Broken Heart penalty and a 1% Extra Reel); three of a kind = free spin.
 
@@ -17,23 +17,14 @@ func _rng(seed_value: int = 8) -> RandomNumberGenerator:
 	return rng
 
 
-func test_spin_costs_five_per_encounter_number() -> void:
+func test_spin_costs_nothing_and_never_touches_coins_on_its_own() -> void:
 	var run := RunState.new()
 	run.record_visit(&"combat")
 	run.record_visit(&"casino")  # encounter number = 3
-	assert_eq(CasinoGame.spin_cost(run), 15, "5 x encounter 3")
-	run.coins = 15
+	run.coins = 0
 	var result := CasinoGame.spin(_db, run, _rng())
-	assert_false(result.is_empty(), "exactly the cost is affordable")
-	assert_eq(int(result.cost), 15)
-
-
-func test_spin_refused_without_coins() -> void:
-	var run := RunState.new()
-	run.coins = 4  # encounter 1 costs 5
-	var result := CasinoGame.spin(_db, run, _rng())
-	assert_true(result.is_empty(), "cannot afford a spin")
-	assert_eq(run.coins, 4)
+	assert_false(result.is_empty(), "a broke player still gets the house spin")
+	assert_false(result.has("cost"), "no entry fee since doc v0.120")
 
 
 func test_three_of_a_kind_grants_free_respin_flag() -> void:

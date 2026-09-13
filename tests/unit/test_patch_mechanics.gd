@@ -34,7 +34,7 @@ func _fire(sim: CombatSim, ability_index: int, suits: Array) -> bool:
 func test_enemy_hp_rolls_within_range() -> void:
 	for seed_value in 20:
 		var sim := _sim(["bouncer"], ["card_sling"], seed_value)
-		assert_between(sim.enemies[0].hp, 55, 65)
+		assert_between(sim.enemies[0].hp, 50, 60)
 
 
 func test_pair_then_brain_shuffles_pair_then_plays_tail_in_order() -> void:

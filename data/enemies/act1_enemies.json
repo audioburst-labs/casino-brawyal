@@ -4,8 +4,8 @@
     {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp_min": 55,
-      "hp_max": 65,
+      "hp_min": 50,
+      "hp_max": 60,
       "brain": {
         "type": "pair_then",
         "pair": ["door_check", "double_jab"],
@@ -53,7 +53,7 @@
           "intent": {
             "instances": 0,
             "per_hit": 0,
-            "debuffs": [{"status": "weak", "stacks": 2}]
+            "debuffs": [{"status": "frail", "stacks": 2}]
           }
         },
         "glass_barrage": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}}
@@ -110,7 +110,7 @@
       },
       "moves": {
         "call_bouncers": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 2}}
+          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 1}}
         },
         "money_barrage": {"intent": {"instances": 3, "per_hit": 4, "debuffs": []}},
         "call_server": {
@@ -118,7 +118,10 @@
         },
         "big_hit": {"intent": {"instances": 1, "per_hit": 15, "debuffs": []}},
         "bonuses": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20}
+          "intent": {
+            "instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20,
+            "self_status": [{"status": "strength", "stacks": 2}]
+          }
         }
       }
     }

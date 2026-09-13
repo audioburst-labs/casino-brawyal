@@ -107,14 +107,8 @@ func _build_ability_card(ability_id: StringName) -> Button:
 	box.add_child(body_label)
 
 	if owned:
-		# Says what it becomes, so the choice is legible without hovering.
-		var to_label := Label.new()
-		to_label.text = "You own this — upgrade to %s" % TierStyle.label(shown_tier)
-		to_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		to_label.add_theme_font_size_override("font_size", 15)
-		to_label.add_theme_color_override("font_color", TierStyle.color(shown_tier))
-		box.add_child(to_label)
-
+		# The glowing border, the tier-coloured name and the UPGRADE! flag
+		# already say it — the "You own this" caption was noise (0.0.111).
 		var overlay := Control.new()
 		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(overlay)

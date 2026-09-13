@@ -14,6 +14,12 @@
       "description": "Takes 25% more damage."
     },
     {
+      "id": "frail",
+      "name": "Frail",
+      "stack_mode": "duration",
+      "description": "Gains 25% less Block from abilities (rounded half-up)."
+    },
+    {
       "id": "taunt",
       "name": "Taunt",
       "stack_mode": "duration",

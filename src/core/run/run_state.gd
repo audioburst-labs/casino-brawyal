@@ -29,6 +29,12 @@ var history: Array[StringName] = []   # encounter type per completed choice
 var seen_events: Array[StringName] = []
 var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
 var shop_offers := 0                           # shop options shown so far (>= 2 guaranteed)
+## The encounter being played right now, saved with the run so that leaving
+## for the main menu mid-encounter resumes it from its beginning instead of
+## skipping it (0.0.111). Free-form JSON: at least {"type"}; combat adds the
+## lineup and seed so the same fight comes back, screens may stash more.
+## Empty once the encounter is finished or its outcome is banked.
+var pending_encounter: Dictionary = {}
 
 
 ## 1-based number of the encounter the player is about to choose/play.
@@ -105,6 +111,29 @@ func move_to_trash(id: StringName) -> bool:
 	return true
 
 
+## Ability Choosing screen (0.0.111): dropping one ability onto another swaps
+## them — two equipped abilities exchange positions, and an equipped one
+## dropped on the trashed one rescues it while taking its place in the bin.
+func swap_abilities(a: StringName, b: StringName) -> bool:
+	if a == b or not ability_ids.has(a) or not ability_ids.has(b):
+		return false
+	var index_a := equipped_ids.find(a)
+	var index_b := equipped_ids.find(b)
+	if index_a >= 0 and index_b >= 0:
+		equipped_ids[index_a] = b
+		equipped_ids[index_b] = a
+		return true
+	if index_a >= 0 and b == trash_id:
+		equipped_ids[index_a] = b
+		trash_id = a
+		return true
+	if index_b >= 0 and a == trash_id:
+		equipped_ids[index_b] = a
+		trash_id = b
+		return true
+	return false
+
+
 func restore_from_trash() -> bool:
 	if trash_id == &"":
 		return false
@@ -151,6 +180,7 @@ func to_dict() -> Dictionary:
 		"history": history.map(func(s: StringName) -> String: return String(s)),
 		"reels": reels,
 		"shop_offers": shop_offers,
+		"pending_encounter": pending_encounter,
 	}
 
 
@@ -188,6 +218,9 @@ static func from_dict(data: Dictionary) -> RunState:
 	for type in data.get("history", []):
 		run.history.append(StringName(str(type)))
 	run.shop_offers = int(data.get("shop_offers", 0))
+	var pending: Variant = data.get("pending_encounter", {})
+	if pending is Dictionary:
+		run.pending_encounter = pending
 	var reels: Array = data.get("reels", [])
 	while run.machine.reels.size() < reels.size():
 		run.machine.add_reel()

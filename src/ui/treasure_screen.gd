@@ -15,6 +15,7 @@ func _ready() -> void:
 		holder.add_child(chest)
 		content.add_child(holder)
 
+	Game.commit_encounter()   # the chest opens on arrival; nothing to replay
 	var relic := Rewards.random_unowned_relic(Db.content, Game.run,
 		Game.rng.stream(&"rewards"))
 	if relic != &"":

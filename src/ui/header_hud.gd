@@ -1,7 +1,8 @@
 class_name HeaderHud
 extends Control
-## Persistent run header (doc's "Screen UI"): Relics top-left, and
-## Timer / Layout Tab / Settings icons top-right, left to right in that
+## Persistent run header (doc's "Screen UI"): Ace's portrait and HP, then
+## Relics, top-left (the Slay the Spire reference bar, 0.0.111); Gold /
+## Encounter / Timer / Layout Tab / Settings top-right, left to right in that
 ## order. Lives in HudLayer so it survives every screen swap.
 
 const BAR_HEIGHT := 64.0
@@ -24,7 +25,36 @@ var _right_row: HBoxContainer
 var _timer_label: Label
 var _coins_label: Label
 var _encounter_label: Label
+var _hp_label: Label
 var _last_relic_count := -1
+
+
+## Ace's face in a gold-rimmed medallion: the portrait art drawn through a
+## circular polygon with UVs cropped to the face, so no mask shader is needed.
+class Portrait:
+	extends Control
+	const SEGMENTS := 48
+	const UV_CENTRE := Vector2(0.5, 0.40)   # where the face sits in the portrait
+	const UV_RADIUS := 0.30
+	var texture: Texture2D = null
+
+	func _draw() -> void:
+		var centre := size * 0.5
+		var radius := minf(size.x, size.y) * 0.5 - 2.0
+		if texture != null:
+			var points := PackedVector2Array()
+			var uvs := PackedVector2Array()
+			var colors := PackedColorArray()
+			for i in SEGMENTS:
+				var angle := TAU * float(i) / SEGMENTS
+				var dir := Vector2(cos(angle), sin(angle))
+				points.append(centre + dir * radius)
+				uvs.append(UV_CENTRE + dir * UV_RADIUS)
+				colors.append(Color.WHITE)
+			draw_polygon(points, colors, uvs, texture)
+		else:
+			draw_circle(centre, radius, Color(0.25, 0.1, 0.12))
+		draw_arc(centre, radius + 0.5, 0, TAU, SEGMENTS, Color(0.83, 0.69, 0.22, 0.95), 3.0, true)
 
 
 ## A distinct bolded bar behind the header content (patch 0.17 — "like in
@@ -60,6 +90,35 @@ func _ready() -> void:
 	_relics_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_relics_row.add_theme_constant_override("separation", 10)
 	add_child(_relics_row)
+
+	# Portrait and health lead the left group (0.0.111): health used to be
+	# invisible everywhere outside a fight.
+	var portrait := Portrait.new()
+	portrait.custom_minimum_size = Vector2(46, 46)
+	portrait.tooltip_text = "Ace"
+	var portrait_path := "res://assets/characters/ace_portrait.png"
+	if ResourceLoader.exists(portrait_path):
+		portrait.texture = load(portrait_path)
+	_relics_row.add_child(portrait)
+	var heart := TextureRect.new()
+	var heart_path := "res://assets/icons/icon_health.png"
+	if ResourceLoader.exists(heart_path):
+		heart.texture = load(heart_path)
+	heart.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	heart.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	heart.custom_minimum_size = Vector2(30, 30)
+	heart.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	heart.tooltip_text = "Health"
+	_relics_row.add_child(heart)
+	_hp_label = _header_label("")
+	_hp_label.tooltip_text = "Health"
+	_hp_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
+	_relics_row.add_child(_hp_label)
+	var divider := VSeparator.new()
+	divider.custom_minimum_size = Vector2(4, 34)
+	divider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_relics_row.add_child(divider)
+	_relics_row.set_meta("fixed_children", _relics_row.get_child_count())
 
 	_right_row = HBoxContainer.new()
 	_right_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -114,6 +173,10 @@ func _process(delta: float) -> void:
 	var total := int(Game.run_elapsed_sec)
 	_timer_label.text = "%02d:%02d" % [total / 60, total % 60]
 	_coins_label.text = "🪙 %d" % Game.run.coins
+	# During a fight the combat screen publishes what Ace's own panel shows,
+	# because run.hp is only written back when the fight ends.
+	var hp := Game.live_hp if Game.live_hp >= 0 else Game.run.hp
+	_hp_label.text = "%d/%d" % [hp, Game.run.max_hp]
 	_encounter_label.text = "Encounter %d/10" % clampi(Game.run.history.size(), 1, 10)
 	if Game.run.relic_ids.size() != _last_relic_count:
 		_refresh_relics()
@@ -130,8 +193,13 @@ func _process(delta: float) -> void:
 
 func _refresh_relics() -> void:
 	_last_relic_count = Game.run.relic_ids.size()
-	for child in _relics_row.get_children():
-		child.queue_free()
+	# The portrait, heart, HP and divider lead the row and stay put; only the
+	# relic icons after them are rebuilt.
+	var fixed: int = _relics_row.get_meta("fixed_children", 0)
+	var children := _relics_row.get_children()
+	for index in range(fixed, children.size()):
+		_relics_row.remove_child(children[index])
+		children[index].queue_free()
 	for relic_id in Game.run.relic_ids:
 		var relic := Db.content.get_relic(relic_id)
 		if relic == null:

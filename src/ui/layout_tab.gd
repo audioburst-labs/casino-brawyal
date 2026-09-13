@@ -3,9 +3,10 @@ extends Control
 ## Layout Tab overlay (doc): Slot Machine reels+symbols, Relics collected,
 ## and Abilities split into Equipped / Trash for management —
 ## reachable any time via the header icon, without leaving the current screen.
+## Sticker placing moved to its own Sticker Applying screen in 0.0.111; the
+## machine here is a read-only view again, as the doc describes it.
 
 var _zones := {}   # zone id -> slot container
-var _held_sticker: StringName = &""   # the sticker awaiting a reel slot
 var _machine_column: VBoxContainer
 
 
@@ -25,8 +26,10 @@ class AbilityChit:
 	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
 		return data is Dictionary and data.has("ability") and data.ability != ability_id
 
+	## Dropped onto another ability: the two swap places (0.0.111). Dropped
+	## on empty zone space (the DropZone below) the old move-into-zone applies.
 	func _drop_data(_position: Vector2, data: Variant) -> void:
-		screen._on_dropped(zone, data.ability)
+		screen._on_swapped(data.ability, ability_id)
 
 
 class DropZone:
@@ -106,47 +109,17 @@ func _build_slot_machine_section(column: VBoxContainer) -> void:
 	_refresh_machine_section()
 
 
-## Doc "Sticker Applying Screen": stickers won outside the shop are held until
-## the player clicks the reel symbol they should replace. Without this they had
-## nowhere to go but the shop, so a Casino-won sticker was a dead reward
-## (patch 0.18).
+## The machine's current reels and symbols, read-only (doc "Layout Tab").
 func _refresh_machine_section() -> void:
 	for child in _machine_column.get_children():
 		_machine_column.remove_child(child)
 		child.queue_free()
 	if Game.run == null:
 		return
-
-	if not Game.run.sticker_inventory.is_empty():
-		var tray := HBoxContainer.new()
-		tray.alignment = BoxContainer.ALIGNMENT_CENTER
-		tray.add_theme_constant_override("separation", 10)
-		_machine_column.add_child(tray)
-		var hint := Label.new()
-		var placing_now := _held_sticker != &""
-		hint.text = "Click a reel symbol to place it:" if placing_now else "Pick a sticker, then a symbol:"
-		tray.add_child(hint)
-		for index in Game.run.sticker_inventory.size():
-			var suit: StringName = Game.run.sticker_inventory[index]
-			var chip := _suit_button(suit, Vector2(44, 44))
-			chip.tooltip_text = "%s sticker" % String(suit).capitalize()
-			chip.toggle_mode = true
-			chip.button_pressed = suit == _held_sticker
-			chip.pressed.connect(_on_sticker_picked.bind(suit))
-			tray.add_child(chip)
-		var discard := Button.new()
-		discard.focus_mode = Control.FOCUS_NONE
-		discard.text = "🗑"
-		discard.tooltip_text = "Throw the held sticker away"
-		discard.disabled = _held_sticker == &""
-		discard.pressed.connect(_on_sticker_discarded)
-		tray.add_child(discard)
-
 	var reels_row := HBoxContainer.new()
 	reels_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	reels_row.add_theme_constant_override("separation", 10)
 	_machine_column.add_child(reels_row)
-	var placing := _held_sticker != &""
 	for reel_index in Game.run.machine.reels.size():
 		var reel: Reel = Game.run.machine.reels[reel_index]
 		var reel_box := VBoxContainer.new()
@@ -155,11 +128,10 @@ func _refresh_machine_section() -> void:
 		for slot_index in reel.symbols.size():
 			var suit: StringName = reel.symbols[slot_index]
 			var slot := _suit_button(suit, Vector2(40, 40))
-			slot.flat = not placing
-			slot.disabled = not placing
+			slot.flat = true
+			slot.disabled = true
 			slot.focus_mode = Control.FOCUS_NONE
 			slot.tooltip_text = String(suit).capitalize()
-			slot.pressed.connect(_on_reel_slot_clicked.bind(reel_index, slot_index))
 			reel_box.add_child(slot)
 
 
@@ -186,26 +158,6 @@ static func _suit_button(suit: StringName, box: Vector2) -> Button:
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(face)
 	return button
-
-
-func _on_sticker_picked(suit: StringName) -> void:
-	_held_sticker = &"" if _held_sticker == suit else suit
-	_refresh_machine_section()
-
-
-func _on_sticker_discarded() -> void:
-	Game.run.sticker_inventory.erase(_held_sticker)
-	_held_sticker = &""
-	_refresh_machine_section()
-
-
-func _on_reel_slot_clicked(reel_index: int, slot_index: int) -> void:
-	if _held_sticker == &"":
-		return
-	Game.run.machine.apply_sticker(reel_index, slot_index, _held_sticker)
-	Game.run.sticker_inventory.erase(_held_sticker)
-	_held_sticker = &""
-	_refresh_machine_section()
 
 
 func _build_relics_section(column: VBoxContainer) -> void:
@@ -362,3 +314,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_close()
+
+
+func _on_swapped(dragged: StringName, onto: StringName) -> void:
+	if not Game.run.swap_abilities(dragged, onto):
+		_on_dropped(_zone_of(onto), dragged)   # e.g. dropped onto itself: no-op move
+		return
+	_refresh()
+
+
+func _zone_of(id: StringName) -> StringName:
+	return &"trash" if id == Game.run.trash_id else &"equipped"

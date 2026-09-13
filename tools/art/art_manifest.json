@@ -926,6 +926,86 @@
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Redraw this exact same character — same rotund casino tycoon build, same black top hat with gold band and spade emblem, same monocle and huge waxed black mustache, same maroon gold-trimmed tailcoat over a cream patterned waistcoat with gold watch chain, same pinstriped trousers and spade-buckled shoes, same green spade money bag and diamond-topped cane, identical art style and colours — in a MONEY-HURLING FOLLOW-THROUGH pose: the throw has finished, his throwing arm swung down and across his belly, the emptied green bag dangling, weight settled onto his front foot, cane back under his other hand, a smug satisfied grin under the mustache, coat settling from the motion. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "dealer_throw_windup",
+      "out": "assets/characters/dealer_throw_windup.png",
+      "base": "assets/characters/enemy_dealer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same lanky pale croupier with the slicked black quiff, same green dealer's visor, same white shirt and black bow tie, same black waistcoat with the gold spade emblem and coattails, same white gloves, same green-and-gold croupier rake, same sly grin, identical art style and colors — in a CARD-DEAL WIND-UP pose: a fan of three playing cards pinched in his raised right hand cocked back beside his ear, torso coiled to the right, weight on his back leg, the rake tucked under his other arm, eyes narrowed on his target to the left. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "dealer_throw_release",
+      "out": "assets/characters/dealer_throw_release.png",
+      "base": "assets/characters/enemy_dealer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same lanky pale croupier with the slicked black quiff, same green dealer's visor, same white shirt and black bow tie, same black waistcoat with the gold spade emblem and coattails, same white gloves, same green-and-gold croupier rake, same sly grin, identical art style and colors — at the RELEASE INSTANT of flicking playing cards: his right arm snapped straight out toward the left, three razor-sharp playing cards just leaving his gloved fingertips with a sharp motion blur, body lunging into the throw, front foot planted, the rake held out behind him for balance, wicked grin. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "dealer_throw_follow",
+      "out": "assets/characters/dealer_throw_follow.png",
+      "base": "assets/characters/enemy_dealer.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same lanky pale croupier with the slicked black quiff, same green dealer's visor, same white shirt and black bow tie, same black waistcoat with the gold spade emblem and coattails, same white gloves, same green-and-gold croupier rake, same sly grin, identical art style and colors — in a CARD-DEAL FOLLOW-THROUGH pose: the cards are gone, his throwing arm drifting down and across his body after the flick, shoulders relaxing, weight settling onto his front foot, the rake swinging back to his side, a smug satisfied smirk. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "manager_punch_windup",
+      "out": "assets/characters/manager_punch_windup.png",
+      "base": "assets/characters/enemy_manager.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same portly casino floor manager, same slicked black hair and thick moustache, same maroon pinstripe three-piece suit with gold buttons, same green tie and pocket square, same gold pocket-watch chain, same chunky gold rings, same scowl, identical art style and colors — in a BACKHAND WIND-UP pose: his ringed right hand raised high and pulled back across his chest, torso twisted to load a heavy backhanded slap, weight sunk into his back leg, other hand gripping his lapel, glaring left at his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "manager_punch_strike",
+      "out": "assets/characters/manager_punch_strike.png",
+      "base": "assets/characters/enemy_manager.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same portly casino floor manager, same slicked black hair and thick moustache, same maroon pinstripe three-piece suit with gold buttons, same green tie and pocket square, same gold pocket-watch chain, same chunky gold rings, same scowl, identical art style and colors — at the IMPACT INSTANT of a heavy backhanded slap: his ringed right hand fully extended out to the left with a sharp motion blur behind the arm, gold rings leading, torso rotated all the way through the swing, front foot stamped down, coat flaring from the force, teeth bared. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "manager_punch_follow",
+      "out": "assets/characters/manager_punch_follow.png",
+      "base": "assets/characters/enemy_manager.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same portly casino floor manager, same slicked black hair and thick moustache, same maroon pinstripe three-piece suit with gold buttons, same green tie and pocket square, same gold pocket-watch chain, same chunky gold rings, same scowl, identical art style and colors — in a BACKHAND FOLLOW-THROUGH pose: the slap has landed, his right arm relaxing down and outward after full extension, shoulders squaring back up, weight resting on his front foot, straightening his tie with the other hand, a satisfied sneer. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ace_flush_splash",
+      "out": "assets/characters/ace_flush_splash.png",
+      "base": "assets/characters/ace_portrait.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "Redraw this exact same character's face — same slicked-back dark hair, same brown eyes, same chin stubble, same sharp features, identical art style — as a dramatic EXTREME CLOSE-UP on his eyes for a critical-hit cut-in: eyes narrowed in fierce, dangerous focus, brows knitted, a confident half-smirk barely visible at the bottom edge, head turned slightly, lit from below by strong teal light with a violet rim light along his hair. The face is contained inside one wide horizontal band that runs the full width of the image and is about two thirds of its height, with ragged torn-paper top and bottom edges: a flat deep teal (#0f5a4e) border about a tenth of the image height along each torn edge, chipped white deckle lines on the tears, and scattered black ink splatter flecks. Persona 5 critical-hit cut-in style, bold graphic comic composition. Above and below the band there is nothing but the background. No text, no letters."
+    },
+    {
+      "id": "icon_health",
+      "out": "assets/icons/icon_health.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game HUD icon on a fully transparent background: a plump glossy cartoon red heart with two simple white highlights, clearly reading as 'health points' — no cross, no sparkle, no card-suit styling. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_broken_coins",
+      "out": "assets/icons/icon_broken_coins.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game reward icon on a fully transparent background: a shiny gold coin with an embossed spade symbol, cracked clean in two with a jagged dark split down the middle, the two halves slightly apart with a few tiny gold fragments falling between them, clearly reading as 'lost money'. Chunky cartoon proportions, thick dark outline, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_frail",
+      "out": "assets/icons/status_frail.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a pale blue-grey cartoon shield that is chipped and crumbling at its edges, with a bold downward-pointing arrow embossed on its face, clearly reading as 'weakened defense'. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
     }
   ]
 }

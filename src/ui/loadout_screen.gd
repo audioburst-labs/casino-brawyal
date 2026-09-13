@@ -24,8 +24,10 @@ class AbilityChit:
 	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
 		return data is Dictionary and data.has("ability") and data.ability != ability_id
 
+	## Dropped onto another ability: the two swap places (0.0.111). Dropped
+	## on empty zone space (the DropZone below) the old move-into-zone applies.
 	func _drop_data(_position: Vector2, data: Variant) -> void:
-		screen._on_dropped(zone, data.ability)
+		screen._on_swapped(data.ability, ability_id)
 
 
 class DropZone:
@@ -149,3 +151,14 @@ func _on_dropped(zone: StringName, id: StringName) -> void:
 		&"trash":
 			run.move_to_trash(id)
 	_refresh()
+
+
+func _on_swapped(dragged: StringName, onto: StringName) -> void:
+	if not Game.run.swap_abilities(dragged, onto):
+		_on_dropped(_zone_of(onto), dragged)   # e.g. dropped onto itself: no-op move
+		return
+	_refresh()
+
+
+func _zone_of(id: StringName) -> StringName:
+	return &"trash" if id == Game.run.trash_id else &"equipped"

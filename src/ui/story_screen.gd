@@ -39,6 +39,7 @@ func setup(args: Dictionary) -> void:
 
 
 func _pick(choice: Dictionary) -> void:
+	Game.commit_encounter()   # the choice is made; nothing left to replay
 	var lines := RunEffects.apply(choice.get("effects", []),
 		Db.content, Game.run, Game.rng.stream(&"rewards"))
 	_choice_row.queue_free()

@@ -4,6 +4,10 @@ extends VBoxContainer
 ## block and status icons. Built procedurally; refresh() re-reads the actor.
 
 signal clicked(actor_id: StringName)
+## Fired on the exact frame an attack pose connects (the strike/release
+## frame, or the snap of the plain lunge), so impact VFX can land on it
+## instead of after the whole animation has returned (0.0.111).
+signal strike_landed
 
 ## One constant size that fits up to 4 enemies side by side (patch 0.13).
 ## Patch 0.20: every unit 10% larger. The four-slot line still fits — 4 x 198
@@ -575,6 +579,7 @@ func play_throw() -> void:
 	if not has_pose("throw_release"):
 		play_lunge()
 		await get_tree().create_timer(0.22).timeout
+		strike_landed.emit()
 		return
 	var origin := _sprite.position
 	var facing := _facing()
@@ -589,6 +594,7 @@ func play_throw() -> void:
 	await get_tree().create_timer(0.08).timeout  # the coiled moment
 	# Release — snap forward with motion smears.
 	_show_pose("throw_release")
+	strike_landed.emit()
 	_smear()
 	var snap := create_tween()
 	snap.set_parallel(true)
@@ -621,6 +627,7 @@ func play_slash() -> void:
 	if not has_pose("slash_strike"):
 		play_lunge()
 		await get_tree().create_timer(0.22).timeout
+		strike_landed.emit()
 		return
 	var origin := _sprite.position
 	var facing := _facing()
@@ -633,6 +640,7 @@ func play_slash() -> void:
 	await wind.finished
 	await get_tree().create_timer(0.07).timeout
 	_show_pose("slash_strike")
+	strike_landed.emit()
 	_smear()
 	var strike := create_tween()
 	strike.set_parallel(true)
@@ -652,6 +660,7 @@ func play_punch() -> void:
 	if not has_pose("punch_strike"):
 		play_lunge()
 		await get_tree().create_timer(0.22).timeout
+		strike_landed.emit()
 		return
 	var origin := _sprite.position
 	var facing := _facing()
@@ -665,6 +674,7 @@ func play_punch() -> void:
 	await wind.finished
 	await get_tree().create_timer(0.1).timeout  # the coiled moment, held longer
 	_show_pose("punch_strike")
+	strike_landed.emit()
 	_smear()
 	var strike := create_tween()
 	strike.set_parallel(true)
@@ -710,6 +720,12 @@ func set_targeted(targeted: bool) -> void:
 
 func sprite_center() -> Vector2:
 	return _sprite.global_position + _sprite.size * 0.5
+
+
+## The HP the bar is currently SHOWING — which trails the actor's real HP
+## during a multi-hit attack (see apply_damage_display).
+func shown_hp() -> int:
+	return int(_hp_bar.value)
 
 
 ## Steps the readout down by ONE landed hit — the sim resolves every instance

@@ -3,7 +3,7 @@ extends RefCounted
 ## Generates the next encounter choice lazily from the run history.
 ## Placement rules (design doc + patch 0.1 "Ori fixes"):
 ##   #1 always Combat (auto-start) - #10 always Boss
-##   Rest offered only at #3, #6 and #9 - the final Shop appears at #8 (v0.19)
+##   Rest offered only at #3, #6 and #9 - the final Shop appears at #9 (v0.120)
 ##   Shop: max 3 visits, never right after a visited shop, never at #2,
 ##   and at least 2 shop OFFERS per run (forced late if needed)
 ##   Treasure: max 2 visits, only after #2, never right after a treasure
@@ -12,8 +12,9 @@ extends RefCounted
 
 ## Doc v0.19: rest is offered at these encounters and nowhere else.
 const REST_ENCOUNTERS: Array[int] = [3, 6, 9]
-## Doc v0.19: the run's guaranteed final Shop option (was #9).
-const FINAL_SHOP_ENCOUNTER := 8
+## Doc v0.120: the run's guaranteed final Shop option is back at #9, sharing
+## the pair with that encounter's Rest (it sat alone at #8 in v0.19).
+const FINAL_SHOP_ENCOUNTER := 9
 
 
 static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dictionary]:
@@ -22,10 +23,12 @@ static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dic
 		return [{"type": &"combat"}]
 	if encounter == 10:
 		return [{"type": &"boss"}]
-	# The guaranteed final Shop. It gets its own slot now that #9 is a rest
-	# encounter, so the two no longer have to share one pair of options.
+	# The guaranteed final Shop shares #9 with that encounter's Rest — the
+	# doc's last choice before the boss is always "restock or recover".
 	if encounter == FINAL_SHOP_ENCOUNTER and _shop_allowed(run):
 		run.shop_offers += 1
+		if REST_ENCOUNTERS.has(encounter):
+			return [{"type": &"shop"}, {"type": &"rest"}]
 		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
 
 	if REST_ENCOUNTERS.has(encounter):

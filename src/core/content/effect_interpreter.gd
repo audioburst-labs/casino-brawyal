@@ -28,22 +28,14 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 			"apply_status":
 				_op_apply_status(effect, sim, source, target)
 			"gain_block":
-				source.gain_block(int(effect.get("amount", 0)))
-				sim.emit_event(&"block_gained",
-					{"actor": source.id, "amount": int(effect.get("amount", 0))})
+				_grant_block(int(effect.get("amount", 0)), sim, source)
 			"block_per_enemy":
 				var living := sim.enemies.filter(
 					func(e: CombatActor) -> bool: return e.is_alive()).size()
-				var block := int(effect.get("amount", 0)) * living
-				if block > 0:
-					source.gain_block(block)
-					sim.emit_event(&"block_gained", {"actor": source.id, "amount": block})
+				_grant_block(int(effect.get("amount", 0)) * living, sim, source)
 			"block_per_chip":
 				var chips: int = sim.last_payout.get(StringName(str(effect.get("suit", ""))), 0)
-				var gained := chips * int(effect.get("amount", 0))
-				if gained > 0:
-					source.gain_block(gained)
-					sim.emit_event(&"block_gained", {"actor": source.id, "amount": gained})
+				_grant_block(chips * int(effect.get("amount", 0)), sim, source)
 			"mark_random_unmarked":
 				_op_mark_random(sim, int(effect.get("count", 1)))
 			"heal_pct":
@@ -211,3 +203,13 @@ static func _op_convert_chips(effect: Dictionary, sim: CombatSim) -> void:
 				converted += 1
 	if converted > 0:
 		sim.emit_event(&"chips_converted", {"to_suit": to_suit, "count": converted})
+
+
+## Every Block an ability grants goes through here so Frail (v0.120) taxes all
+## three block ops the same way; the event carries what was actually gained.
+static func _grant_block(amount: int, sim: CombatSim, source: CombatActor) -> void:
+	var gained := StatusRules.block_gained(amount, source)
+	if gained <= 0:
+		return
+	source.gain_block(gained)
+	sim.emit_event(&"block_gained", {"actor": source.id, "amount": gained})

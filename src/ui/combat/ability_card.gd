@@ -386,14 +386,8 @@ func _show_keywords() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	_keyword_panel.add_child(box)
-	var full := PanelContainer.new()
-	var full_label := Label.new()
-	full_label.text = "%s — %s" % [_state.def.name, _state.def.description]
-	full_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	full_label.custom_minimum_size = Vector2(280, 0)
-	full_label.add_theme_font_size_override("font_size", 15)
-	full.add_child(full_label)
-	box.add_child(full)
+	# Keywords only (0.0.111): the card already shows its full description,
+	# so the hover panel no longer repeats it.
 	for keyword_id: StringName in _state.def.keywords:
 		var keyword := Db.content.get_keyword(keyword_id)
 		if keyword == null:

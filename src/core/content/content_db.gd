@@ -131,6 +131,10 @@ func lineups_for_stage(stage: int) -> Array[Dictionary]:
 	return _lineups.filter(func(l: Dictionary) -> bool: return int(l.stage) == stage)
 
 
+func all_lineups() -> Array[Dictionary]:
+	return _lineups
+
+
 func get_story_event(id: StringName) -> Defs.StoryEventDef:
 	return _story_events.get(id)
 

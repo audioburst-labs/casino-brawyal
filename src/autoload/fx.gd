@@ -75,6 +75,29 @@ func set_cursor_grabbing(active: bool) -> void:
 	Input.set_custom_mouse_cursor(texture, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
 
 
+## Sticker Applying screen (doc): "the in-game cursor is replaced by the
+## sticker currently held for placement". `null` hands the pointer back.
+func set_cursor_sticker(texture: Texture2D) -> void:
+	if texture == null:
+		if _cursor_idle != null:
+			Input.set_custom_mouse_cursor(_cursor_idle, Input.CURSOR_ARROW, CURSOR_HOTSPOT)
+		return
+	var image: Image = texture.get_image()
+	image.resize(56, 56, Image.INTERPOLATE_LANCZOS)
+	Input.set_custom_mouse_cursor(ImageTexture.create_from_image(image),
+		Input.CURSOR_ARROW, Vector2(28, 28))
+
+
+## The hand opens again when ANY drag ends, wherever it ends. Godot sends
+## NOTIFICATION_DRAG_END down the whole tree, and this autoload is always in
+## it — the chip button that started the drag is not: the tray rebuilds its
+## buttons the moment the chip lands, so the button's own handler was freed
+## before it could revert the cursor, and the fist stuck (0.0.111).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		set_cursor_grabbing(false)
+
+
 ## Tiered shake: big requests also kick a slight screen rotation —
 ## "the art of screenshake" says rotation is what sells the heavy tier.
 func shake(strength: float = 12.0) -> void:

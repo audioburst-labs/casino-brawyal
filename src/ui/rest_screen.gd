@@ -21,12 +21,14 @@ func _ready() -> void:
 
 
 func _on_rest() -> void:
+	Game.commit_encounter()
 	var healed: int = mini(int(ceil(Game.run.max_hp * 0.3)), Game.run.max_hp - Game.run.hp)
 	Game.run.hp += healed
 	_finish("You rest by the fire.\n+%d HP" % healed)
 
 
 func _on_reward() -> void:
+	Game.commit_encounter()
 	var reward_rng := Game.rng.stream(&"rewards")
 	var lines: Array[String]
 	var relic := Rewards.random_unowned_relic(Db.content, Game.run, reward_rng)

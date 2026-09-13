@@ -63,3 +63,33 @@ static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -
 		ability_pool.remove_at(index)
 
 	return stock
+
+
+## The stock as plain JSON (String keys and values), so a shop visit can ride
+## in the run's `pending_encounter` and come back identical after an exit to
+## the main menu — regenerating it would re-roll the shelf (0.0.111).
+static func to_json(stock: Dictionary) -> Dictionary:
+	return {
+		"reel": {"price": int(stock.reel.price), "available": bool(stock.reel.available)},
+		"stickers": stock.stickers.map(func(o: Dictionary) -> Dictionary:
+			return {"suit": String(o.suit), "price": int(o.price)}),
+		"relics": stock.relics.map(func(o: Dictionary) -> Dictionary:
+			return {"id": String(o.id), "price": int(o.price)}),
+		"abilities": stock.abilities.map(func(o: Dictionary) -> Dictionary:
+			return {"id": String(o.id), "price": int(o.price),
+				"upgrade": bool(o.upgrade), "tier": int(o.tier)}),
+	}
+
+
+static func from_json(data: Dictionary) -> Dictionary:
+	var reel: Dictionary = data.get("reel", {})
+	return {
+		"reel": {"price": int(reel.get("price", 0)), "available": bool(reel.get("available", false))},
+		"stickers": Array(data.get("stickers", [])).map(func(o: Dictionary) -> Dictionary:
+			return {"suit": StringName(str(o.suit)), "price": int(o.price)}),
+		"relics": Array(data.get("relics", [])).map(func(o: Dictionary) -> Dictionary:
+			return {"id": StringName(str(o.id)), "price": int(o.price)}),
+		"abilities": Array(data.get("abilities", [])).map(func(o: Dictionary) -> Dictionary:
+			return {"id": StringName(str(o.id)), "price": int(o.price),
+				"upgrade": bool(o.get("upgrade", false)), "tier": int(o.get("tier", 0))}),
+	}

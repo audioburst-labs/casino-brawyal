@@ -94,3 +94,68 @@ func test_boss_victory_leads_to_victory_screen() -> void:
 	Game.combat_finished(true, 30, [])
 	await wait_physics_frames(2)
 	assert_eq(_current_screen().name, "VictoryScreen")
+
+
+# ---- Exiting to the main menu mid-encounter resumes it, not skips it (0.0.111) ----
+
+func test_the_chosen_encounter_is_remembered_until_it_is_finished() -> void:
+	Game.new_run(555)
+	await wait_physics_frames(2)
+	assert_eq(str(Game.run.pending_encounter.get("type", "")), "combat",
+		"encounter one is pending while it is being fought")
+	assert_true(Game.run.pending_encounter.has("lineup"))
+	Game.combat_finished(true, 60, [])
+	await wait_physics_frames(2)
+	assert_true(Game.run.pending_encounter.is_empty(), "the reward screen is not an encounter")
+	Game.choose_encounter({"type": &"shop"})
+	await wait_physics_frames(2)
+	assert_eq(str(Game.run.pending_encounter.type), "shop")
+	Game.encounter_finished()
+	await wait_physics_frames(2)
+	assert_true(Game.run.pending_encounter.is_empty())
+
+
+func test_continuing_a_save_reopens_the_pending_encounter() -> void:
+	Game.new_run(556)
+	await wait_physics_frames(2)
+	Game.combat_finished(true, 60, [])
+	await wait_physics_frames(2)
+	Game.choose_encounter({"type": &"casino"})
+	await wait_physics_frames(2)
+	var history_before := Game.run.history.duplicate()
+	var saved := Game.run.to_dict()
+	Game.run = RunState.from_dict(saved)
+	Game.resume_run()
+	await wait_physics_frames(2)
+	assert_eq(_current_screen().name, "CasinoScreen", "back to the start of the casino, not the map")
+	assert_eq(Game.run.history, history_before, "the visit is not recorded twice")
+
+
+func test_continuing_a_save_with_a_pending_combat_refights_the_same_lineup() -> void:
+	Game.new_run(557)
+	await wait_physics_frames(2)
+	var pending := Game.run.pending_encounter.duplicate()
+	var first_enemies: Array = _current_screen().sim.enemies.map(
+		func(e: CombatActor) -> StringName: return e.def_id)
+	Game.run = RunState.from_dict(Game.run.to_dict())
+	Game.resume_run()
+	await wait_physics_frames(2)
+	assert_eq(_current_screen().name, "CombatScreen")
+	assert_eq(str(Game.run.pending_encounter.lineup), str(pending.lineup))
+	var again: Array = _current_screen().sim.enemies.map(
+		func(e: CombatActor) -> StringName: return e.def_id)
+	assert_eq(again, first_enemies, "same lineup, from the beginning")
+
+
+func test_a_committed_encounter_resumes_at_the_map() -> void:
+	Game.new_run(558)
+	await wait_physics_frames(2)
+	Game.combat_finished(true, 60, [])
+	await wait_physics_frames(2)
+	Game.choose_encounter({"type": &"casino"})
+	await wait_physics_frames(2)
+	Game.commit_encounter()   # the spin has been played; its winnings are banked
+	Game.run = RunState.from_dict(Game.run.to_dict())
+	Game.resume_run()
+	await wait_physics_frames(2)
+	assert_eq(_current_screen().name, "MapScreen", "nothing left to replay")
