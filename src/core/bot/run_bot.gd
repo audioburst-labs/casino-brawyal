@@ -33,10 +33,10 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 				if relic != &"":
 					run.relic_ids.append(relic)
 			&"casino":
-				# One free spin (doc v0.120), then chase any free re-spins.
-				var result := CasinoGame.spin(db, run, rng.stream(&"rewards"))
-				while not result.is_empty() and result.free_respin:
-					result = CasinoGame.spin(db, run, rng.stream(&"rewards"))
+				# Doc v0.120: the player picks one of three games. The bot
+				# picks at random so the balance instrument covers all three
+				# (patch 0.22).
+				_play_casino(db, run, rng, choice_rng)
 			&"shop":
 				_play_shop(db, run, rng, choice_rng)
 	return _result(run, true)
@@ -123,3 +123,26 @@ static func _play_shop(db: ContentDB, run: RunState, rng: GameRng,
 			var slot_index := choice_rng.randi_range(0,
 				machine.reels[reel_index].symbols.size() - 1)
 			machine.apply_sticker(reel_index, slot_index, &"spade")
+
+
+## One casino visit: the slot machine, the dice game or the relic hunt.
+static func _play_casino(db: ContentDB, run: RunState, rng: GameRng,
+		choice_rng: RandomNumberGenerator) -> void:
+	match choice_rng.randi_range(0, 2):
+		0:
+			var result := CasinoGame.spin(db, run, rng.stream(&"rewards"))
+			while not result.is_empty() and result.free_respin:
+				result = CasinoGame.spin(db, run, rng.stream(&"rewards"))
+		1:
+			# Rolls while a 6 could not bust it, which is how a careful player
+			# reads the table.
+			var dice := DiceGame.new()
+			while dice.can_roll() and dice.total() + 6 <= DiceGame.TARGET:
+				dice.roll(rng.stream(&"rewards"))
+			if dice.can_cash_out():
+				dice.cash_out(run)
+		_:
+			var hunt := RelicHunt.build(db, run, rng.stream(&"rewards"))
+			hunt.shuffle(rng.stream(&"rewards"))
+			hunt.reveal(choice_rng.randi_range(0, RelicHunt.CARDS - 1))
+			hunt.claim(db, run)
