@@ -47,9 +47,6 @@ var _db: ContentDB
 var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
 var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
-## Enemy passives (patch 0.22): running damage tally per enemy, for the
-## Dealer's Bust count and the Chip Golem's Break threshold.
-var _passive_counters: Dictionary = {}
 ## Chips a Gift move promised; handed over after the next spin so the player
 ## sees them arrive with the payout.
 var _pending_gift_chips := 0
@@ -308,7 +305,7 @@ func _build_intent_entry(enemy: CombatActor, move_id: String) -> Dictionary:
 	entry["display_instances"] = _move_instances(enemy, intent)
 	if not _db.get_enemy(enemy.def_id).passive.is_empty():
 		entry["passive"] = _db.get_enemy(enemy.def_id).passive
-		entry["passive_count"] = int(_passive_counters.get(enemy.id, 0))
+		entry["passive_count"] = enemy.passive_counter
 	return entry
 
 
@@ -403,33 +400,48 @@ func end_assignment() -> bool:
 
 ## Every point of damage an enemy takes runs through here, so its passive can
 ## react (patch 0.22). Called by EffectInterpreter right after `damage_dealt`.
+## The number an enemy passive starts its countdown at, or -1 for a passive
+## that keeps no count. Patch 0.113: the sheet reads "count DOWN all damage
+## taken", and the unit wears the number as a permanent buff, ticking to 0.
+static func passive_start(passive: Dictionary) -> int:
+	match str(passive.get("type", "")):
+		"bust":
+			return maxi(1, int(passive.get("threshold", 21)))
+		"break":
+			return maxi(1, int(passive.get("every", 20)))
+	return -1
+
+
+## Every point of damage an enemy takes runs through here, so its passive can
+## react (patch 0.22). Called by EffectInterpreter right after `damage_dealt`.
 func on_enemy_damaged(actor: CombatActor, hp_lost: int) -> void:
 	if actor == null or actor.is_hero or hp_lost <= 0:
 		return
 	var passive: Dictionary = _db.get_enemy(actor.def_id).passive
 	if passive.is_empty():
 		return
-	var tally: int = int(_passive_counters.get(actor.id, 0)) + hp_lost
+	var start := passive_start(passive)
+	if actor.passive_counter < 0:
+		actor.passive_counter = start
+	var remaining := actor.passive_counter - hp_lost
 	match str(passive.get("type", "")):
 		"bust":
-			# Dealer: "count all damage taken; when it reaches 21, stun me and
-			# reduce my Strength to 0."
-			var threshold := maxi(1, int(passive.get("threshold", 21)))
-			if tally >= threshold:
-				tally = 0
+			# Dealer: the count runs down from 21 and fires at 0 — it is
+			# stunned and its Strength is wiped, then the count resets.
+			if remaining <= 0:
+				remaining = start
 				actor.statuses.erase(&"strength")
 				actor.apply_status(&"stun", 1)
-				emit_event(&"enemy_busted", {"actor": actor.id, "threshold": threshold})
+				emit_event(&"enemy_busted", {"actor": actor.id, "threshold": start})
 				emit_event(&"status_applied",
 					{"actor": actor.id, "status": &"stun", "stacks": 1})
 		"break":
-			# Chip Golem: "for every 20 health that I lose, give the player a
-			# random Chip."
-			var every := maxi(1, int(passive.get("every", 20)))
-			while tally >= every:
-				tally -= every
+			# Chip Golem: a chip for every 20 health it loses.
+			while remaining <= 0:
+				remaining += start
 				_grant_random_chip(&"break")
-	_passive_counters[actor.id] = tally
+	actor.passive_counter = remaining
+	emit_event(&"passive_counter", {"actor": actor.id, "value": remaining})
 
 
 ## The loan countdown runs with the hero's own debuffs, at the end of his turn
@@ -497,6 +509,7 @@ func _spawn_enemy(def_id: StringName, announce := true,
 	var stream := rng.stream(&"combat")
 	var hp := int(round(stream.randi_range(def.hp_min, def.hp_max) * _hp_mult))
 	var enemy := CombatActor.new(StringName("enemy_%d" % _summon_counter), def.id, def.name, hp)
+	enemy.passive_counter = passive_start(def.passive)
 	_summon_counter += 1
 	var slot := _summon_slot(summoner)
 	if slot < 0:
@@ -547,7 +560,6 @@ func _remove_actor(actor: CombatActor) -> void:
 	_brains.erase(actor.id)
 	_intents.erase(actor.id)
 	_intent_ids.erase(actor.id)
-	_passive_counters.erase(actor.id)
 	emit_event(&"actor_removed", {"actor": actor.id})
 
 
@@ -579,6 +591,13 @@ func _fire_ability(ability: AbilityState) -> void:
 		if not passives.has(ability.def):
 			passives.append(ability.def)
 		emit_event(&"passive_gained", {"ability": ability.def.id})
+		# It pays on the turn you play it as well as at every round start
+		# after (patch 0.113, designer's call). "At the start of your turn" —
+		# you are ON your turn; spending two chips for nothing read as broken
+		# math, which is what the Face Reader note was about.
+		_active_ability = ability
+		EffectInterpreter.execute(ability.def.effects, self, hero, target)
+		_active_ability = null
 	else:
 		_active_ability = ability
 		var bonus := ability.bonus_active()

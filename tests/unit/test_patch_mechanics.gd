@@ -171,15 +171,18 @@ func test_replace_bonus_swaps_effects() -> void:
 	assert_eq(sim.hero.block, 8, "diamond replaces 5 block with 8, not 13")
 
 
-func test_passive_fires_at_round_start_after_activation() -> void:
+## Patch 0.113 (designer's note: "Face Reader block gain math looks completely
+## wrong"): a passive pays on the turn you PLAY it as well as at every round
+## start after. It used to charge two chips and hand back nothing that turn.
+func test_passive_pays_on_activation_and_every_round_start_after() -> void:
 	var sim := _sim(["bouncer", "server"], ["face_reader"])
 	sim.begin_round()
 	_fire(sim, 0, [&"club", &"diamond"])
-	assert_eq(sim.hero.block, 0, "passive does not fire on activation")
+	assert_eq(sim.hero.block, 4, "2 block per living enemy, paid immediately")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
-	assert_eq(sim.hero.block, 4, "2 block per living enemy at round start")
+	assert_eq(sim.hero.block, 4, "and again at the next round start")
 
 
 func test_summon_adds_a_new_enemy() -> void:
@@ -308,6 +311,6 @@ func test_bust_is_cash_in_only() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	enemy.apply_status(&"mark", 1)
-	_fire(sim, 0, [&"spade", &"club"])
+	_fire(sim, 0, [&"club", &"spade"])
 	assert_eq(enemy.hp, hp_start - 30)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")

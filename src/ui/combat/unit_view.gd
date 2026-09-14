@@ -48,6 +48,7 @@ var _target_ring: TargetRing
 var _frame_outline: FrameOutline
 var _base_sprite_position := Vector2.ZERO
 var _shown_block := 0              # block currently drawn under the HP bar
+var _shown_passive := -1           # last enemy-passive number drawn, for its flash
 
 
 ## The blue target circle drawn under the targeted enemy's model (patch 0.13).
@@ -70,6 +71,87 @@ class FrameOutline:
 	func _draw() -> void:
 		draw_rect(Rect2(Vector2(2, 2), size - Vector2(4, 4)),
 			Color(0.45, 0.8, 1.0, 0.95), false, 3.0)
+
+
+## A minted plaque carrying an enemy passive's running number — the Dealer's
+## 21 ticking down to a bust, the Chip Golem's health-to-next-chip (patch
+## 0.113). The number is drawn here rather than parented as a Label so the
+## whole badge can flash and swell as one piece when it ticks.
+class PassiveChip:
+	extends Control
+
+	var value := 0
+	var tint := Color(1.0, 0.78, 0.34)
+	var pulse := 0.0:
+		set(v):
+			pulse = v
+			queue_redraw()
+
+	## One bright swell as the number moves, fading back to the resting plaque.
+	func flash() -> void:
+		var tween := create_tween()
+		tween.tween_method(func(v: float) -> void: pulse = v, 1.0, 0.0, 0.45) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+	func _draw() -> void:
+		var plate := Rect2(Vector2.ZERO, size).grow(-1.0)
+		# A halo that blooms outward on a tick, drawn first so it sits behind.
+		if pulse > 0.0:
+			draw_rect(plate.grow(2.0 + 6.0 * pulse),
+				Color(tint.r, tint.g, tint.b, 0.55 * pulse), false, 3.0)
+		draw_rect(plate, Color(0.07, 0.06, 0.10, 0.94), true)
+		# A doubled bezel reads as a token rather than a flat swatch.
+		draw_rect(plate, Color(tint.r, tint.g, tint.b, 0.95), false, 2.0)
+		draw_rect(plate.grow(-4.0), Color(tint.r, tint.g, tint.b, 0.30), false, 1.0)
+		var font := get_theme_default_font()
+		if font == null:
+			return
+		var body := str(value)
+		var font_size := 19 if body.length() < 3 else 16
+		var extent := font.get_string_size(body, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+		var at := Vector2((size.x - extent.x) * 0.5,
+			(size.y + font.get_ascent(font_size) - font.get_descent(font_size)) * 0.5)
+		var lit := tint.lerp(Color.WHITE, 0.35 + 0.65 * pulse)
+		draw_string(font, at, body, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, lit)
+
+
+## Seeing stars: the ring that orbits a stunned unit's head while it is out
+## (patch 0.113). `phase` is driven by the unit's own tween.
+class StunStars:
+	extends Control
+
+	const STAR_COUNT := 4
+
+	var phase := 0.0:
+		set(v):
+			phase = v
+			queue_redraw()
+	var fade := 1.0:
+		set(v):
+			fade = v
+			queue_redraw()
+
+	func _draw() -> void:
+		var centre := Vector2(size.x * 0.5, size.y * 0.5)
+		var radius := size.x * 0.34
+		for i in STAR_COUNT:
+			var angle := phase + TAU * float(i) / float(STAR_COUNT)
+			# Squashed orbit: the stars pass behind the head, so the far half of
+			# the ring is drawn smaller and dimmer.
+			var depth := (sin(angle) + 1.0) * 0.5
+			var at := centre + Vector2(cos(angle) * radius, sin(angle) * radius * 0.34)
+			var scale := 6.5 + 5.5 * depth
+			var alpha := fade * (0.45 + 0.55 * depth)
+			_star(at, scale, Color(1.0, 0.92, 0.45, alpha))
+
+	## A four-pointed sparkle, the same shape the hit sparks use.
+	func _star(at: Vector2, radius: float, colour: Color) -> void:
+		var points := PackedVector2Array()
+		for i in 8:
+			var angle := TAU * float(i) / 8.0 - PI * 0.5
+			var reach := radius if i % 2 == 0 else radius * 0.38
+			points.append(at + Vector2(cos(angle), sin(angle)) * reach)
+		draw_colored_polygon(points, colour)
 
 
 func setup(combat_actor: CombatActor) -> void:
@@ -202,12 +284,31 @@ static func _name_font_size(label: Label, text: String) -> int:
 	return 14
 
 
+## A full re-read of the actor, ANIMATED READOUTS INCLUDED.
+##
+## Patch 0.113: HP and Block are stepped hit-by-hit by `apply_damage_display`,
+## but the sim resolves a whole multi-hit attack before its first hit is drawn
+## — so snapping them to the actor's final values midway through the animation
+## made health "drop more than it should, then rise back up to the correct
+## number". Anything that is not itself an HP or Block change now calls
+## `refresh_statuses()`, and only a real full refresh re-syncs the two bars.
 func refresh() -> void:
 	_hp_bar.max_value = actor.max_hp
 	_hp_bar.value = actor.hp
 	_hp_label.text = "%d / %d" % [actor.hp, actor.max_hp]
+	refresh_block()
+	refresh_statuses()
+
+
+## Re-sync only the Block readout (the other animated number).
+func refresh_block() -> void:
 	_shown_block = actor.block
 	_block_label.text = ("  🛡 %d" % actor.block) if actor.block > 0 else ""
+
+
+## Statuses, the enemy's passive plaque, loans and the Mark — everything
+## except the two animated HP/Block readouts.
+func refresh_statuses() -> void:
 	for child in _status_row.get_children():
 		child.queue_free()
 	for status_id: StringName in actor.statuses:
@@ -230,8 +331,47 @@ func refresh() -> void:
 		_status_row.add_child(stack_label)
 	for loan: Dictionary in actor.loans:
 		_add_loan_chip(loan)
+	_add_passive_chip()
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
 	_refresh_mark()
+
+
+## An enemy's passive, worn as the permanent buff it is (patch 0.113,
+## designer's note: "enemy passives should appear as permanent buffs they
+## have"). The plaque carries the passive's running number — the Dealer's
+## 21 counting DOWN toward the bust, the Chip Golem's health-to-next-chip —
+## and flashes on every tick so the countdown is legible in the fight.
+const PASSIVE_TINTS := {
+	"bust": Color(1.0, 0.78, 0.34),
+	"break": Color(0.62, 0.86, 1.0),
+	"loan": Color(0.86, 0.66, 1.0),
+}
+
+
+func _add_passive_chip() -> void:
+	if actor == null or actor.is_hero:
+		return
+	var def := Db.content.get_enemy(actor.def_id)
+	if def == null or def.passive.is_empty():
+		return
+	var kind := str(def.passive.get("type", ""))
+	var tint: Color = PASSIVE_TINTS.get(kind, Color(0.9, 0.9, 0.95))
+	var keyword := Db.content.get_keyword(StringName(kind))
+	var hint := "%s — %s" % [
+		keyword.name if keyword != null else kind.capitalize(),
+		keyword.text if keyword != null else "a passive this enemy always has"]
+	var chip := PassiveChip.new()
+	chip.custom_minimum_size = Vector2(38, 33)
+	chip.tint = tint
+	chip.value = actor.passive_counter
+	chip.tooltip_text = hint
+	chip.mouse_filter = Control.MOUSE_FILTER_PASS
+	_status_row.add_child(chip)
+	# It only pulses when the number actually moved, so a plain status refresh
+	# does not set every enemy's plaque flashing.
+	if _shown_passive >= 0 and _shown_passive != actor.passive_counter:
+		chip.flash()
+	_shown_passive = actor.passive_counter
 
 
 ## Doc "Loan": the debt shows as a scroll with the number of turns left on it,
@@ -832,6 +972,35 @@ func play_debuff_shake() -> void:
 	tween.tween_property(target, "position:x", base_x + 14.0, 0.06)
 	tween.tween_property(target, "position:x", base_x - 8.0, 0.06)
 	tween.tween_property(target, "position:x", base_x, 0.07) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+## Stun (patch 0.113, designer's note: "stun should have a stun animation").
+## The unit's head snaps aside from the blow, then sways where it stands while
+## a ring of stars orbits over it — the classic read, so a skipped enemy turn
+## is obviously a stun and not the game losing track of a move.
+func play_stun(duration: float = 1.5) -> void:
+	var target: Control = _sprite if _sprite.texture != null else _fallback
+	var stars := StunStars.new()
+	stars.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	# Above the head rather than over the face: anchored to the sprite's own
+	# rect, so it follows the wobble instead of hovering next to it.
+	stars.offset_top = -30.0
+	stars.offset_bottom = 52.0
+	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	target.add_child(stars)
+	var spin := create_tween()
+	spin.tween_method(func(v: float) -> void: stars.phase = v, 0.0, TAU * 2.0, duration)
+	var out := create_tween()
+	out.tween_interval(duration * 0.66)
+	out.tween_method(func(v: float) -> void: stars.fade = v, 1.0, 0.0, duration * 0.34)
+	out.tween_callback(stars.queue_free)
+	var sway := create_tween()
+	sway.tween_property(target, "rotation", 0.17, 0.09) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	sway.tween_property(target, "rotation", -0.11, 0.36).set_trans(Tween.TRANS_SINE)
+	sway.tween_property(target, "rotation", 0.07, 0.36).set_trans(Tween.TRANS_SINE)
+	sway.tween_property(target, "rotation", 0.0, 0.3) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 

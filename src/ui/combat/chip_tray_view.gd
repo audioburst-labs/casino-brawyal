@@ -16,14 +16,56 @@ var _shown: Dictionary = {}
 
 ## One chip button's footprint (patch 0.22: 96 -> 80, see _ready).
 const CHIP_SIZE := 80
-## Inside the slot machine's drawer the cabinet art IS the frame, so the tray
-## drops its own panel (patch 0.22).
+## Inside the slot machine's drawer the cabinet art IS the outer frame, so
+## the tray drops its own bevel (patch 0.22). The brown well below is drawn
+## either way.
 var framed := true
+
+## The drawer's felt: ONE constant brown well behind every chip, instead of a
+## frame per chip (patch 0.113, designer's note). The chips themselves are
+## frameless from here on, so the row reads as coins lying in a tray.
+const WELL_FILL := Color(0.26, 0.15, 0.09)
+const WELL_EDGE := Color(0.44, 0.27, 0.15)
+
+
+static func _well_style(bevelled: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = WELL_FILL
+	box.set_corner_radius_all(10)
+	box.content_margin_left = 12.0
+	box.content_margin_right = 12.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	if bevelled:
+		box.set_border_width_all(3)
+		box.border_color = WELL_EDGE
+	# A soft drop shadow reads as depth: the chips sit IN the drawer.
+	box.shadow_color = Color(0.0, 0.0, 0.0, 0.5)
+	box.shadow_size = 6
+	box.shadow_offset = Vector2(0, 3)
+	return box
 
 
 class ChipButton:
 	extends Button
 	var suit: StringName = &""
+	var art: Control = null
+
+	## With the per-chip frame gone the chip itself has to answer the mouse, so
+	## it lifts and brightens under the cursor (patch 0.113).
+	func _ready() -> void:
+		mouse_entered.connect(func() -> void: _hover(true))
+		mouse_exited.connect(func() -> void: _hover(false))
+
+	func _hover(on: bool) -> void:
+		if art == null or not is_instance_valid(art):
+			return
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(art, "position:y", -5.0 if on else 0.0, 0.12) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(art, "modulate",
+			Color(1.18, 1.14, 1.05) if on else Color.WHITE, 0.12)
 
 	func _get_drag_data(_position: Vector2) -> Variant:
 		var preview_texture := SuitAssets.chip_texture(suit)
@@ -52,9 +94,7 @@ class ChipButton:
 
 
 func _ready() -> void:
-	if not framed:
-		var flat := StyleBoxEmpty.new()
-		add_theme_stylebox_override("panel", flat)
+	add_theme_stylebox_override("panel", _well_style(framed))
 	# Constant footprint whether the tray holds 0 or 4 suits (patch 0.12).
 	# Patch 0.22: a little slimmer, because the tray is the slot machine's
 	# drawer now and the whole cabinet has to fit one band of the screen.
@@ -99,9 +139,18 @@ func _redraw() -> void:
 			_row.add_child(_build_stack(suit, count))
 
 
+## A frameless chip. Every button state is an empty box (patch 0.113) —
+## hover and press are carried by the chip art's own scale and tint instead,
+## so nothing draws a second square inside the drawer's one brown well.
+static func _strip_button_frames(button: Button) -> void:
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+
+
 func _build_stack(suit: StringName, count: int) -> Control:
 	var button := ChipButton.new()
 	button.suit = suit
+	_strip_button_frames(button)
 	button.custom_minimum_size = Vector2(CHIP_SIZE, CHIP_SIZE)
 	button.tooltip_text = "%s chips: %d — drag onto an ability socket" % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)
@@ -117,6 +166,7 @@ func _build_stack(suit: StringName, count: int) -> Control:
 		chip.offset_bottom = -8
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(chip)
+		button.art = chip
 		var badge := Label.new()
 		badge.text = "x%d" % count
 		badge.theme_type_variation = &"SubtitleLabel"

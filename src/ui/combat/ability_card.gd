@@ -46,6 +46,39 @@ func accepts_chip(slot: int, suit: StringName) -> bool:
 	return not _state.exhausted() and _state.can_accept(slot, suit)
 
 
+## The doc's two indicator colours: lavender for a per-turn cap, peach for a
+## per-fight one, both with dark text so they read against the card art.
+const PER_TURN_FILL := Color(0.63, 0.51, 0.81)
+const PER_FIGHT_FILL := Color(0.96, 0.79, 0.63)
+const PILL_TEXT := Color(0.13, 0.09, 0.15)
+
+
+static func _limit_pill(text: String, fill: Color, hint: String) -> PanelContainer:
+	var pill := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	# Rounded everywhere except where it meets the card's own top-right corner.
+	box.corner_radius_top_left = 9
+	box.corner_radius_bottom_left = 9
+	box.corner_radius_bottom_right = 9
+	box.corner_radius_top_right = 11
+	box.content_margin_left = 9.0
+	box.content_margin_right = 9.0
+	box.content_margin_top = 2.0
+	box.content_margin_bottom = 3.0
+	pill.add_theme_stylebox_override("panel", box)
+	pill.tooltip_text = hint
+	pill.mouse_filter = Control.MOUSE_FILTER_PASS
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", PILL_TEXT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_child(label)
+	return pill
+
+
 func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	_state = state
 	_sim = sim
@@ -109,21 +142,33 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 		add_child(pip_overlay)
 		pip_overlay.add_child(pip)
 
-	# Once-per-turn indicator badge (patch 0.13), explained on hover.
-	# Wrapped in a plain Control overlay so the PanelContainer can't stretch it.
-	if _state.def.per_turn > 0 and ResourceLoader.exists("res://assets/icons/badge_per_turn.png"):
-		var overlay := Control.new()
-		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(overlay)
-		var badge := TextureRect.new()
-		badge.texture = load("res://assets/icons/badge_per_turn.png")
-		badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		badge.size = Vector2(34, 34)
-		badge.position = Vector2(CARD_SIZE.x - 42, 6)
-		badge.tooltip_text = "Once per turn: usable %d time(s) each round." % _state.def.per_turn
-		badge.mouse_filter = Control.MOUSE_FILTER_PASS
-		overlay.add_child(badge)
+	# Use limits (doc "Per Turn & Per Combat", patch 0.113): a pill in the
+	# card's top-right corner naming the limit and how many uses it allows,
+	# stacked when an ability is capped both ways. It replaces the 0.13 icon
+	# badge, which said "limited" without saying limited to WHAT, and showed
+	# nothing at all for the per-fight abilities (House Edge, Face Reader).
+	if _state.def.per_turn > 0 or _state.def.per_combat > 0:
+		var limits := Control.new()
+		limits.set_anchors_preset(Control.PRESET_FULL_RECT)
+		limits.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(limits)
+		var pills := VBoxContainer.new()
+		pills.add_theme_constant_override("separation", 3)
+		pills.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		# Flush with the card's right edge, growing leftward and downward, so a
+		# long reading can never push the pill off the card.
+		pills.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		pills.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		limits.add_child(pills)
+		if _state.def.per_turn > 0:
+			pills.add_child(_limit_pill(
+				"%d Per Turn" % _state.def.per_turn, PER_TURN_FILL,
+				"Usable %d time(s) each turn." % _state.def.per_turn))
+		if _state.def.per_combat > 0:
+			pills.add_child(_limit_pill(
+				"%d Per Fight" % _state.def.per_combat, PER_FIGHT_FILL,
+				"Usable %d time(s) this fight — never refreshed between turns."
+				% _state.def.per_combat))
 
 	# Socket rows: odd costs of 5+ put 2 on top, the rest in rows of 3
 	# (patch 0.13); otherwise up to 3 per centered row.
@@ -416,8 +461,8 @@ func _on_hover_exited() -> void:
 
 
 func _show_keywords() -> void:
-	if (_state.def.keywords.is_empty() and _state.def.per_turn == 0) \
-			or _keyword_panel != null:
+	if (_state.def.keywords.is_empty() and _state.def.per_turn == 0
+		and _state.def.per_combat == 0) or _keyword_panel != null:
 		return
 	_keyword_panel = PanelContainer.new()
 	_keyword_panel.top_level = true
@@ -441,14 +486,12 @@ func _show_keywords() -> void:
 		entry.add_child(label)
 		box.add_child(entry)
 	if _state.def.per_turn > 0:
-		var limit_entry := PanelContainer.new()
-		var limit_label := Label.new()
-		limit_label.text = "Once per turn — usable %d time(s) each round." % _state.def.per_turn
-		limit_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		limit_label.custom_minimum_size = Vector2(280, 0)
-		limit_label.add_theme_font_size_override("font_size", 15)
-		limit_entry.add_child(limit_label)
-		box.add_child(limit_entry)
+		box.add_child(_hover_entry(
+			"Per Turn — usable %d time(s) each turn." % _state.def.per_turn))
+	if _state.def.per_combat > 0:
+		box.add_child(_hover_entry(
+			"Per Fight — usable %d time(s) this fight, and never refreshed."
+			% _state.def.per_combat))
 	add_child(_keyword_panel)
 	# Above the card, clamped to the screen.
 	await get_tree().process_frame
@@ -459,6 +502,18 @@ func _show_keywords() -> void:
 	pos.x = clampf(pos.x, 8, get_viewport_rect().size.x - panel_size.x - 8)
 	pos.y = maxf(pos.y, 8)
 	_keyword_panel.global_position = pos
+
+
+## One line of the hover panel, boxed like the keyword entries above it.
+static func _hover_entry(text: String) -> PanelContainer:
+	var entry := PanelContainer.new()
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(280, 0)
+	label.add_theme_font_size_override("font_size", 15)
+	entry.add_child(label)
+	return entry
 
 
 func _hide_keywords() -> void:

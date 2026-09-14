@@ -37,21 +37,21 @@
           "effects": [
             {
               "op": "damage",
-              "amount": 9,
+              "amount": 8,
               "times": 1
             }
           ],
-          "description": "Deal 9 damage. If Spade - Mark."
+          "description": "Deal 8 damage. If Spade - Mark."
         },
         {
           "effects": [
             {
               "op": "damage",
-              "amount": 12,
+              "amount": 10,
               "times": 1
             }
           ],
-          "description": "Deal 12 damage. If Spade - Mark."
+          "description": "Deal 10 damage. If Spade - Mark."
         }
       ]
     },
@@ -89,31 +89,31 @@
           "effects": [
             {
               "op": "gain_block",
-              "amount": 8
+              "amount": 7
             }
           ],
           "bonus_effects": [
             {
               "op": "gain_block",
-              "amount": 11
+              "amount": 10
             }
           ],
-          "description": "Gain 8 Block. If Diamond - Gain 11 instead."
+          "description": "Gain 7 Block. If Diamond - Gain 10 instead."
         },
         {
           "effects": [
             {
               "op": "gain_block",
-              "amount": 11
+              "amount": 9
             }
           ],
           "bonus_effects": [
             {
               "op": "gain_block",
-              "amount": 14
+              "amount": 12
             }
           ],
-          "description": "Gain 11 Block. If Diamond - Gain 14 instead."
+          "description": "Gain 9 Block. If Diamond - Gain 12 instead."
         }
       ]
     },
@@ -192,20 +192,20 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 26,
+                  "amount": 24,
                   "times": 1
                 }
               ],
               "else_effects": [
                 {
                   "op": "damage",
-                  "amount": 13,
+                  "amount": 12,
                   "times": 1
                 }
               ]
             }
           ],
-          "description": "Deal 13 damage. Cash In: Deal 26 instead."
+          "description": "Deal 12 damage. Cash In: Deal 24 instead."
         },
         {
           "effects": [
@@ -214,20 +214,20 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 32,
+                  "amount": 28,
                   "times": 1
                 }
               ],
               "else_effects": [
                 {
                   "op": "damage",
-                  "amount": 16,
+                  "amount": 14,
                   "times": 1
                 }
               ]
             }
           ],
-          "description": "Deal 16 damage. Cash In: Deal 32 instead."
+          "description": "Deal 14 damage. Cash In: Deal 28 instead."
         }
       ]
     },
@@ -265,7 +265,7 @@
           "effects": [
             {
               "op": "gain_block",
-              "amount": 13
+              "amount": 12
             },
             {
               "op": "apply_status",
@@ -274,22 +274,22 @@
               "target": "all_enemies"
             }
           ],
-          "description": "Gain 13 Block. Apply Weak 1 to all enemies."
+          "description": "Gain 12 Block. Apply Weak 1 to all enemies."
         },
         {
           "effects": [
             {
               "op": "gain_block",
-              "amount": 15
+              "amount": 14
             },
             {
               "op": "apply_status",
               "status": "weak",
-              "stacks": 2,
+              "stacks": 1,
               "target": "all_enemies"
             }
           ],
-          "description": "Gain 15 Block. Apply Weak 2 to all enemies."
+          "description": "Gain 14 Block. Apply Weak 1 to all enemies."
         }
       ]
     },
@@ -330,6 +330,23 @@
           "effects": [
             {
               "op": "damage",
+              "amount": 16,
+              "times": 1
+            }
+          ],
+          "bonus_effects": [
+            {
+              "op": "damage",
+              "amount": 16,
+              "times": 1
+            }
+          ],
+          "description": "Deal 16 damage. If both are Spades, Repeat 1."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
               "amount": 17,
               "times": 1
             }
@@ -342,23 +359,6 @@
             }
           ],
           "description": "Deal 17 damage. If both are Spades, Repeat 1."
-        },
-        {
-          "effects": [
-            {
-              "op": "damage",
-              "amount": 20,
-              "times": 1
-            }
-          ],
-          "bonus_effects": [
-            {
-              "op": "damage",
-              "amount": 20,
-              "times": 1
-            }
-          ],
-          "description": "Deal 20 damage. If both are Spades, Repeat 1."
         }
       ]
     },
@@ -390,19 +390,19 @@
           "effects": [
             {
               "op": "gain_block",
-              "amount": 25
+              "amount": 22
             }
           ],
-          "description": "Gain 25 Block."
+          "description": "Gain 22 Block."
         },
         {
           "effects": [
             {
               "op": "gain_block",
-              "amount": 30
+              "amount": 24
             }
           ],
-          "description": "Gain 30 Block."
+          "description": "Gain 24 Block."
         }
       ]
     },
@@ -455,10 +455,10 @@
       "rarity": "uncommon",
       "cost": [
         {
-          "suit": "spade"
+          "suit": "club"
         },
         {
-          "suit": "club"
+          "suit": "spade"
         }
       ],
       "effects": [
@@ -486,13 +486,13 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 40,
+                  "amount": 35,
                   "times": 1
                 }
               ]
             }
           ],
-          "description": "Cash In: Deal 40 damage."
+          "description": "Cash In: Deal 35 damage."
         },
         {
           "effects": [
@@ -501,13 +501,13 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 50,
+                  "amount": 40,
                   "times": 1
                 }
               ]
             }
           ],
-          "description": "Cash In: Deal 50 damage."
+          "description": "Cash In: Deal 40 damage."
         }
       ]
     },
@@ -651,21 +651,21 @@
           "effects": [
             {
               "op": "gain_block",
-              "amount": 15,
+              "amount": 13,
               "condition": "enemy_marked"
             }
           ],
-          "description": "If an enemy is marked, gain 15 Block."
+          "description": "If an enemy is marked, gain 13 Block."
         },
         {
           "effects": [
             {
               "op": "gain_block",
-              "amount": 20,
+              "amount": 16,
               "condition": "enemy_marked"
             }
           ],
-          "description": "If an enemy is marked, gain 20 Block."
+          "description": "If an enemy is marked, gain 16 Block."
         }
       ]
     },
@@ -722,14 +722,14 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 50,
+                  "amount": 44,
                   "times": 1
                 }
               ],
               "else_effects": [
                 {
                   "op": "damage",
-                  "amount": 25,
+                  "amount": 22,
                   "times": 1
                 }
               ]
@@ -741,7 +741,7 @@
               "target": "enemy"
             }
           ],
-          "description": "Deal 25. Cash In: Deal 50 instead. Mark."
+          "description": "Deal 22. Cash In: Deal 44 instead. Mark."
         },
         {
           "effects": [
@@ -750,14 +750,14 @@
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 60,
+                  "amount": 48,
                   "times": 1
                 }
               ],
               "else_effects": [
                 {
                   "op": "damage",
-                  "amount": 30,
+                  "amount": 24,
                   "times": 1
                 }
               ]
@@ -769,7 +769,7 @@
               "target": "enemy"
             }
           ],
-          "description": "Deal 30. Cash In: Deal 60 instead. Mark."
+          "description": "Deal 24. Cash In: Deal 48 instead. Mark."
         }
       ]
     },
@@ -810,6 +810,19 @@
           "effects": [
             {
               "op": "damage",
+              "amount": 25,
+              "times": 1
+            },
+            {
+              "op": "respin_reel"
+            }
+          ],
+          "description": "Deal 25. Go Again."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
               "amount": 30,
               "times": 1
             },
@@ -818,19 +831,6 @@
             }
           ],
           "description": "Deal 30. Go Again."
-        },
-        {
-          "effects": [
-            {
-              "op": "damage",
-              "amount": 40,
-              "times": 1
-            },
-            {
-              "op": "respin_reel"
-            }
-          ],
-          "description": "Deal 40. Go Again."
         }
       ]
     },
@@ -867,23 +867,23 @@
           "effects": [
             {
               "op": "damage",
+              "amount": 35,
+              "times": 1,
+              "target": "all_enemies"
+            }
+          ],
+          "description": "Deal 35 to all enemies."
+        },
+        {
+          "effects": [
+            {
+              "op": "damage",
               "amount": 40,
               "times": 1,
               "target": "all_enemies"
             }
           ],
           "description": "Deal 40 to all enemies."
-        },
-        {
-          "effects": [
-            {
-              "op": "damage",
-              "amount": 50,
-              "times": 1,
-              "target": "all_enemies"
-            }
-          ],
-          "description": "Deal 50 to all enemies."
         }
       ]
     }

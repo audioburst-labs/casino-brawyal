@@ -59,7 +59,7 @@ func test_bust_does_nothing_without_a_mark() -> void:
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"spade", &"club"]))
+	assert_true(_fire(sim, 0, [&"club", &"spade"]))
 	assert_eq(enemy.hp, hp_start, "no mark, no damage")
 
 
@@ -69,7 +69,7 @@ func test_bust_pays_thirty_on_a_marked_enemy() -> void:
 	var enemy := sim.enemies[0]
 	enemy.apply_status(&"mark", 1)
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"spade", &"club"]))
+	assert_true(_fire(sim, 0, [&"club", &"spade"]))
 	assert_eq(enemy.hp, hp_start - 30)
 	assert_eq(enemy.status_stacks(&"mark"), 0)
 

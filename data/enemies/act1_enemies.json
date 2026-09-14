@@ -5,7 +5,7 @@
       "id": "bouncer",
       "name": "Bouncer",
       "hp_min": 50,
-      "hp_max": 60,
+      "hp_max": 55,
       "brain": {
         "type": "pair_then",
         "pair": [
@@ -56,7 +56,7 @@
       "id": "server",
       "name": "Server",
       "hp_min": 25,
-      "hp_max": 35,
+      "hp_max": 30,
       "brain": {
         "type": "weighted",
         "weights": {
@@ -104,7 +104,7 @@
       "id": "dealer",
       "name": "Dealer",
       "hp_min": 43,
-      "hp_max": 53,
+      "hp_max": 48,
       "brain": {
         "type": "sequence",
         "loop": true,
@@ -164,7 +164,7 @@
       "id": "manager",
       "name": "Manager",
       "hp_min": 40,
-      "hp_max": 50,
+      "hp_max": 45,
       "brain": {
         "type": "intro_loop",
         "intro": [
@@ -278,7 +278,7 @@
             "self_status": [
               {
                 "status": "strength",
-                "stacks": 2
+                "stacks": 3
               }
             ]
           }
@@ -288,8 +288,8 @@
     {
       "id": "chip_golem",
       "name": "Chip Golem",
-      "hp_min": 101,
-      "hp_max": 109,
+      "hp_min": 100,
+      "hp_max": 108,
       "passive": {
         "type": "break",
         "every": 20
@@ -339,7 +339,7 @@
     {
       "id": "loan_shark",
       "name": "Loan Shark",
-      "hp_min": 75,
+      "hp_min": 80,
       "hp_max": 85,
       "passive": {
         "type": "loan",

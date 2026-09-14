@@ -209,7 +209,7 @@ func test_self_block_shields_the_enemy() -> void:
 func test_the_dealer_no_longer_raffles_blackjack() -> void:
 	var dealer := _db.get_enemy(&"dealer")
 	assert_eq(dealer.hp_min, 43)
-	assert_eq(dealer.hp_max, 53)
+	assert_eq(dealer.hp_max, 48)
 	for move_id: String in dealer.moves:
 		var intent: Dictionary = dealer.moves[move_id].intent
 		assert_false(intent.has("blackjack"), "%s still raffles" % move_id)

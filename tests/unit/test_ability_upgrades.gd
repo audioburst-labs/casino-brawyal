@@ -35,16 +35,16 @@ func test_every_ability_resolves_three_tiers() -> void:
 
 
 func test_tiers_scale_the_sheets_numbers() -> void:
-	# Card Sling: 6 / 9 / 12
+	# Card Sling: 6 / 8 / 10 (sheet v0.121)
 	var amounts: Array[int] = []
 	for tier in 3:
 		amounts.append(int(_db.get_ability(&"card_sling", tier).effects[0].amount))
-	assert_eq(amounts, [6, 9, 12] as Array[int])
-	# Flush: 30 / 40 / 50, all enemies at every tier
+	assert_eq(amounts, [6, 8, 10] as Array[int])
+	# Flush: 30 / 35 / 40, all enemies at every tier (sheet v0.121)
 	for tier in 3:
 		var flush := _db.get_ability(&"flush", tier)
 		assert_eq(str(flush.effects[0].target), "all_enemies")
-	assert_eq(int(_db.get_ability(&"flush", 2).effects[0].amount), 50)
+	assert_eq(int(_db.get_ability(&"flush", 2).effects[0].amount), 40)
 
 
 func test_a_tier_can_override_a_limit_not_just_a_number() -> void:
@@ -193,4 +193,4 @@ func test_combat_uses_the_owned_tier() -> void:
 	var hp_start := enemy.hp
 	sim.tray.add(&"club", 1)
 	assert_true(sim.assign_chip(&"club", 0, 0))
-	assert_eq(enemy.hp, hp_start - 9, "the silver copy hits for 9, not 6")
+	assert_eq(enemy.hp, hp_start - 8, "the silver copy hits for 8, not 6")

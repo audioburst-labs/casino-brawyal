@@ -19,6 +19,10 @@ var last_absorbed: int = 0
 ## Loans the hero has taken (doc "Loan"): {id, turns_left}. Counted down with
 ## his debuffs at the end of his turn; at zero the penalty fires.
 var loans: Array[Dictionary] = []
+## An enemy passive's running number, worn on the unit as a permanent buff
+## (patch 0.113). The Dealer's Bust counts DOWN from 21 and fires at 0; the
+## Chip Golem's Break counts down to its next chip. -1 means no passive.
+var passive_counter := -1
 
 
 func _init(actor_id: StringName, definition_id: StringName, name_text: String,

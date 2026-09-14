@@ -21,11 +21,11 @@ func _rng() -> RandomNumberGenerator:
 func test_reel_price_scales_with_previous_purchases() -> void:
 	var run := RunState.new()
 	var stock := ShopStock.generate(_db, run, _rng())
-	assert_eq(stock.reel.price, 50)
+	assert_eq(stock.reel.price, 75)
 	run.machine.add_reel()
 	run.machine.add_reel()
 	stock = ShopStock.generate(_db, run, _rng())
-	assert_eq(stock.reel.price, 150)
+	assert_eq(stock.reel.price, 225)
 	assert_true(stock.reel.available)
 
 

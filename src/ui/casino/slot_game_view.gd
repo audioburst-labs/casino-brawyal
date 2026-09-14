@@ -132,7 +132,9 @@ func _on_spin() -> void:
 		if relic_id != &"":
 			_relic_won = relic_id
 		landing.append(SuitAssets.relic_texture(relic_id) if relic_id != &"" else null)
+	_cabinet.pull_lever()
 	await _reels.spin_to(result.symbols, landing)
+	_cabinet.celebrate(1.2)
 	if result.free_respin:
 		_free_spins += 1
 	_lines = result.lines

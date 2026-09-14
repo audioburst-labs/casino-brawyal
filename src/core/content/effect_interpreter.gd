@@ -32,10 +32,10 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 			"block_per_enemy":
 				var living := sim.enemies.filter(
 					func(e: CombatActor) -> bool: return e.is_alive()).size()
-				_grant_block(int(effect.get("amount", 0)) * living, sim, source)
+				_grant_block_per_unit(int(effect.get("amount", 0)), living, sim, source)
 			"block_per_chip":
 				var chips: int = sim.last_payout.get(StringName(str(effect.get("suit", ""))), 0)
-				_grant_block(chips * int(effect.get("amount", 0)), sim, source)
+				_grant_block_per_unit(int(effect.get("amount", 0)), chips, sim, source)
 			"mark_random_unmarked":
 				_op_mark_random(sim, int(effect.get("count", 1)))
 			"heal":
@@ -229,10 +229,22 @@ static func _op_convert_chips(effect: Dictionary, sim: CombatSim) -> void:
 		sim.emit_event(&"chips_converted", {"to_suit": to_suit, "count": converted})
 
 
+## A per-unit block op ("2 Block per enemy"). Frail taxes the figure the CARD
+## SHOWS and the total is that figure times the count (patch 0.113, designer's
+## call) — taxing the total instead made "2 per enemy" pay 6 for four enemies,
+## which is what "the block math looks completely wrong" was about.
+static func _grant_block_per_unit(amount: int, count: int, sim: CombatSim,
+		source: CombatActor) -> void:
+	if count <= 0 or amount <= 0:
+		return
+	_grant_block(StatusRules.block_gained(amount, source) * count, sim, source, false)
+
+
 ## Every Block an ability grants goes through here so Frail (v0.120) taxes all
 ## three block ops the same way; the event carries what was actually gained.
-static func _grant_block(amount: int, sim: CombatSim, source: CombatActor) -> void:
-	var gained := StatusRules.block_gained(amount, source)
+static func _grant_block(amount: int, sim: CombatSim, source: CombatActor,
+		taxed := true) -> void:
+	var gained := StatusRules.block_gained(amount, source) if taxed else amount
 	if gained <= 0:
 		return
 	source.gain_block(gained)

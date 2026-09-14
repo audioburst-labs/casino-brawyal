@@ -21,10 +21,9 @@
       "gold_max": 33
     },
     {
-      "id": "twin_tables",
+      "id": "cold_deck",
       "stage": 1,
       "enemies": [
-        "dealer",
         "dealer"
       ],
       "gold_min": 27,
@@ -44,8 +43,8 @@
       "id": "pit_backup",
       "stage": 2,
       "enemies": [
-        "bouncer",
-        "dealer"
+        "dealer",
+        "server"
       ],
       "gold_min": 37,
       "gold_max": 43
@@ -55,18 +54,18 @@
       "stage": 2,
       "enemies": [
         "server",
-        "dealer",
-        "dealer"
+        "server",
+        "server"
       ],
       "gold_min": 37,
       "gold_max": 43
     },
     {
-      "id": "double_door",
+      "id": "twin_tables",
       "stage": 3,
       "enemies": [
-        "bouncer",
-        "bouncer"
+        "dealer",
+        "dealer"
       ],
       "gold_min": 47,
       "gold_max": 53
@@ -76,8 +75,7 @@
       "stage": 3,
       "enemies": [
         "bouncer",
-        "dealer",
-        "server"
+        "dealer"
       ],
       "gold_min": 47,
       "gold_max": 53
@@ -108,7 +106,7 @@
         "bouncer",
         "server",
         "server",
-        "dealer"
+        "server"
       ],
       "gold_min": 57,
       "gold_max": 63
@@ -119,7 +117,7 @@
       "enemies": [
         "dealer",
         "dealer",
-        "manager"
+        "server"
       ],
       "gold_min": 57,
       "gold_max": 63
@@ -139,9 +137,7 @@
       "stage": 5,
       "enemies": [
         "dealer",
-        "dealer",
-        "dealer",
-        "dealer"
+        "manager"
       ],
       "gold_min": 67,
       "gold_max": 73
@@ -151,7 +147,7 @@
       "stage": 5,
       "enemies": [
         "server",
-        "dealer",
+        "server",
         "manager"
       ],
       "gold_min": 67,

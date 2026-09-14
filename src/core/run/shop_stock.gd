@@ -2,14 +2,14 @@ class_name ShopStock
 extends RefCounted
 ## Generates one shop visit's stock and prices, per the design doc's economy
 ## (per-lineup gold rewards, relic prices from the capabilities sheet):
-##   Extra Reel: 50 + 50 per previously purchased reel, machine cap 8
+##   Extra Reel: 75 + 75 per previously purchased reel (doc v0.121), cap 6
 ##   Symbol Stickers x4 (one per suit): 20 + 5 x encounter number
 ##   Relics x3 priced per their sheet range, Abilities x4 @ 30-50 (new or an
 ##   upgrade of one already owned, same price either way);
 ##   slots stay empty when a pool runs out.
 
-const REEL_BASE_PRICE := 50
-const REEL_PRICE_STEP := 50
+const REEL_BASE_PRICE := 75
+const REEL_PRICE_STEP := 75
 
 
 ## The Extra Reel's current price and availability, on its own — buying one

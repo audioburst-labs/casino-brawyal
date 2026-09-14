@@ -100,6 +100,13 @@ func _ready() -> void:
 	if ResourceLoader.exists(portrait_path):
 		portrait.texture = load(portrait_path)
 	_relics_row.add_child(portrait)
+	# The heart and its number are one unit with a tight gap of their own
+	# (patch 0.113: "HP numbers should sit adjacent to the heart icon"), not
+	# two items separated by the row's 10 px.
+	var health_box := HBoxContainer.new()
+	health_box.add_theme_constant_override("separation", 5)
+	health_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_relics_row.add_child(health_box)
 	var heart := TextureRect.new()
 	var heart_path := "res://assets/icons/icon_health.png"
 	if ResourceLoader.exists(heart_path):
@@ -109,11 +116,11 @@ func _ready() -> void:
 	heart.custom_minimum_size = Vector2(30, 30)
 	heart.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	heart.tooltip_text = "Health"
-	_relics_row.add_child(heart)
+	health_box.add_child(heart)
 	_hp_label = _header_label("")
 	_hp_label.tooltip_text = "Health"
 	_hp_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
-	_relics_row.add_child(_hp_label)
+	health_box.add_child(_hp_label)
 	var divider := VSeparator.new()
 	divider.custom_minimum_size = Vector2(4, 34)
 	divider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -170,7 +177,10 @@ func _reserve_number_widths() -> void:
 	_reserve(_timer_label, "%s%s:%s%s" % [digit, digit, digit, digit])
 	_reserve(_coins_label, "🪙 %s" % digit.repeat(4))
 	_reserve(_encounter_label, "Encounter %s%s/10" % [digit, digit])
-	_reserve(_hp_label, "%s/%s" % [digit.repeat(3), digit.repeat(3)])
+	# Left-aligned: right-aligning it inside a "999/999" column parked a
+	# two-digit reading at the far end, a thumb's width from the heart.
+	_reserve(_hp_label, "%s/%s" % [digit.repeat(3), digit.repeat(3)],
+		HORIZONTAL_ALIGNMENT_LEFT)
 
 
 ## Alfa Slab One has no tabular figures, so the widest glyph is measured
@@ -191,8 +201,9 @@ static func _widest_digit(label: Label) -> String:
 	return widest
 
 
-static func _reserve(label: Label, widest: String) -> void:
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+static func _reserve(label: Label, widest: String,
+		align := HORIZONTAL_ALIGNMENT_RIGHT) -> void:
+	label.horizontal_alignment = align
 	var font := label.get_theme_font("font")
 	if font == null:
 		return

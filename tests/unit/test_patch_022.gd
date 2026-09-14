@@ -55,10 +55,11 @@ func test_block_preview_is_unchanged_without_frail() -> void:
 
 
 func test_gold_tier_block_figures_are_previewed_too() -> void:
+	# Gold Quick Maneuvers is 9 -> 12 in the 0.121 sheet (patch 0.113).
 	var gold := _db.get_ability(&"quick_maneuvers", 2)
 	var amounts := CardScript.block_amounts(gold)
-	assert_has(amounts, 11)
-	assert_has(amounts, 14)
+	assert_has(amounts, 9)
+	assert_has(amounts, 12)
 
 
 # ---- doc/sheet sync of the 2026-09-14 pull ----

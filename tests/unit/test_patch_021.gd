@@ -117,10 +117,11 @@ func test_server_spilled_drink_now_applies_frail() -> void:
 
 # ---- the sheet's other number changes ----
 
-func test_bouncer_health_is_fifty_to_sixty() -> void:
+func test_bouncer_health_is_fifty_to_fifty_five() -> void:
+	# 50-60 in the 0.120 sheet, 50-55 in the 0.121 pull (patch 0.113).
 	var bouncer := _db.get_enemy(&"bouncer")
 	assert_eq(bouncer.hp_min, 50)
-	assert_eq(bouncer.hp_max, 60)
+	assert_eq(bouncer.hp_max, 55)
 
 
 func test_boss_summons_one_bouncer_and_grows_stronger_when_he_heals() -> void:
@@ -129,7 +130,8 @@ func test_boss_summons_one_bouncer_and_grows_stronger_when_he_heals() -> void:
 	var bonuses: Dictionary = boss.moves["bonuses"].intent
 	assert_eq(int(bonuses.heal_allies), 20)
 	assert_eq(str(bonuses.self_status[0].status), "strength")
-	assert_eq(int(bonuses.self_status[0].stacks), 2)
+	# Sheet v0.121: "Heal all allies 20. Strength 3." (was Increase Damage 2).
+	assert_eq(int(bonuses.self_status[0].stacks), 3)
 
 
 # ---- Unit positioning: a lone enemy stands one slot nearer the centre, and

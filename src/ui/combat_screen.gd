@@ -348,6 +348,12 @@ func setup(config: Dictionary) -> void:
 	if override != "":
 		config = config.duplicate()
 		config["enemies"] = Array(override.split(","))
+	# CB_DEBUG_ABILITIES="face_reader,color_up,..." does the same for the hand,
+	# so a loadout can be reviewed without playing a run up to it (0.113).
+	var hand := OS.get_environment("CB_DEBUG_ABILITIES")
+	if hand != "":
+		config = config.duplicate()
+		config["abilities"] = Array(hand.split(","))
 	# CB_DEBUG_TIERS=1|2: bring every equipped ability in at that upgrade tier,
 	# to review the silver/gold cards without playing a run up to them.
 	var forced_tier := OS.get_environment("CB_DEBUG_TIERS").to_int()
@@ -740,6 +746,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 						view.show_intent(entry)
 				await get_tree().create_timer(0.2).timeout
 			&"spin_resolved":
+				# The lever is what starts a spin, so it swings with one (0.113).
+				_cabinet.pull_lever()
 				await _reel_strip.spin_to(event.data.symbols)
 				await _payout_flourish(event.data.symbols)
 				_tray_view.refresh()
@@ -841,7 +849,9 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"block_gained":
 				var actor_view := _view_of(event.data.actor)
 				if actor_view != null:
-					actor_view.refresh()
+					# Block only. An ability that both hits and blocks would otherwise
+					# snap the target's HP bar mid-animation (patch 0.113).
+					actor_view.refresh_block()
 					Fx.spawn_number(actor_view.sprite_center(),
 						"+%d" % event.data.amount, Color(0.6, 0.85, 1.0))
 					# Block Gain (doc animation): shield icon + blue flash.
@@ -851,13 +861,16 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"status_applied":
 				var status_view := _view_of(event.data.actor)
 				if status_view != null:
-					status_view.refresh()
+					status_view.refresh_statuses()
 					Fx.spawn_number(status_view.sprite_center(),
 						"%s %d" % [event.data.status, event.data.stacks],
 						Color(0.85, 0.7, 1.0))
 					# Apply Debuff (doc animation): a quick side-to-side shake.
 					if StringName(event.data.status) in DEBUFF_STATUSES:
 						status_view.play_debuff_shake()
+					# Stun gets its own animation on top (patch 0.113).
+					if StringName(event.data.status) == &"stun":
+						status_view.play_stun()
 					# Shown intent numbers track live buffs/debuffs (patch 0.13).
 					if event.data.actor != sim.hero.id:
 						var updated := sim.intent_display(event.data.actor)
@@ -910,6 +923,12 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_update_target_markers()
 			&"enemy_move":
 				var mover := _view_of(event.data.actor)
+				if mover != null and event.data.get("skipped", false):
+					# Stunned: it loses its turn, and now that reads as a stun rather
+					# than as the game quietly skipping a unit (patch 0.113).
+					mover.play_stun()
+					mover.clear_intent()
+					await get_tree().create_timer(0.75).timeout
 				if mover != null and not event.data.get("skipped", false):
 					mover.play_telegraph()  # menace first...
 					await get_tree().create_timer(0.32).timeout
@@ -962,19 +981,26 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if busted != null:
 					Fx.spawn_number(busted.sprite_center(), "BUST!", Color(1.0, 0.85, 0.4))
 					_vfx.shockwave(busted.sprite_center(), Color(1.0, 0.85, 0.4), 150.0)
-					busted.refresh()
+					busted.refresh_statuses()
 				await get_tree().create_timer(0.3).timeout
 			&"rage_spent":
 				var raging := _view_of(event.data.actor)
 				if raging != null:
-					raging.refresh()
+					raging.refresh_statuses()
+			&"passive_counter":
+				# An enemy passive ticked (patch 0.113): the plaque it wears as a
+				# permanent buff carries the new number and flashes for it.
+				var counted := _view_of(event.data.actor)
+				if counted != null:
+					counted.refresh_statuses()
 			&"turn_started", &"turn_ended":
 				# Statuses tick per actor now (patch 0.22), so the pips under
 				# that unit — and the hero's live ability numbers, which Frail
-				# and Weak both move — refresh on its own boundary.
+				# and Weak both move — refresh on its own boundary. Statuses
+				# only: snapping HP here is half of what made the bar bounce.
 				var ticked := _view_of(event.data.actor)
 				if ticked != null:
-					ticked.refresh()
+					ticked.refresh_statuses()
 				if event.data.actor == sim.hero.id:
 					for card in _ability_cards:
 						card.refresh()
@@ -1205,6 +1231,7 @@ func _burst_duo(at: Vector2, texture_path: String, tint_a: Color, tint_b: Color)
 func _go_again_flourish() -> void:
 	await _burst(_cabinet.window_rect_global().get_center(),
 		"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
+	_cabinet.celebrate(1.4)
 	_cabinet.shake()
 
 	var original_text := _end_turn.text
@@ -1256,9 +1283,15 @@ func _ultimate_flourish() -> void:
 		_vfx.shockwave(view.sprite_center(), Color(0.6, 0.95, 1.0), 160.0)
 
 
-## The cut-in itself (designer's call, 0.20/0.0.111): a purpose-drawn splash
-## of Ace's eyes inside a torn teal band (`ace_flush_splash.png`), whipped in
-## from the left over a wider purple tear, held on his face, then whipped out.
+## The cut-in itself (designer's call, 0.20/0.0.111; rebuilt in 0.113): the
+## purpose-drawn splash of Ace's eyes (`ace_flush_splash.png`) FILLS THE WHOLE
+## SCREEN, wiped in from left to right behind a bright leading edge, held on
+## his face, then wiped away the same way. The purple-pink geometric tear that
+## used to sit behind it is gone at the designer's request.
+##
+## The wipe is a clipping mask whose width grows across the viewport while the
+## art inside it stays perfectly still, so the image is REVEALED left to right
+## rather than flown in — sliding a full-bleed image across would read as a pan.
 ## Falls back to the old procedural band and portrait crop if the art is
 ## missing, so a fresh checkout without generated art still plays something.
 func _splash_cut_in() -> void:
@@ -1273,50 +1306,56 @@ func _splash_cut_in() -> void:
 	layer.z_index = 95
 	add_child(layer)
 
-	# Behind: the purple tear, wider and offset, so the band has depth.
-	var band_back := PaintStreak.new()
-	band_back.streak_color = Color(0.46, 0.18, 0.82)
-	band_back.seed_value = 7
-	band_back.size = Vector2(viewport_size.x * 2.0, 400)
-	band_back.pivot_offset = band_back.size * 0.5
-	band_back.rotation = -0.14
-	band_back.position = Vector2(-viewport_size.x * 1.6, viewport_size.y * 0.5 - 200)
-	layer.add_child(band_back)
+	var mask := Control.new()
+	mask.clip_contents = true
+	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mask.position = Vector2.ZERO
+	mask.size = Vector2(0.0, viewport_size.y)
+	layer.add_child(mask)
 
 	var splash := TextureRect.new()
 	splash.texture = load(splash_path)
 	splash.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	splash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# COVERED, not CENTERED: the art reaches every edge instead of leaving the
+	# combat screen showing above and below it.
+	splash.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	splash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var width := viewport_size.x * 0.92
-	splash.size = Vector2(width, width * 1024.0 / 1536.0)
-	splash.pivot_offset = splash.size * 0.5
-	var rest := (viewport_size - splash.size) * 0.5 + Vector2(0, -20)
-	splash.position = rest - Vector2(viewport_size.x * 1.3, 0)
-	splash.scale = Vector2(1.08, 1.08)
-	layer.add_child(splash)
+	splash.position = Vector2.ZERO
+	splash.size = viewport_size
+	mask.add_child(splash)
+
+	# The wipe's leading edge: a bright blade running just ahead of the art.
+	var edge := ColorRect.new()
+	edge.color = Color(0.55, 1.0, 0.92, 0.9)
+	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	edge.size = Vector2(16.0, viewport_size.y)
+	edge.position = Vector2.ZERO
+	layer.add_child(edge)
 
 	Fx.shake(16.0)
 	Fx.punch_zoom(0.05)
 	_vfx.screen_flash(0.5)
 	var sweep := create_tween()
 	sweep.set_parallel(true)
-	sweep.tween_property(band_back, "position:x", -viewport_size.x * 0.5, 0.30) \
+	sweep.tween_property(mask, "size:x", viewport_size.x, 0.30) \
 		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	sweep.tween_property(splash, "position:x", rest.x, 0.26).set_delay(0.03) \
+	sweep.tween_property(edge, "position:x", viewport_size.x, 0.30) \
 		.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	sweep.tween_property(splash, "scale", Vector2.ONE, 0.34).set_delay(0.08) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	sweep.tween_property(edge, "modulate:a", 0.0, 0.30).set_delay(0.16)
 	await sweep.finished
 	_vfx.ray_burst(viewport_size * 0.5, Color(0.35, 1.0, 0.88, 0.35), 520.0, 0.5)
 	await get_tree().create_timer(0.42).timeout   # hold on his eyes
+	# Away the same way: the mask's left edge chases its right one off screen
+	# while the art counter-moves, so the picture stays pinned as it is uncovered.
 	var whip := create_tween()
 	whip.set_parallel(true)
-	whip.tween_property(splash, "position:x", rest.x + viewport_size.x * 0.9, 0.16) \
+	whip.tween_property(mask, "position:x", viewport_size.x, 0.20) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
-	whip.tween_property(band_back, "position:x", viewport_size.x * 0.4, 0.18) \
+	whip.tween_property(mask, "size:x", 0.0, 0.20) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
-	whip.tween_property(layer, "modulate:a", 0.0, 0.16).set_delay(0.04)
+	whip.tween_property(splash, "position:x", -viewport_size.x, 0.20) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	whip.tween_property(layer, "modulate:a", 0.0, 0.18).set_delay(0.06)
 	await whip.finished
 	layer.queue_free()
 
@@ -1415,6 +1454,7 @@ func _payout_flourish(symbols: Array) -> void:
 	# the row happened to fill the panel).
 	var window := _cabinet.window_rect_global()
 	var tray_center := _cabinet.drawer_centre_global()
+	_cabinet.celebrate(1.0)
 	var triple: bool = symbols.size() >= 3 and symbols[0] == symbols[1] and symbols[1] == symbols[2]
 	if triple:
 		_vfx.ray_burst(window.get_center(), Color(1.0, 0.9, 0.4, 0.6), 220.0, 0.9)
