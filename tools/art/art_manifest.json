@@ -1006,6 +1006,115 @@
       "transparent": true,
       "quality": "medium",
       "prompt": "A game status icon on a fully transparent background: a pale blue-grey cartoon shield that is chipped and crumbling at its edges, with a bold downward-pointing arrow embossed on its face, clearly reading as 'weakened defense'. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "cabinet_window",
+      "out": "assets/props/cabinet_window.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "An ornate golden reel-window frame for a slot machine, front view, centered, filling the whole image. A wide rectangular band of polished gold art-deco moulding with riveted fluted pillars at the far left and far right edges and a plain smooth gold rail along the top and the bottom. In the very middle, occupying about seventy percent of the width and sixty-five percent of the height, there is one perfectly flat solid pure magenta (#FF00FF) rectangle with sharp straight edges - completely empty: no reels, no drums, no symbols, no shading, no gradient, no highlights of any kind inside it. That magenta rectangle is a clean cut-out hole and the gold frame surrounds it on all four sides. No text, no letters, no numbers.",
+      "cutout": true
+    },
+    {
+      "id": "cabinet_marquee",
+      "out": "assets/props/cabinet_marquee.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "A rectangular illuminated casino sign header for a slot machine, front view, centered, filling the whole image. A wide flat-topped rectangle of polished gold art-deco moulding. Clusters of warm glowing round marquee bulbs run along the far-left third and the far-right third only. Across the entire middle third there is a plain flat dark maroon lacquered plaque with a thin gold pinstripe border and absolutely nothing on it - empty, smooth, unlit, no bulbs, no ornament, no emblem. No text, no letters, no numbers anywhere."
+    },
+    {
+      "id": "cabinet_drawer",
+      "out": "assets/props/cabinet_drawer.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "prompt": "A coin payout drawer for a slot machine, front view, centered, filling the whole image. A wide horizontal scoop of deep maroon lacquered wood with a polished gold lip along its top edge and gold corner brackets. In the middle, occupying about eighty percent of the width and fifty-five percent of the height, there is one perfectly flat solid pure magenta (#FF00FF) rectangle with sharp straight edges - a clean empty cut-out hole with no coins, no shading and no gradient inside it. No text, no letters, no numbers.",
+      "cutout": true
+    },
+    {
+      "id": "cabinet_lever",
+      "out": "assets/props/cabinet_lever.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "A slot machine side lever alone on a fully transparent background, side-on view, vertical: a polished gold cylindrical arm rising from a round gold boss plate at the bottom, topped with a glossy deep red sphere handle with a single white highlight. Thick clean outlines, rich saturated gold. Nothing else in the frame - no cabinet, no machine, no background."
+    },
+    {
+      "id": "card_back",
+      "out": "assets/cards/card_back.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "A playing card back, front view, centered, filling the frame: a rounded-corner card with a cream border, a deep maroon field patterned with a fine gold damask lattice, and a single ornate gold spade emblem in a thin gold medallion at the center. Symmetrical, clean, luxurious casino styling. No text, no letters, no numbers."
+    },
+    {
+      "id": "icon_multistrike",
+      "out": "assets/icons/status_multistrike.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: three overlapping golden dagger blades fanned out in a row with sharp white speed streaks behind them, suggesting extra hits. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_rage",
+      "out": "assets/icons/status_rage.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a clenched red fist wreathed in a burst of orange flame with two sharp motion spikes, suggesting a furious incoming blow. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
+      "id": "icon_loan_scroll",
+      "out": "assets/icons/status_loan.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a rolled parchment scroll tied with a cord, seen front-on, with a blank cream face and a small wax seal at the bottom. Neutral pale parchment and grey-white tones so it can be tinted any color in engine. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. No text, no letters, no numbers."
+    },
+    {
+      "id": "chip_golem_punch_windup",
+      "out": "assets/characters/chip_golem_punch_windup.png",
+      "base": "assets/characters/enemy_chip_golem.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same hulking golem built from stacked casino chips, same maroon, green, blue and cream chip columns, same burning gold coin eyes in a chip-stack head, same fists like chip pillars, same loose orbiting chips, identical art style and colors - in a HAMMER-BLOW WIND-UP pose: both chip-pillar fists hauled back high over one shoulder, the chip columns of the torso twisting and grinding apart, weight sunk into the back leg, loose chips flying off from the strain, coin eyes blazing. Full body, three-quarter view, facing slightly left. Same scale and framing as the original."
+    },
+    {
+      "id": "chip_golem_punch_strike",
+      "out": "assets/characters/chip_golem_punch_strike.png",
+      "base": "assets/characters/enemy_chip_golem.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same hulking golem built from stacked casino chips, same maroon, green, blue and cream chip columns, same burning gold coin eyes in a chip-stack head, same fists like chip pillars, same loose orbiting chips, identical art style and colors - at the IMPACT INSTANT of a two-fisted hammer blow: both chip-pillar fists smashed down and forward to the left with a hard motion blur behind them, torso columns compressed, chips bursting outward from the shoulders and arms, front foot cratering the ground, coin eyes flaring white-hot. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "chip_golem_punch_follow",
+      "out": "assets/characters/chip_golem_punch_follow.png",
+      "base": "assets/characters/enemy_chip_golem.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same hulking golem built from stacked casino chips, same maroon, green, blue and cream chip columns, same burning gold coin eyes in a chip-stack head, same fists like chip pillars, same loose orbiting chips, identical art style and colors - in a HAMMER-BLOW FOLLOW-THROUGH pose: arms hanging low and forward after the strike, the chip columns of the body resettling and re-stacking, a few chips still tumbling loose, shoulders squaring back up, coin eyes dimming. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "loan_shark_throw_windup",
+      "out": "assets/characters/loan_shark_throw_windup.png",
+      "base": "assets/characters/enemy_loan_shark.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same predatory loan shark enforcer, same long maroon trench coat over a gold waistcoat, same wide-brimmed hat shadowing a hungry gold-toothed grin, same heavy ledger book chained to his wrist, identical art style and colors - in a LEDGER-SWING WIND-UP pose: the chained ledger book hauled back behind his hip at the end of its chain, torso coiled to the right, hat brim low over a widening grin, free hand beckoning, weight loaded on the back leg. Full body, three-quarter view, facing slightly left. Same scale and framing as the original."
+    },
+    {
+      "id": "loan_shark_throw_release",
+      "out": "assets/characters/loan_shark_throw_release.png",
+      "base": "assets/characters/enemy_loan_shark.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same predatory loan shark enforcer, same long maroon trench coat over a gold waistcoat, same wide-brimmed hat shadowing a hungry gold-toothed grin, same heavy ledger book chained to his wrist, identical art style and colors - at the RELEASE INSTANT of swinging the chained ledger: the heavy book whipped out to the left at the end of its taut chain with a sharp motion blur, loose banknotes and papers bursting from its pages, his body lunging into the swing, coat flaring, teeth bared. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "loan_shark_throw_follow",
+      "out": "assets/characters/loan_shark_throw_follow.png",
+      "base": "assets/characters/enemy_loan_shark.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character - same predatory loan shark enforcer, same long maroon trench coat over a gold waistcoat, same wide-brimmed hat shadowing a hungry gold-toothed grin, same heavy ledger book chained to his wrist, identical art style and colors - in a LEDGER-SWING FOLLOW-THROUGH pose: the chain slack and the ledger swinging back toward him, his arm drifting down across his body, shoulders settling, hat straightened with the free hand, a satisfied predatory smirk. Full body, three-quarter view. Same scale and framing as the original."
     }
   ]
 }

@@ -119,7 +119,13 @@ func _refresh_machine_section() -> void:
 	var reels_row := HBoxContainer.new()
 	reels_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	reels_row.add_theme_constant_override("separation", 10)
-	_machine_column.add_child(reels_row)
+	# Framed by the same cabinet art the player sees in combat (patch 0.22).
+	var cabinet := SlotCabinet.new()
+	cabinet.art_scale = 0.7
+	var holder := CenterContainer.new()
+	_machine_column.add_child(holder)
+	holder.add_child(cabinet)
+	cabinet.setup(SlotCabinet.Mode.GRID, reels_row)
 	for reel_index in Game.run.machine.reels.size():
 		var reel: Reel = Game.run.machine.reels[reel_index]
 		var reel_box := VBoxContainer.new()
@@ -133,6 +139,7 @@ func _refresh_machine_section() -> void:
 			slot.focus_mode = Control.FOCUS_NONE
 			slot.tooltip_text = String(suit).capitalize()
 			reel_box.add_child(slot)
+	cabinet.refresh_layout.call_deferred()
 
 
 ## A square suit button. The art is 1024px square, so it rides as an inset

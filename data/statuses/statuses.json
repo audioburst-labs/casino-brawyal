@@ -5,48 +5,56 @@
       "id": "weak",
       "name": "Weak",
       "stack_mode": "duration",
+      "kind": "debuff",
       "description": "Deals 25% less damage (rounded half-up, minimum 1)."
     },
     {
       "id": "vulnerable",
       "name": "Vulnerable",
       "stack_mode": "duration",
+      "kind": "debuff",
       "description": "Takes 25% more damage."
     },
     {
       "id": "frail",
       "name": "Frail",
       "stack_mode": "duration",
+      "kind": "debuff",
       "description": "Gains 25% less Block from abilities (rounded half-up)."
     },
     {
       "id": "taunt",
       "name": "Taunt",
       "stack_mode": "duration",
+      "kind": "buff",
       "description": "Forces the player to target this enemy."
     },
     {
       "id": "block",
       "name": "Block",
       "stack_mode": "intensity",
+      "kind": "buff",
       "description": "Absorbs incoming damage. Expires at the owner's next round start."
     },
     {
       "id": "strength",
       "name": "Strength",
       "stack_mode": "intensity",
+      "kind": "buff",
       "description": "Adds bonus damage to every hit."
     },
     {
       "id": "stun",
       "name": "Stun",
       "stack_mode": "duration",
+      "kind": "debuff",
       "description": "Skips the next intended action."
     },
     {
       "id": "mark",
       "name": "Mark",
       "stack_mode": "intensity",
+      "kind": "debuff",
       "description": "Marked by Ace. Cash In removes a Mark for a bonus effect. Marks persist until cashed in."
     }
   ]

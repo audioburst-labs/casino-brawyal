@@ -58,6 +58,16 @@ const MAGENTA_INSTRUCTION =
   "filling every pixel that is not the subject. No gradients, no vignette, no shadows " +
   "cast on the background, no magenta anywhere on the subject itself.";
 
+// Cabinet pieces are frames with HOLES in them: the chroma key removes every
+// magenta pixel, so a flat magenta rectangle painted inside the artwork becomes
+// a transparent window the live reels / chip tray show through (patch 0.22).
+const MAGENTA_CUTOUT_INSTRUCTION =
+  "The entire background must be one flat, uniform, pure magenta color (#FF00FF) " +
+  "filling every pixel that is not the subject. Additionally, the cut-out opening " +
+  "described above must be painted in that exact same flat pure magenta, with sharp " +
+  "edges and absolutely nothing drawn inside it. Apart from the background and that " +
+  "one opening, no magenta anywhere on the subject itself.";
+
 async function generateOne(manifest, asset, target) {
   let prompt = `${manifest.style_prefix}\n\n${asset.prompt}`;
   const body = {
@@ -68,7 +78,8 @@ async function generateOne(manifest, asset, target) {
   };
   body.model = target.model ?? manifest.model ?? "gpt-image-1";
   if (asset.transparent) {
-    if (target.isAzure) prompt += `\n\n${MAGENTA_INSTRUCTION}`;
+    if (target.isAzure)
+      prompt += `\n\n${asset.cutout ? MAGENTA_CUTOUT_INSTRUCTION : MAGENTA_INSTRUCTION}`;
     else body.background = "transparent";
   }
   body.prompt = prompt;

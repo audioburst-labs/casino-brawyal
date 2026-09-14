@@ -4,11 +4,13 @@ extends RefCounted
 ## Every state change appends a CombatEvent; presenters drain and animate them.
 ##
 ## Round flow:
-##   begin_round()      ROUND_START -> ASSIGNMENT (passives fire, intents shown,
-##                      machine spun)
+##   begin_round()      ROUND_START -> ASSIGNMENT (hero turn start: buffs tick,
+##                      passives fire, intents shown, machine spun)
 ##   assign_chip()...   fills ability sockets; full abilities fire immediately
-##   end_assignment()   discards tray, runs the enemy phase, ticks statuses,
-##                      then returns to ROUND_START (or ENDED on win/loss)
+##   end_assignment()   hero turn end (debuffs tick), discards tray, runs the
+##                      enemy phase — each enemy ticks its own buffs before it
+##                      acts and its own debuffs after — then returns to
+##                      ROUND_START (or ENDED on win/loss)
 
 enum Phase { ROUND_START, ASSIGNMENT, ENDED }
 
@@ -128,15 +130,23 @@ func preview_damage(base: int, ability: AbilityState) -> int:
 	return int(floor(damage * ability_multiplier(ability) + 0.5))
 
 
+## What a block op's base would actually grant right now — Frail taxes it
+## (patch 0.22: "Block numbers on abilities should be affected by
+## buffs/debuffs and show the correct numbers when used").
+func preview_block(base: int) -> int:
+	return StatusRules.block_gained(base, hero)
+
+
 func begin_round() -> bool:
 	if phase != Phase.ROUND_START:
 		return false
 	round_number += 1
 	abilities_fired_this_round = 0
 	_exclusive_lock = null
-	hero.on_round_start()
-	for enemy in enemies:
-		enemy.on_round_start()
+	# The hero's turn begins: his shield drops and his buffs tick (patch 0.22).
+	# Enemies tick their own at their own slot in the enemy phase.
+	hero.on_turn_start()
+	emit_event(&"turn_started", {"actor": hero.id})
 	for ability in abilities:
 		ability.uses_this_round = 0
 	emit_event(&"round_started", {"round": round_number})
@@ -263,13 +273,15 @@ func end_assignment() -> bool:
 		emit_event(&"chips_discarded", {"count": tray.total()})
 		tray.discard_all()
 
+	# The hero's turn ends here, BEFORE the enemy phase: his debuffs each
+	# covered a full turn of his (patch 0.22).
+	hero.tick_turn_end()
+	emit_event(&"turn_ended", {"actor": hero.id})
+
 	_run_enemy_phase()
 	if phase == Phase.ENDED:
 		return true
 
-	hero.tick_round_end()
-	for enemy in enemies:
-		enemy.tick_round_end()
 	emit_event(&"round_ended", {"round": round_number})
 	_fire_relics(&"round_ended")
 	phase = Phase.ROUND_START
@@ -430,12 +442,21 @@ func _run_enemy_phase() -> void:
 	for enemy in enemies.duplicate():  # summons during the phase act next round
 		if not enemy.is_alive():
 			continue
+		# Its own turn: block drops and buffs tick, it acts, then its debuffs
+		# tick — so a Stun is spent by the very action it skipped (patch 0.22).
+		enemy.on_turn_start()
+		emit_event(&"turn_started", {"actor": enemy.id})
 		if enemy.has_status(&"stun"):
 			emit_event(&"enemy_move", {"actor": enemy.id, "skipped": true})
+			enemy.tick_turn_end()
+			emit_event(&"turn_ended", {"actor": enemy.id})
 			continue
 		_execute_move(enemy, true)
 		if phase == Phase.ENDED:
 			return
+		if enemy.is_alive():
+			enemy.tick_turn_end()
+			emit_event(&"turn_ended", {"actor": enemy.id})
 
 
 func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:

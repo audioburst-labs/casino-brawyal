@@ -56,7 +56,7 @@
             "debuffs": [{"status": "frail", "stacks": 2}]
           }
         },
-        "glass_barrage": {"intent": {"instances": 3, "per_hit": 3, "debuffs": []}}
+        "glass_barrage": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}}
       }
     },
     {

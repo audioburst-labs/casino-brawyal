@@ -5,80 +5,129 @@
       "id": "gamblers_confidence",
       "name": "Gambler's Confidence",
       "trigger": "combat_started",
-      "price_min": 17,
-      "price_max": 23,
-      "effects": [{"op": "gain_block", "amount": 20}],
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [
+        {
+          "op": "gain_block",
+          "amount": 20
+        }
+      ],
       "description": "Start combat with 20 Block."
     },
     {
       "id": "bounty_list",
       "name": "Bounty List",
       "trigger": "enemy_killed",
-      "price_min": 17,
-      "price_max": 23,
-      "effects": [{"op": "gain_coins", "amount": 7}],
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [
+        {
+          "op": "gain_coins",
+          "amount": 7
+        }
+      ],
       "description": "At the end of each fight, gain 7 gold for each enemy killed."
     },
     {
       "id": "spade_protection",
       "name": "Spade's Protection",
       "trigger": "spin_resolved",
-      "price_min": 22,
-      "price_max": 28,
-      "effects": [{"op": "block_per_chip", "suit": "spade", "amount": 2}],
+      "price_min": 27,
+      "price_max": 33,
+      "effects": [
+        {
+          "op": "block_per_chip",
+          "suit": "spade",
+          "amount": 2
+        }
+      ],
       "description": "When you get a Spade Chip, gain 2 Block."
     },
     {
       "id": "heart_protection",
       "name": "Heart's Protection",
       "trigger": "spin_resolved",
-      "price_min": 22,
-      "price_max": 28,
-      "effects": [{"op": "block_per_chip", "suit": "heart", "amount": 2}],
+      "price_min": 27,
+      "price_max": 33,
+      "effects": [
+        {
+          "op": "block_per_chip",
+          "suit": "heart",
+          "amount": 2
+        }
+      ],
       "description": "When you get a Heart Chip, gain 2 Block."
     },
     {
       "id": "club_protection",
       "name": "Club's Protection",
       "trigger": "spin_resolved",
-      "price_min": 22,
-      "price_max": 28,
-      "effects": [{"op": "block_per_chip", "suit": "club", "amount": 2}],
+      "price_min": 27,
+      "price_max": 33,
+      "effects": [
+        {
+          "op": "block_per_chip",
+          "suit": "club",
+          "amount": 2
+        }
+      ],
       "description": "When you get a Club Chip, gain 2 Block."
     },
     {
       "id": "diamond_protection",
       "name": "Diamond's Protection",
       "trigger": "spin_resolved",
-      "price_min": 22,
-      "price_max": 28,
-      "effects": [{"op": "block_per_chip", "suit": "diamond", "amount": 2}],
+      "price_min": 27,
+      "price_max": 33,
+      "effects": [
+        {
+          "op": "block_per_chip",
+          "suit": "diamond",
+          "amount": 2
+        }
+      ],
       "description": "When you get a Diamond Chip, gain 2 Block."
     },
     {
       "id": "winners_aura",
       "name": "Winner's Aura",
       "trigger": "combat_started",
-      "price_min": 17,
-      "price_max": 23,
-      "effects": [{"op": "apply_status", "status": "weak", "stacks": 2, "target": "all_enemies"}],
+      "price_min": 22,
+      "price_max": 28,
+      "effects": [
+        {
+          "op": "apply_status",
+          "status": "weak",
+          "stacks": 2,
+          "target": "all_enemies"
+        }
+      ],
       "description": "At the start of combat, apply Weak 2 to all enemies."
     },
     {
       "id": "high_roller",
       "name": "High Roller",
       "trigger": "spin_resolved",
-      "price_min": 27,
-      "price_max": 33,
-      "effects": [{"op": "damage", "amount": 20, "times": 1, "target": "random_enemy", "condition": "spin_has_triple"}],
+      "price_min": 32,
+      "price_max": 38,
+      "effects": [
+        {
+          "op": "damage",
+          "amount": 20,
+          "times": 1,
+          "target": "random_enemy",
+          "condition": "spin_has_triple"
+        }
+      ],
       "description": "When you roll 3 of the same type, deal 20 to a random enemy."
     },
     {
       "id": "dark_emblem",
       "name": "Dark Emblem",
       "trigger": "combat_started",
-      "price_min": 32,
-      "price_max": 38,
+      "price_min": 37,
+      "price_max": 43,
       "effects": [],
       "description": "Attacks that require a Spade or a Club deal 30% more damage."
     },
@@ -86,8 +135,8 @@
       "id": "red_emblems",
       "name": "Red Emblem",
       "trigger": "combat_started",
-      "price_min": 32,
-      "price_max": 38,
+      "price_min": 37,
+      "price_max": 43,
       "effects": [],
       "description": "Attacks that require a Heart or a Diamond deal 30% more damage."
     },
@@ -95,8 +144,8 @@
       "id": "lucky_foot",
       "name": "Lucky Foot",
       "trigger": "combat_started",
-      "price_min": 22,
-      "price_max": 28,
+      "price_min": 27,
+      "price_max": 33,
       "effects": [],
       "description": "When attacked, there's a 10% chance the damage is reduced to 0."
     }

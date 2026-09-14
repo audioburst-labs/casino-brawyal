@@ -30,7 +30,8 @@ static func generate(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -
 		"abilities": [],
 	}
 
-	var sticker_price := 20 + 5 * run.encounter_number()
+	# Doc v0.121: "Price: 10 Coins (+5 Coins x Encounter Number)" (was 20).
+	var sticker_price := 10 + 5 * run.encounter_number()
 	for suit: StringName in ContentDB.SUITS:
 		stock.stickers.append({"suit": suit, "price": sticker_price})
 

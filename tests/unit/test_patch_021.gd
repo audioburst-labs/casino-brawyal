@@ -101,7 +101,7 @@ func test_frail_is_a_duration_status_that_ticks_down() -> void:
 	assert_has(StatusRules.DURATION_STATUSES, &"frail")
 	var sim := _sim()
 	sim.hero.apply_status(&"frail", 1)
-	sim.hero.tick_round_end()
+	sim.hero.tick_turn_end()
 	assert_false(sim.hero.has_status(&"frail"))
 	var effects: Array[Dictionary] = [{"op": "gain_block", "amount": 8}]
 	EffectInterpreter.execute(effects, sim, sim.hero, null)

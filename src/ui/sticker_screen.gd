@@ -10,6 +10,7 @@ const SLOT_SIZE := Vector2(66, 66)
 
 var _held: StringName = &""
 var _machine_row: HBoxContainer
+var _cabinet: SlotCabinet
 var _extra_panel: PanelContainer
 var _extra_row: HBoxContainer
 var _hint: Label
@@ -28,22 +29,17 @@ func _ready() -> void:
 	build_screen("Sticker Time", "res://assets/backgrounds/bg_shop.png")
 	_hint = add_info_label("", 24)
 
-	var machine_panel := PanelContainer.new()
-	machine_panel.theme_type_variation = &"FeltPanel"
-	machine_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	content.add_child(machine_panel)
-	var machine_column := VBoxContainer.new()
-	machine_column.add_theme_constant_override("separation", 10)
-	machine_panel.add_child(machine_column)
-	var machine_title := Label.new()
-	machine_title.text = "Your Slot Machine"
-	machine_title.theme_type_variation = &"SubtitleLabel"
-	machine_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	machine_column.add_child(machine_title)
+	# The machine itself, in its cabinet (patch 0.22) — the same object the
+	# player spins in combat, so a sticker visibly goes onto that machine.
 	_machine_row = HBoxContainer.new()
 	_machine_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_machine_row.add_theme_constant_override("separation", 18)
-	machine_column.add_child(_machine_row)
+	_cabinet = SlotCabinet.new()
+	_cabinet.art_scale = 0.85
+	var machine_holder := CenterContainer.new()
+	content.add_child(machine_holder)
+	machine_holder.add_child(_cabinet)
+	_cabinet.setup(SlotCabinet.Mode.GRID, _machine_row)
 
 	_extra_panel = PanelContainer.new()
 	_extra_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -113,6 +109,7 @@ func _refresh() -> void:
 				String(_held).capitalize()] if placing else String(reel.symbols[slot_index]).capitalize()
 			slot.pressed.connect(_on_slot_clicked.bind(reel_index, slot_index))
 			reel_box.add_child(slot)
+	_cabinet.refresh_layout.call_deferred()
 
 	# The tray only exists for multi-sticker hauls (doc): the held one is on
 	# the cursor, the rest wait here.

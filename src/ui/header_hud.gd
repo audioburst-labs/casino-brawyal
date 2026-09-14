@@ -143,6 +143,8 @@ func _ready() -> void:
 	right.add_child(_header_button("🎰", "Layout", _open_layout_tab))
 	right.add_child(_header_button("⚙", "Settings", _open_settings_tab))
 
+	_reserve_number_widths.call_deferred()
+
 
 static func _header_label(text: String) -> Label:
 	var label := Label.new()
@@ -152,6 +154,51 @@ static func _header_label(text: String) -> Label:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.custom_minimum_size = Vector2(0, BUTTON_SIZE.y)
 	return label
+
+
+## Every number in the header gets a FIXED column wide enough for its widest
+## reading, right-aligned inside it (patch 0.22: "UI elements slightly shift
+## due to the numbers on the timer ticking"). The display font is Alfa Slab
+## One, whose digits are proportional - "1" is narrower than "0" - and both
+## header rows are positioned every frame from their own measured width, so
+## 00:01 -> 00:11 used to drag every sibling sideways once a second.
+##
+## Deferred because a Label only resolves its theme font once it is inside the
+## tree; measured off an orphan it returns the plain default (patch 0.18).
+func _reserve_number_widths() -> void:
+	var digit := _widest_digit(_timer_label)
+	_reserve(_timer_label, "%s%s:%s%s" % [digit, digit, digit, digit])
+	_reserve(_coins_label, "🪙 %s" % digit.repeat(4))
+	_reserve(_encounter_label, "Encounter %s%s/10" % [digit, digit])
+	_reserve(_hp_label, "%s/%s" % [digit.repeat(3), digit.repeat(3)])
+
+
+## Alfa Slab One has no tabular figures, so the widest glyph is measured
+## rather than assumed.
+static func _widest_digit(label: Label) -> String:
+	var font := label.get_theme_font("font")
+	if font == null:
+		return "0"
+	var size := label.get_theme_font_size("font_size")
+	var widest := "0"
+	var best := 0.0
+	for value in 10:
+		var glyph := str(value)
+		var width := font.get_string_size(glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+		if width > best:
+			best = width
+			widest = glyph
+	return widest
+
+
+static func _reserve(label: Label, widest: String) -> void:
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var font := label.get_theme_font("font")
+	if font == null:
+		return
+	var size := label.get_theme_font_size("font_size")
+	label.custom_minimum_size.x = ceilf(
+		font.get_string_size(widest, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x) + 2.0
 
 
 static func _header_button(text: String, hint: String, action: Callable) -> Button:

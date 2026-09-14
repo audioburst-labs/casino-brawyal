@@ -10,6 +10,15 @@ extends RefCounted
 ## below 1. The High Stakes relic raises both modifiers to 50% via
 ## `intensity_bonus` on the attacker's/target's sim.
 
+## Duration statuses, split by who benefits (patch 0.22). The designer's rule:
+## **buffs tick down at the start of their owner's turn, debuffs at its end.**
+## That is what makes an enemy's Weak 2 on Ace cover Ace's next two turns
+## (before 0.22 every duration ticked once, together, after the enemy phase, so
+## a debuff lost a stack before its victim had acted under it once), and what
+## lets the Bouncer's self-applied Taunt 2 hold the player's aim for two turns.
+## `statuses.json` carries the same split as a "kind" field.
+const DURATION_BUFFS: Array[StringName] = [&"taunt"]
+const DURATION_DEBUFFS: Array[StringName] = [&"weak", &"vulnerable", &"stun", &"frail"]
 const DURATION_STATUSES: Array[StringName] = [&"weak", &"vulnerable", &"taunt", &"stun", &"frail"]
 
 const WEAK_PCT := 0.25

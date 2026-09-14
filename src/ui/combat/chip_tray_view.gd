@@ -14,6 +14,12 @@ var _row: HBoxContainer
 ## presenter only calls that once a payout has been animated.
 var _shown: Dictionary = {}
 
+## One chip button's footprint (patch 0.22: 96 -> 80, see _ready).
+const CHIP_SIZE := 80
+## Inside the slot machine's drawer the cabinet art IS the frame, so the tray
+## drops its own panel (patch 0.22).
+var framed := true
+
 
 class ChipButton:
 	extends Button
@@ -46,8 +52,13 @@ class ChipButton:
 
 
 func _ready() -> void:
+	if not framed:
+		var flat := StyleBoxEmpty.new()
+		add_theme_stylebox_override("panel", flat)
 	# Constant footprint whether the tray holds 0 or 4 suits (patch 0.12).
-	custom_minimum_size = Vector2(4 * 96 + 3 * 14 + 32, 112)
+	# Patch 0.22: a little slimmer, because the tray is the slot machine's
+	# drawer now and the whole cabinet has to fit one band of the screen.
+	custom_minimum_size = Vector2(4 * CHIP_SIZE + 3 * 12 + 24, CHIP_SIZE + 16)
 	_row = HBoxContainer.new()
 	_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_row.add_theme_constant_override("separation", 18)
@@ -91,7 +102,7 @@ func _redraw() -> void:
 func _build_stack(suit: StringName, count: int) -> Control:
 	var button := ChipButton.new()
 	button.suit = suit
-	button.custom_minimum_size = Vector2(96, 96)
+	button.custom_minimum_size = Vector2(CHIP_SIZE, CHIP_SIZE)
 	button.tooltip_text = "%s chips: %d — drag onto an ability socket" % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)
 	if texture != null:

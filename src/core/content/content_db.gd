@@ -180,6 +180,10 @@ func _parse_status(item: Dictionary) -> void:
 	status.id = StringName(item.get("id", ""))
 	status.name = item.get("name", "")
 	status.stack_mode = item.get("stack_mode", "duration")
+	# Patch 0.22: buffs tick at their owner's turn start, debuffs at its end.
+	status.kind = str(item.get("kind", "debuff"))
+	if not ["buff", "debuff"].has(status.kind):
+		errors.append("status %s: unknown kind '%s'" % [status.id, status.kind])
 	status.description = item.get("description", "")
 	if status.id == &"":
 		errors.append("status with missing id")

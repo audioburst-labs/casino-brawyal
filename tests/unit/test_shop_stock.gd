@@ -1,7 +1,7 @@
 extends GutTest
 ## ShopStock: pricing formulas and stock generation.
 ## Extra reel: 50 + 50 per previously bought reel, cap 8 reels.
-## Stickers (one per suit): 20 + 5 x encounter number.
+## Stickers (one per suit): 10 + 5 x encounter number (doc v0.121).
 ## Relics x3 priced per their sheet range, abilities x4 @ 30-50, unowned pools.
 
 var _db: ContentDB
@@ -45,7 +45,7 @@ func test_sticker_prices_scale_with_encounter_and_cover_all_suits() -> void:
 	assert_eq(stock.stickers.size(), 4)
 	var suits: Array[StringName] = []
 	for sticker: Dictionary in stock.stickers:
-		assert_eq(sticker.price, 20 + 5 * 5)
+		assert_eq(sticker.price, 10 + 5 * 5)
 		suits.append(sticker.suit)
 	for suit: StringName in ContentDB.SUITS:
 		assert_has(suits, suit)

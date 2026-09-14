@@ -236,6 +236,33 @@ static func _collect_damage(effects: Array, into: Array[int]) -> void:
 				_collect_damage(effect.get("else_effects", []), into)
 
 
+## Every Block figure an ability can print (patch 0.22: "Block numbers on
+## abilities should be affected by buffs/debuffs and show the correct numbers
+## when used"). Walked exactly like the damage figures, nested branches and
+## all — Bad Beat's Block lives inside its Cash In, and Quick Maneuvers keeps
+## its Diamond value in `bonus_effects`.
+##
+## `block_per_enemy` / `block_per_chip` print their PER-UNIT amount ("2 Block
+## per enemy"), which is the number on the card and the number Frail taxes.
+static func block_amounts(def: Defs.AbilityDef) -> Array[int]:
+	var amounts: Array[int] = []
+	_collect_block(def.effects, amounts)
+	_collect_block(def.bonus_effects, amounts)
+	return amounts
+
+
+static func _collect_block(effects: Array, into: Array[int]) -> void:
+	for effect: Dictionary in effects:
+		match str(effect.get("op", "")):
+			"gain_block", "block_per_enemy", "block_per_chip":
+				var amount := int(effect.get("amount", 0))
+				if amount > 0 and not into.has(amount):
+					into.append(amount)
+			"cash_in":
+				_collect_block(effect.get("effects", []), into)
+				_collect_block(effect.get("else_effects", []), into)
+
+
 ## Live numbers (patch 0.12): damage figures reflect the hero's current
 ## Strength/Weak modifiers, colored red when lowered and green when raised
 ## (patch 0.17). Keyword icons render on enemy intents instead — inline
@@ -246,11 +273,24 @@ func _refresh_description() -> void:
 		# Largest first: replacing "10" before "100" would corrupt the longer
 		# number, and every match is bounded to a whole number so a figure
 		# already wrapped in a colour tag is never re-matched.
-		var amounts := damage_amounts(_state.def)
+		#
+		# Damage and Block are collected together and sorted as one list: an
+		# ability can print both (HeartSteal), and doing them in two passes
+		# would let the second pass re-match a digit the first had already
+		# wrapped in a colour tag.
+		var previews := {}   # base figure -> modified figure
+		for base: int in damage_amounts(_state.def):
+			previews[base] = _sim.preview_damage(base, _state)
+		for base: int in block_amounts(_state.def):
+			if not previews.has(base):
+				previews[base] = _sim.preview_block(base)
+		var amounts: Array[int] = []
+		for base: int in previews:
+			amounts.append(base)
 		amounts.sort()
 		amounts.reverse()
 		for base: int in amounts:
-			var modified := _sim.preview_damage(base, _state)
+			var modified: int = previews[base]
 			if modified == base:
 				continue
 			var tint := "#6ee06e" if modified > base else "#e06e6e"

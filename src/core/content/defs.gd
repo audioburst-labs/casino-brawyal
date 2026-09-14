@@ -69,4 +69,5 @@ class StatusDef:
 	var id: StringName
 	var name: String
 	var stack_mode: String = "duration"       # "duration" | "intensity"
+	var kind: String = "debuff"               # "buff" | "debuff" — when it ticks
 	var description: String

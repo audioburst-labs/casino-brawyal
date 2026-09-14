@@ -508,10 +508,18 @@ func _refresh_machine() -> void:
 		% String(_selected_sticker).capitalize() if placing \
 		else "Buy a sticker to replace a symbol on your machine."
 
+	# The player's machine is the same cabinet they play on (patch 0.22), at a
+	# size that fits the loadout column.
 	var reels_row := HBoxContainer.new()
 	reels_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	reels_row.add_theme_constant_override("separation", 8)
-	_machine_box.add_child(reels_row)
+	var cabinet := SlotCabinet.new()
+	cabinet.art_scale = 0.55
+	cabinet.marquee_text = ""
+	var holder := CenterContainer.new()
+	_machine_box.add_child(holder)
+	holder.add_child(cabinet)
+	cabinet.setup(SlotCabinet.Mode.GRID, reels_row)
 	for reel_index in Game.run.machine.reels.size():
 		var reel: Reel = Game.run.machine.reels[reel_index]
 		var reel_column := VBoxContainer.new()
@@ -523,6 +531,7 @@ func _refresh_machine() -> void:
 			slot.disabled = not placing
 			slot.pressed.connect(_apply_sticker.bind(reel_index, slot_index))
 			reel_column.add_child(slot)
+	cabinet.refresh_layout.call_deferred()
 
 
 func _buy_reel() -> void:

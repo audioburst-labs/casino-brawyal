@@ -40,6 +40,16 @@ const FLAME_COLORS := [
 	Color(0.6, 1.0, 0.5), Color(0.45, 1.0, 0.85), Color(0.65, 0.4, 1.0),
 ]
 const DEBUFF_STATUSES: Array[StringName] = [&"weak", &"vulnerable", &"stun"]
+## The dagger's default cut, a quarter turn clockwise from the 0.21 sweep
+## (patch 0.22: "Rotate it 90 degrees clockwise").
+const SLASH_ANGLE := -0.55 + PI * 0.5
+## Flush's eight cuts, each the same quarter turn round from where they were.
+const ULTIMATE_ANGLES := [
+	-0.9 + PI * 0.5, 0.75 + PI * 0.5, -0.25 + PI * 0.5, 1.15 + PI * 0.5,
+	-1.45 + PI * 0.5, 0.35 + PI * 0.5, -0.6 + PI * 0.5, 0.95 + PI * 0.5,
+]
+## The red swipe an enemy's hit leaves on Ace, likewise.
+const IMPACT_ANGLE := 2.4 + PI * 0.5
 
 var sim: CombatSim
 var run_mode := false   # true when launched by Game flow (reports results back)
@@ -60,6 +70,7 @@ var _corpse_views: Dictionary = {}
 var _enemy_slot_of: Dictionary = {}
 var _enemies_row: HBoxContainer
 var _reel_strip: ReelStrip
+var _cabinet: SlotCabinet
 var _tray_view: ChipTrayView
 var _ability_row: HBoxContainer
 var _ability_cards: Array[AbilityCard] = []
@@ -129,6 +140,15 @@ class SlashArc:
 	var bands := [Color(0.60, 0.28, 1.0, 0.8), Color(0.30, 1.0, 0.86, 0.95), Color(1, 1, 1, 0.9)]
 	var band_widths := [1.0, 0.66, 0.2]
 	var filaments := 11
+
+	## The mid-arc point of the spine, in the node's own space. The crescent is
+	## drawn on a circle of `radius` around the node origin, so without this the
+	## origin sits in the HOLE of the crescent — which is exactly the "goes
+	## around the target" the designer reported (patch 0.22). Offsetting the
+	## node by this puts the fat middle of the cut on the target.
+	func belly() -> Vector2:
+		var mid := start_angle + sweep * 0.5
+		return Vector2(cos(mid), sin(mid)) * radius
 
 	func _draw() -> void:
 		if progress <= 0.002:
@@ -257,6 +277,7 @@ func setup(config: Dictionary) -> void:
 	_spawn_units()
 	_spawn_abilities()
 	_reel_strip.set_reel_count(sim.machine.reels.size())
+	_cabinet.refresh_layout()
 	_tray_view.bind(sim.tray)
 	_next_round.call_deferred()
 
@@ -298,8 +319,8 @@ func _build_layout() -> void:
 	# entirely, which is what frees the vertical room.
 	_enemies_row.anchor_left = 0.52
 	_enemies_row.anchor_right = 0.985
-	_enemies_row.anchor_top = 0.06
-	_enemies_row.anchor_bottom = 0.655
+	_enemies_row.anchor_top = 0.05
+	_enemies_row.anchor_bottom = 0.635
 	add_child(_enemies_row)
 
 	# The bottom band spans the whole width (0.0.111): a fixed machine area on
@@ -309,21 +330,24 @@ func _build_layout() -> void:
 	var bottom := HBoxContainer.new()
 	bottom.anchor_left = 0.01
 	bottom.anchor_right = 0.99
-	bottom.anchor_top = 0.70
-	bottom.anchor_bottom = 0.985
+	bottom.anchor_top = 0.687
+	bottom.anchor_bottom = 0.99
 	bottom.add_theme_constant_override("separation", 12)
 	add_child(bottom)
 
-	var machine_box := VBoxContainer.new()
-	machine_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	machine_box.add_theme_constant_override("separation", 10)
+	# The machine is a real cabinet now (doc "Assets → Slot Machine", patch
+	# 0.22): the reels sit in its window and the chip tray IS its drawer, so
+	# paid-out chips fall into it the way the doc describes.
+	var machine_box := CenterContainer.new()
 	machine_box.custom_minimum_size = Vector2(MACHINE_WIDTH, 0)
 	bottom.add_child(machine_box)
 	_reel_strip = ReelStrip.new()
-	machine_box.add_child(_reel_strip)
+	_reel_strip.framed = false
 	_tray_view = ChipTrayView.new()
-	_tray_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	machine_box.add_child(_tray_view)
+	_tray_view.framed = false
+	_cabinet = SlotCabinet.new()
+	machine_box.add_child(_cabinet)
+	_cabinet.setup(SlotCabinet.Mode.COMBAT, _reel_strip, _tray_view)
 
 	_ability_row = HBoxContainer.new()
 	_ability_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -339,8 +363,8 @@ func _build_layout() -> void:
 	_end_turn.pressed.connect(_on_end_turn)
 	_end_turn.anchor_left = 0.878
 	_end_turn.anchor_right = 0.985
-	_end_turn.anchor_top = 0.652
-	_end_turn.anchor_bottom = 0.695
+	_end_turn.anchor_top = 0.638
+	_end_turn.anchor_bottom = 0.681
 	add_child(_end_turn)
 
 	# Hero stands between the machine and the enemies.
@@ -364,8 +388,8 @@ func _spawn_units() -> void:
 	# panel is exactly as wide as an enemy's (patch 0.18).
 	_hero_view.anchor_left = 0.150
 	_hero_view.anchor_right = 0.244
-	_hero_view.anchor_top = 0.06
-	_hero_view.anchor_bottom = 0.655
+	_hero_view.anchor_top = 0.05
+	_hero_view.anchor_bottom = 0.635
 	add_child(_hero_view)
 	move_child(_banner, get_child_count() - 1)
 	_hero_view.setup(sim.hero)
@@ -799,6 +823,16 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if run_mode:
 					await get_tree().create_timer(1.6).timeout
 					Game.combat_finished(false, 0, [])
+			&"turn_started", &"turn_ended":
+				# Statuses tick per actor now (patch 0.22), so the pips under
+				# that unit — and the hero's live ability numbers, which Frail
+				# and Weak both move — refresh on its own boundary.
+				var ticked := _view_of(event.data.actor)
+				if ticked != null:
+					ticked.refresh()
+				if event.data.actor == sim.hero.id:
+					for card in _ability_cards:
+						card.refresh()
 			&"round_ended":
 				_hero_view.refresh()
 				for view: UnitView in _enemy_views.values():
@@ -929,7 +963,15 @@ func _flame_color_at(t: float) -> Color:
 ## cut in a tenth of a second, hangs for a blink, and dissolves outward with
 ## a slight turn — angle in radians so a flurry can cut from every side.
 ## `palette` swaps the bands (the enemy impact uses it in red).
-func _dagger_slash(at: Vector2, angle := -0.55, palette: Array = [], scale_factor := 1.0) -> void:
+##
+## Patch 0.22, both halves of the designer's note. (1) The default sweep is
+## rotated a quarter turn CLOCKWISE (+PI/2 with y pointing down) so the cut
+## comes down across the target instead of along it. (2) The arc is offset by
+## its own belly so the stroke crosses the target: it is drawn on a circle
+## centred on the node origin, so pinning the origin to the target put the
+## target in the crescent's empty middle — "it goes around it".
+func _dagger_slash(at: Vector2, angle := SLASH_ANGLE, palette: Array = [],
+		scale_factor := 1.0) -> void:
 	var arc := SlashArc.new()
 	if not palette.is_empty():
 		arc.bands = palette
@@ -941,7 +983,8 @@ func _dagger_slash(at: Vector2, angle := -0.55, palette: Array = [], scale_facto
 	arc.z_index = 90
 	arc.rotation = angle
 	add_child(arc)
-	arc.global_position = at
+	var centring := arc.belly().rotated(angle)
+	arc.global_position = at - centring
 	# A dim, wider twin behind fakes the bloom the reference's soft edges have.
 	var halo := SlashArc.new()
 	halo.bands = [Color(arc.bands[0], 0.2), Color(arc.bands[1], 0.14)]
@@ -954,7 +997,7 @@ func _dagger_slash(at: Vector2, angle := -0.55, palette: Array = [], scale_facto
 	halo.z_index = 89
 	halo.rotation = angle
 	add_child(halo)
-	halo.global_position = at
+	halo.global_position = at - centring
 	_sparks(at, arc.bands[1], 12)
 	var tween := create_tween()
 	tween.set_parallel(true)
@@ -1015,16 +1058,9 @@ func _burst_duo(at: Vector2, texture_path: String, tint_a: Color, tint_b: Color)
 ## Go Again (doc animation): the Slot Machine shakes in joy, and the
 ## End Turn button flips over to read "Go Again!" for a beat.
 func _go_again_flourish() -> void:
-	await _burst(_reel_strip.global_position + _reel_strip.size * 0.5,
+	await _burst(_cabinet.window_rect_global().get_center(),
 		"res://assets/icons/coin.png", Color(1.3, 1.15, 0.6))
-	var origin := _reel_strip.position
-	_reel_strip.pivot_offset = _reel_strip.size * 0.5
-	var shake := create_tween()
-	shake.tween_property(_reel_strip, "position", origin + Vector2(-6, 0), 0.05)
-	shake.tween_property(_reel_strip, "position", origin + Vector2(6, 0), 0.06)
-	shake.tween_property(_reel_strip, "position", origin + Vector2(-4, 0), 0.06)
-	shake.tween_property(_reel_strip, "position", origin, 0.07) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_cabinet.shake()
 
 	var original_text := _end_turn.text
 	_end_turn.pivot_offset = _end_turn.size * 0.5
@@ -1055,7 +1091,7 @@ func _ultimate_flourish() -> void:
 	_hero_view.play_slash()
 	await _hero_view.strike_landed
 	# Eight cuts from eight directions, a beat apart, over every living enemy.
-	var angles := [-0.9, 0.75, -0.25, 1.15, -1.45, 0.35, -0.6, 0.95]
+	var angles := ULTIMATE_ANGLES
 	var cut := 0
 	for view: UnitView in _enemy_views.values():
 		if not is_instance_valid(view):
@@ -1228,13 +1264,16 @@ func _paint_streak_closeup() -> void:
 ## from its reel to the tray on its own beat; a three-of-a-kind detonates a
 ## jackpot of rays and confetti.
 func _payout_flourish(symbols: Array) -> void:
-	var strip_origin := _reel_strip.global_position
-	var strip_step := _reel_strip.size.x / maxf(1.0, symbols.size())
-	var tray_center := _tray_view.global_position + _tray_view.size * 0.5
+	# Each chip leaves the reel that actually paid it and falls into the
+	# cabinet's drawer (patch 0.22; before, they fanned out from the panel's
+	# top-left corner on a uniform step that only lined up with the reels when
+	# the row happened to fill the panel).
+	var window := _cabinet.window_rect_global()
+	var tray_center := _cabinet.drawer_centre_global()
 	var triple: bool = symbols.size() >= 3 and symbols[0] == symbols[1] and symbols[1] == symbols[2]
 	if triple:
-		_vfx.ray_burst(strip_origin + _reel_strip.size * 0.5, Color(1.0, 0.9, 0.4, 0.6), 220.0, 0.9)
-		_vfx.confetti(strip_origin + Vector2(_reel_strip.size.x * 0.5, 0))
+		_vfx.ray_burst(window.get_center(), Color(1.0, 0.9, 0.4, 0.6), 220.0, 0.9)
+		_vfx.confetti(Vector2(window.get_center().x, window.position.y))
 		Fx.punch_zoom(0.04)
 		Fx.shake(10.0)
 	for i in symbols.size():
@@ -1249,7 +1288,7 @@ func _payout_flourish(symbols: Array) -> void:
 		chip.pivot_offset = Vector2(28, 28)
 		chip.z_index = 92
 		add_child(chip)
-		chip.global_position = strip_origin + Vector2(strip_step * (i + 0.5) - 28, 40)
+		chip.global_position = _reel_strip.reel_centre(i) - Vector2(28, 28)
 		chip.scale = Vector2(0.4, 0.4)
 		var hop := chip.create_tween()
 		hop.tween_property(chip, "scale", Vector2.ONE, 0.12) \
@@ -1292,7 +1331,7 @@ func _sparks(at: Vector2, color: Color, amount := 14) -> void:
 ## drawn crescent as the Dagger Slash, in red and orange, smaller and cut the
 ## other way, so the two vocabularies match (0.0.111).
 func _impact(at: Vector2) -> void:
-	_dagger_slash(at, 2.4 + randf_range(-0.3, 0.3),
+	_dagger_slash(at, IMPACT_ANGLE + randf_range(-0.3, 0.3),
 		[Color(1.0, 0.25, 0.2, 0.75), Color(1.0, 0.6, 0.3, 0.95), Color(1.0, 0.95, 0.85, 1.0)],
 		0.68)
 

@@ -63,15 +63,28 @@ func status_stacks(status_id: StringName) -> int:
 	return statuses.get(status_id, 0)
 
 
-## Duration statuses lose one stack at the end of each round.
-func tick_round_end() -> void:
-	for status_id in StatusRules.DURATION_STATUSES:
+## Buffs lose a stack when this actor's own turn BEGINS (patch 0.22).
+func tick_turn_start() -> void:
+	_tick(StatusRules.DURATION_BUFFS)
+
+
+## Debuffs lose a stack when this actor's own turn ENDS (patch 0.22) — the
+## designer's rule, so a debuff always covers a full turn of whoever carries it.
+func tick_turn_end() -> void:
+	_tick(StatusRules.DURATION_DEBUFFS)
+
+
+func _tick(ids: Array[StringName]) -> void:
+	for status_id in ids:
 		if statuses.has(status_id):
 			statuses[status_id] -= 1
 			if statuses[status_id] <= 0:
 				statuses.erase(status_id)
 
 
-## Block expires when the owner's next round starts.
-func on_round_start() -> void:
+## Block expires when the owner's own next turn starts — for enemies that is
+## their slot in the enemy phase, not the hero's round start, or a shield they
+## raised (the Chip Golem's Harden) would be gone before Ace could swing at it.
+func on_turn_start() -> void:
 	block = 0
+	tick_turn_start()

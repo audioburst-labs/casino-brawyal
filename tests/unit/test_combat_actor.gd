@@ -53,19 +53,19 @@ func test_apply_status_accumulates_stacks() -> void:
 	assert_true(actor.has_status(&"weak"))
 
 
-func test_round_end_tick_decrements_duration_statuses_only() -> void:
+func test_turn_end_tick_decrements_debuff_durations_only() -> void:
 	var actor := _actor()
 	actor.apply_status(&"weak", 1)
 	actor.apply_status(&"strength", 3)
-	actor.tick_round_end()
+	actor.tick_turn_end()
 	assert_false(actor.has_status(&"weak"))
 	assert_eq(actor.status_stacks(&"strength"), 3)
 
 
-func test_block_clears_at_own_round_start() -> void:
+func test_block_clears_at_own_turn_start() -> void:
 	var actor := _actor()
 	actor.gain_block(7)
-	actor.on_round_start()
+	actor.on_turn_start()
 	assert_eq(actor.block, 0)
 
 
@@ -95,8 +95,8 @@ func test_vulnerable_increases_taken_damage_by_quarter_half_up() -> void:
 	assert_eq(StatusRules.damage_taken(5, target), 6)    # 5*1.25 = 6.25 -> 6
 
 
-func test_mark_does_not_tick_at_round_end() -> void:
+func test_mark_does_not_tick_at_turn_end() -> void:
 	var actor := _actor()
 	actor.apply_status(&"mark", 1)
-	actor.tick_round_end()
+	actor.tick_turn_end()
 	assert_eq(actor.status_stacks(&"mark"), 1, "mark persists until cashed in")
