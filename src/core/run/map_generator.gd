@@ -7,7 +7,9 @@ extends RefCounted
 ##   Shop: max 3 visits, never right after a visited shop, never at #2,
 ##   and at least 2 shop OFFERS per run (forced late if needed)
 ##   Treasure: max 2 visits, only after #2, never right after a treasure
-##   Hard Combat: only after #3 - the two options always differ in type
+##   Elite: only after #3, at most twice, with a gap of 2 encounters between
+##     them (doc v0.120; this replaced Hard Combat in patch 0.22)
+##   The two options always differ in type
 
 
 ## Doc v0.19: rest is offered at these encounters and nowhere else.
@@ -61,6 +63,19 @@ static func _treasure_allowed(run: RunState) -> bool:
 		and run.last_visited() != &"treasure"
 
 
+## Doc v0.120: "Elites only appear starting after Encounter #3, up to twice,
+## and there must be a gap of 2 encounters between them."
+static func _elite_allowed(run: RunState) -> bool:
+	if run.encounter_number() <= 3 or run.count_visited(&"elite") >= 2:
+		return false
+	var last := run.history.rfind(&"elite")
+	if last < 0:
+		return true
+	# `last` is a 0-based index, so that Elite was encounter `last + 1`; two
+	# encounters have to sit between it and this one.
+	return run.encounter_number() - (last + 1) > 2
+
+
 static func _casino_allowed(run: RunState) -> bool:
 	return run.encounter_number() > 1 \
 		and run.count_visited(&"casino") < 2 \
@@ -73,8 +88,8 @@ static func _roll_option(run: RunState, rng: RandomNumberGenerator,
 	var pool: Array[Dictionary] = []  # {type, weight}
 	pool.append({"type": &"combat", "weight": 4})
 	pool.append({"type": &"story", "weight": 3})
-	if run.encounter_number() > 3:
-		pool.append({"type": &"hard_combat", "weight": 2})
+	if _elite_allowed(run):
+		pool.append({"type": &"elite", "weight": 2})
 	if _shop_allowed(run):
 		pool.append({"type": &"shop", "weight": 2})
 	if _treasure_allowed(run):
@@ -95,8 +110,7 @@ static func _roll_option(run: RunState, rng: RandomNumberGenerator,
 	return _finalize(&"combat", rng)
 
 
-static func _finalize(type: StringName, rng: RandomNumberGenerator) -> Dictionary:
-	if type == &"hard_combat":
-		var variant := "buffed" if rng.randi_range(0, 1) == 0 else "advanced"
-		return {"type": type, "variant": variant}
+## Elites have no variants: they are their own fights against their own
+## mini-bosses now, not a buffed copy of a normal lineup (patch 0.22).
+static func _finalize(type: StringName, _rng: RandomNumberGenerator) -> Dictionary:
 	return {"type": type}

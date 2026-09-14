@@ -13,7 +13,16 @@ const KNOWN_OPS: Array[String] = [
 	"convert_chips", "respin_reel", "gain_coins", "grant_relic",
 	"lose_hp", "lose_coins", "gain_max_hp",
 	"cash_in", "damage_missing_pct", "block_per_enemy",
-	"mark_random_unmarked", "block_per_chip",
+	"mark_random_unmarked", "block_per_chip", "heal",
+]
+## Enemy passives (sheet v0.120). These names live in their own namespace —
+## `bust` is also an ABILITY id, and the two never meet.
+const KNOWN_PASSIVES: Array[String] = ["bust", "break", "loan"]
+## Everything an enemy move's `intent` may carry. Whitelisted since patch 0.22
+## because a typo in an intent extra used to fail silently.
+const KNOWN_INTENT_KEYS: Array[String] = [
+	"instances", "per_hit", "debuffs", "self_status", "summon", "heal_allies",
+	"ally_attack_again", "self_heal", "self_block", "gift_chips", "absorb",
 ]
 const KNOWN_CONDITIONS: Array[String] = [
 	"no_enemy_marked", "enemy_marked", "solo_ability_this_round", "spin_has_triple",
@@ -37,6 +46,7 @@ var _heroes: Dictionary = {}
 var _statuses: Dictionary = {}
 var _relics: Dictionary = {}
 var _lineups: Array[Dictionary] = []
+var _loans: Dictionary = {}
 var _story_events: Dictionary = {}
 var _keywords: Dictionary = {}
 
@@ -86,6 +96,9 @@ func load_all(root: String) -> bool:
 			"events":
 				for item: Dictionary in doc.get("items", []):
 					_parse_story_event(item)
+			"loans":
+				for item: Dictionary in doc.get("items", []):
+					_parse_loan(item)
 
 	_validate_summons()
 	return errors.is_empty()
@@ -128,7 +141,22 @@ func all_relic_ids() -> Array:
 
 
 func lineups_for_stage(stage: int) -> Array[Dictionary]:
-	return _lineups.filter(func(l: Dictionary) -> bool: return int(l.stage) == stage)
+	return _lineups.filter(func(l: Dictionary) -> bool:
+		return int(l.stage) == stage and not bool(l.get("elite", false)))
+
+
+## Doc v0.120: an Elite is a fight against a mini-boss, drawn from its own
+## pool rather than from the encounter's stage (patch 0.22).
+func elite_lineups() -> Array[Dictionary]:
+	return _lineups.filter(func(l: Dictionary) -> bool: return bool(l.get("elite", false)))
+
+
+func get_loan(id: StringName) -> Defs.LoanDef:
+	return _loans.get(id)
+
+
+func all_loan_ids() -> Array:
+	return _loans.keys()
 
 
 func all_lineups() -> Array[Dictionary]:
@@ -320,14 +348,27 @@ func _parse_enemy(item: Dictionary) -> void:
 	enemy.hp_max = int(item.get("hp_max", item.get("hp", 0)))
 	enemy.brain = item.get("brain", {})
 	enemy.moves = item.get("moves", {})
+	enemy.passive = item.get("passive", {})
 
 	if enemy.hp_min <= 0 or enemy.hp_max < enemy.hp_min:
 		errors.append("enemy %s: invalid hp range" % enemy.id)
 	if enemy.moves.is_empty():
 		errors.append("enemy %s: no moves" % enemy.id)
+	if not enemy.passive.is_empty():
+		var passive_type := str(enemy.passive.get("type", ""))
+		if not KNOWN_PASSIVES.has(passive_type):
+			errors.append("enemy %s: unknown passive '%s'" % [enemy.id, passive_type])
+		for key in ["threshold", "every", "every_rounds", "offers"]:
+			if enemy.passive.has(key) and int(enemy.passive[key]) <= 0:
+				errors.append("enemy %s: passive %s must be positive" % [enemy.id, key])
+
 	for move_id: String in enemy.moves:
 		var move: Dictionary = enemy.moves[move_id]
 		var intent: Dictionary = move.get("intent", {})
+		for key in intent:
+			if not KNOWN_INTENT_KEYS.has(str(key)):
+				errors.append("enemy %s move %s: unknown intent key '%s'"
+					% [enemy.id, move_id, key])
 		for debuff: Dictionary in intent.get("debuffs", []):
 			var status := StringName(str(debuff.get("status", "")))
 			if not _statuses.has(status):
@@ -370,6 +411,31 @@ func _validate_summons() -> void:
 					errors.append("enemy %s move %s: unknown summon '%s'" % [enemy_id, move_id, target])
 
 
+## One loan offer (doc "Loan"): a reward now, a penalty in `turns` turns.
+## Both effect lists go through the same linter as any other op array.
+func _parse_loan(item: Dictionary) -> void:
+	var loan := Defs.LoanDef.new()
+	loan.id = StringName(str(item.get("id", "")))
+	if loan.id == &"":
+		errors.append("loan with missing id")
+		return
+	loan.title = str(item.get("title", ""))
+	loan.turns = int(item.get("turns", 0))
+	loan.reward_text = str(item.get("reward_text", ""))
+	loan.penalty_text = str(item.get("penalty_text", ""))
+	if loan.turns <= 0:
+		errors.append("loan %s: turns must be positive" % loan.id)
+	for effect: Dictionary in item.get("reward", []):
+		_validate_effect(effect, "loan %s reward" % loan.id)
+		loan.reward.append(effect)
+	for effect: Dictionary in item.get("penalty", []):
+		_validate_effect(effect, "loan %s penalty" % loan.id)
+		loan.penalty.append(effect)
+	if loan.reward.is_empty() or loan.penalty.is_empty():
+		errors.append("loan %s: needs both a reward and a penalty" % loan.id)
+	_loans[loan.id] = loan
+
+
 func _parse_lineup(item: Dictionary) -> void:
 	var enemies: Array[StringName] = []
 	for enemy_id in item.get("enemies", []):
@@ -382,6 +448,7 @@ func _parse_lineup(item: Dictionary) -> void:
 	_lineups.append({
 		"id": StringName(str(item.get("id", ""))),
 		"stage": int(item.get("stage", 1)),
+		"elite": bool(item.get("elite", false)),
 		"enemies": enemies,
 		"gold_min": int(item.get("gold_min", 0)),
 		"gold_max": int(item.get("gold_max", 0)),

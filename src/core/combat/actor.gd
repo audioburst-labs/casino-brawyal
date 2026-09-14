@@ -16,6 +16,9 @@ var statuses: Dictionary = {}  # status id -> stacks
 ## need the split so a blocked hit reads as "the shield ate it" rather than
 ## the HP bar dropping and springing back (patch 0.18).
 var last_absorbed: int = 0
+## Loans the hero has taken (doc "Loan"): {id, turns_left}. Counted down with
+## his debuffs at the end of his turn; at zero the penalty fires.
+var loans: Array[Dictionary] = []
 
 
 func _init(actor_id: StringName, definition_id: StringName, name_text: String,

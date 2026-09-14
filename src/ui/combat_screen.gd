@@ -206,6 +206,91 @@ class SlashArc:
 				strand, rng.randf_range(1.2, 2.6), true)
 
 
+## "Options In Combat" (doc): a foe puts a decision to the player. The field
+## darkens, the choices sit in the middle of it, and play resumes the moment
+## one is taken. Built to the doc's mock (image1): a title plate over two
+## option cards (patch 0.22).
+class OptionsOverlay:
+	extends Control
+
+	signal picked(index: int)
+
+	func build(title_text: String, options: Array) -> void:
+		# Sized from the viewport directly, not from anchors: a Control built
+		# and added in the same frame does not reliably resolve anchor
+		# percentages yet (the lesson LayoutTab/SettingsTab already learned).
+		var vp := get_viewport_rect().size
+		position = Vector2.ZERO
+		size = vp
+		z_index = 120
+		var dim := ColorRect.new()
+		dim.color = Color(0.03, 0.01, 0.02, 0.62)
+		dim.position = Vector2.ZERO
+		dim.size = vp
+		dim.mouse_filter = Control.MOUSE_FILTER_STOP
+		add_child(dim)
+
+		var plate := PanelContainer.new()
+		var plate_size := Vector2(minf(760.0, vp.x * 0.5), 74.0)
+		plate.position = Vector2((vp.x - plate_size.x) * 0.5, vp.y * 0.13)
+		plate.size = plate_size
+		add_child(plate)
+		var title := Label.new()
+		title.text = title_text
+		title.theme_type_variation = &"SubtitleLabel"
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		plate.add_child(title)
+
+		var card_size := Vector2(380, 250)
+		var gap := 48.0
+		var total := card_size.x * options.size() + gap * maxf(0.0, options.size() - 1)
+		var left := (vp.x - total) * 0.5
+		var top := vp.y * 0.13 + plate_size.y + 34.0
+		for index in options.size():
+			var card := _option_card(options[index], index)
+			card.position = Vector2(left + (card_size.x + gap) * index, top)
+			card.size = card_size
+			add_child(card)
+
+
+	func _option_card(option: Dictionary, index: int) -> Button:
+		var card := Button.new()
+		card.custom_minimum_size = Vector2(380, 250)
+		card.pressed.connect(func() -> void: picked.emit(index))
+		var box := VBoxContainer.new()
+		box.set_anchors_preset(Control.PRESET_FULL_RECT)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_theme_constant_override("separation", 10)
+		card.add_child(box)
+
+		var name_label := Label.new()
+		name_label.text = str(option.get("title", "?"))
+		name_label.theme_type_variation = &"SubtitleLabel"
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(name_label)
+		box.add_child(HSeparator.new())
+
+		var reward := Label.new()
+		reward.text = str(option.get("reward_text", ""))
+		reward.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		reward.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		reward.add_theme_color_override("font_color", Color(0.62, 1.0, 0.68))
+		reward.add_theme_font_size_override("font_size", 21)
+		box.add_child(reward)
+
+		var penalty := Label.new()
+		penalty.text = str(option.get("penalty_text", ""))
+		penalty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		penalty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		penalty.add_theme_color_override("font_color", Color(1.0, 0.62, 0.58))
+		penalty.add_theme_font_size_override("font_size", 19)
+		penalty.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		box.add_child(penalty)
+		return card
+
+
 func _ready() -> void:
 	_build_layout()
 	if get_tree().current_scene == self:
@@ -491,6 +576,8 @@ func _spawn_abilities() -> void:
 func _next_round() -> void:
 	_busy = true
 	sim.begin_round()
+	# A pending "Options In Combat" choice is drained as a `choice_offered`
+	# event and awaited inside _play_events (patch 0.22).
 	await _play_events(sim.drain_events())
 	_busy = false
 	_refresh_all()
@@ -534,6 +621,34 @@ func _on_end_turn() -> void:
 		_next_round()
 
 
+## Puts a foe's decision to the player and blocks until they answer, then
+## lets the round start finish (the machine has not spun yet).
+func _offer_choice(data: Dictionary) -> void:
+	var overlay := OptionsOverlay.new()
+	add_child(overlay)
+	var title := "The Loan Shark makes you an offer"
+	if str(data.get("kind", "")) != "loan":
+		title = "Choose"
+	overlay.build(title, data.get("options", []))
+	# CB_DEBUG_CHOICE=N: take option N automatically, so a fight that pauses on
+	# a decision can still be screenshot-reviewed end to end. Kicked off
+	# WITHOUT awaiting, so the listener below is already in place when it fires.
+	var auto := OS.get_environment("CB_DEBUG_CHOICE")
+	if auto != "":
+		_auto_pick(overlay, maxi(0, auto.to_int() - 1))
+	var index: int = await overlay.picked
+	overlay.queue_free()
+	if sim.choose(index):
+		await _play_events(sim.drain_events())
+	_refresh_all()
+
+
+func _auto_pick(overlay: OptionsOverlay, index: int) -> void:
+	await get_tree().create_timer(1.2).timeout
+	if is_instance_valid(overlay):
+		overlay.picked.emit(index)
+
+
 func _refresh_all() -> void:
 	_hero_view.refresh()
 	_publish_hero_hp()
@@ -574,9 +689,7 @@ func _intent_strikes(actor_id: StringName) -> bool:
 	if entry.is_empty():
 		return false
 	var intent: Dictionary = entry.get("intent", {})
-	if intent.get("blackjack", false):
-		return not entry.get("bust", false)
-	return int(intent.get("instances", 0)) > 0
+	return int(entry.get("display_instances", intent.get("instances", 0))) > 0
 
 
 func _card_of(ability_id: StringName) -> AbilityCard:
@@ -823,6 +936,38 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if run_mode:
 					await get_tree().create_timer(1.6).timeout
 					Game.combat_finished(false, 0, [])
+			&"choice_offered":
+				await _offer_choice(event.data)
+			&"loan_taken":
+				_hero_view.refresh()
+				Fx.spawn_number(_hero_view.sprite_center(),
+					str(event.data.get("title", "LOAN")), Color(0.85, 0.75, 1.0))
+				await get_tree().create_timer(0.3).timeout
+			&"loan_ticked":
+				_hero_view.refresh()
+			&"loan_due":
+				Fx.spawn_number(_hero_view.sprite_center(), "DUE!", Color(1.0, 0.55, 0.5))
+				_vfx.vignette(0.4, 0.7)
+				_hero_view.refresh()
+				await get_tree().create_timer(0.3).timeout
+			&"chips_absorbed":
+				for card in _ability_cards:
+					card.refresh()
+				_vfx.shockwave(_cabinet.window_rect_global().get_center(),
+					Color(0.7, 0.5, 1.0), 200.0)
+				Fx.shake(14.0)
+				await get_tree().create_timer(0.35).timeout
+			&"enemy_busted":
+				var busted := _view_of(event.data.actor)
+				if busted != null:
+					Fx.spawn_number(busted.sprite_center(), "BUST!", Color(1.0, 0.85, 0.4))
+					_vfx.shockwave(busted.sprite_center(), Color(1.0, 0.85, 0.4), 150.0)
+					busted.refresh()
+				await get_tree().create_timer(0.3).timeout
+			&"rage_spent":
+				var raging := _view_of(event.data.actor)
+				if raging != null:
+					raging.refresh()
 			&"turn_started", &"turn_ended":
 				# Statuses tick per actor now (patch 0.22), so the pips under
 				# that unit — and the hero's live ability numbers, which Frail

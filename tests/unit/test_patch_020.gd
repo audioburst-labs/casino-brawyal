@@ -49,11 +49,14 @@ func test_a_summon_does_not_steal_a_manually_chosen_target() -> void:
 
 func test_the_target_still_moves_on_when_it_dies() -> void:
 	var sim := _sim(["dealer", "manager"], ["card_sling"], 5)
-	var first: CombatActor = sim.enemies[0]
-	assert_eq(sim.targeting.effective_target(sim.enemies), first)
+	# Whoever the resolver settled on: killing them hands the marker to the
+	# other one. (Which of the two starts as the target depends on their HP
+	# rolls, and the Dealer's range moved in patch 0.22.)
+	var first: CombatActor = sim.targeting.effective_target(sim.enemies)
+	var other: CombatActor = sim.enemies[0] if sim.enemies[1] == first else sim.enemies[1]
 	first.hp = 0
 	sim.check_death(first)
-	assert_eq(sim.targeting.effective_target(sim.enemies), sim.enemies[1])
+	assert_eq(sim.targeting.effective_target(sim.enemies), other)
 
 
 # ---- the loadout loses its middle tier ----

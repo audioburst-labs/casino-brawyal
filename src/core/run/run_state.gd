@@ -216,11 +216,17 @@ static func from_dict(data: Dictionary) -> RunState:
 	for id in data.get("seen_events", []):
 		run.seen_events.append(StringName(str(id)))
 	for type in data.get("history", []):
-		run.history.append(StringName(str(type)))
+		# Patch 0.22 renamed Hard Combat to Elite; an in-flight save keeps
+		# playing rather than tripping the placement rules.
+		var visited := StringName(str(type))
+		run.history.append(&"elite" if visited == &"hard_combat" else visited)
 	run.shop_offers = int(data.get("shop_offers", 0))
 	var pending: Variant = data.get("pending_encounter", {})
 	if pending is Dictionary:
 		run.pending_encounter = pending
+		if str(run.pending_encounter.get("type", "")) == "hard_combat":
+			run.pending_encounter["type"] = "elite"
+			run.pending_encounter.erase("variant")
 	var reels: Array = data.get("reels", [])
 	while run.machine.reels.size() < reels.size():
 		run.machine.add_reel()

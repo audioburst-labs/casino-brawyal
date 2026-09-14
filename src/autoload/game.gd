@@ -124,7 +124,7 @@ func choose_encounter(option: Dictionary) -> void:
 ## so a resumed run gets the very same encounter back.
 func _open_encounter(option: Dictionary) -> void:
 	match option.type:
-		&"combat", &"hard_combat", &"boss":
+		&"combat", &"elite", &"boss":
 			run.process_trash()  # the trash slot empties when combat begins
 			_start_combat(option)
 		&"story":
@@ -193,7 +193,7 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 		goto_screen("res://scenes/screens/reward_screen.tscn", {
 			"gold_min": _combat_gold.x,
 			"gold_max": _combat_gold.y,
-			"hard": run.last_visited() == &"hard_combat",
+			"elite": run.last_visited() == &"elite",
 		})
 
 

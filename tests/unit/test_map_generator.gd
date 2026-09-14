@@ -63,8 +63,15 @@ func test_property_all_placement_rules_hold_across_many_runs() -> void:
 						assert_gt(encounter_number, 1, "casino only after enc 1")
 						assert_lt(run.count_visited(&"casino"), 2, "casino cap is 2")
 						assert_ne(run.last_visited(), &"casino", "no consecutive casinos")
-					&"hard_combat":
-						assert_gt(encounter_number, 3, "hard combat only after enc 3")
+					&"elite":
+						# Doc v0.120: after #3, at most twice, two encounters
+						# apart (patch 0.22).
+						assert_gt(encounter_number, 3, "elites only after enc 3")
+						assert_lt(run.count_visited(&"elite"), 2, "at most two elites")
+						var previous := run.history.rfind(&"elite")
+						if previous >= 0:
+							assert_gt(encounter_number - (previous + 1), 2,
+								"two encounters between elites")
 
 			if encounter_number == MapGenerator.FINAL_SHOP_ENCOUNTER:
 				var has_shop_or_capped: bool = types.has(&"shop") \
@@ -74,8 +81,8 @@ func test_property_all_placement_rules_hold_across_many_runs() -> void:
 						% MapGenerator.FINAL_SHOP_ENCOUNTER)
 
 			for option: Dictionary in options:
-				if option.type == &"hard_combat":
-					assert_has(["buffed", "advanced"], str(option.get("variant")))
+				assert_false(option.has("variant"),
+					"elites replaced the buffed/advanced variants (patch 0.22)")
 
 			var pick: Dictionary = options[choice_rng.randi_range(0, options.size() - 1)]
 			run.record_visit(pick.type)

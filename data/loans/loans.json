@@ -1,0 +1,102 @@
+{
+  "type": "loans",
+  "items": [
+    {
+      "id": "pocket_change",
+      "title": "Pocket Change",
+      "turns": 3,
+      "reward_text": "Gain 1 random Chip.",
+      "penalty_text": "In 3 turns, take 10 damage.",
+      "reward": [
+        {
+          "op": "add_chips",
+          "suit": "random",
+          "count": 1
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_hp",
+          "amount": 10
+        }
+      ]
+    },
+    {
+      "id": "quick_patch",
+      "title": "Quick Patch",
+      "turns": 2,
+      "reward_text": "Heal 10.",
+      "penalty_text": "In 2 turns, take 20 damage.",
+      "reward": [
+        {
+          "op": "heal",
+          "amount": 10
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_hp",
+          "amount": 20
+        }
+      ]
+    },
+    {
+      "id": "double_stack",
+      "title": "Double Stack",
+      "turns": 4,
+      "reward_text": "Gain 2 random Chips.",
+      "penalty_text": "In 4 turns, take 40 damage.",
+      "reward": [
+        {
+          "op": "add_chips",
+          "suit": "random",
+          "count": 2
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_hp",
+          "amount": 40
+        }
+      ]
+    },
+    {
+      "id": "house_doctor",
+      "title": "House Doctor",
+      "turns": 3,
+      "reward_text": "Heal 20.",
+      "penalty_text": "In 3 turns, take 40 damage.",
+      "reward": [
+        {
+          "op": "heal",
+          "amount": 20
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_hp",
+          "amount": 40
+        }
+      ]
+    },
+    {
+      "id": "cash_advance",
+      "title": "Cash Advance",
+      "turns": 2,
+      "reward_text": "Gain 20 Coins.",
+      "penalty_text": "In 2 turns, lose 50 Coins.",
+      "reward": [
+        {
+          "op": "gain_coins",
+          "amount": 20
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_coins",
+          "amount": 50
+        }
+      ]
+    }
+  ]
+}

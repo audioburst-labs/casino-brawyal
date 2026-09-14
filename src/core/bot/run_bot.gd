@@ -21,7 +21,7 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 		var option: Dictionary = options[choice_rng.randi_range(0, options.size() - 1)]
 		run.record_visit(option.type)
 		match option.type:
-			&"combat", &"hard_combat", &"boss":
+			&"combat", &"elite", &"boss":
 				if not _play_combat(db, run, rng, option, choice_rng):
 					return _result(run, false)
 			&"story":
@@ -69,7 +69,7 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 		var choices := Rewards.ability_choices(db, run, rng.stream(&"rewards"))
 		if not choices.is_empty():
 			run.acquire_ability(choices[choice_rng.randi_range(0, choices.size() - 1)])
-		if option.type == &"hard_combat":
+		if option.type == &"elite":
 			var relic := Rewards.random_unowned_relic(db, run, rng.stream(&"rewards"))
 			if relic != &"":
 				run.relic_ids.append(relic)

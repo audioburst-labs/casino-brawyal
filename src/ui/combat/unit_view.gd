@@ -228,8 +228,49 @@ func refresh() -> void:
 		stack_label.tooltip_text = status_tooltip(status_id, stacks)
 		stack_label.mouse_filter = Control.MOUSE_FILTER_PASS
 		_status_row.add_child(stack_label)
+	for loan: Dictionary in actor.loans:
+		_add_loan_chip(loan)
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
 	_refresh_mark()
+
+
+## Doc "Loan": the debt shows as a scroll with the number of turns left on it,
+## a different colour per loan, and a hover that names what happens at zero.
+const LOAN_ICON := "res://assets/icons/status_loan.png"
+const LOAN_TINTS := {
+	&"pocket_change": Color(0.55, 0.78, 1.0),
+	&"quick_patch": Color(0.55, 1.0, 0.7),
+	&"double_stack": Color(0.85, 0.6, 1.0),
+	&"house_doctor": Color(1.0, 0.85, 0.5),
+	&"cash_advance": Color(1.0, 0.6, 0.55),
+}
+
+
+func _add_loan_chip(loan: Dictionary) -> void:
+	var id := StringName(str(loan.get("id", "")))
+	var def := Db.content.get_loan(id)
+	var tint: Color = LOAN_TINTS.get(id, Color(0.8, 0.8, 0.9))
+	var hint := "%s — in %d turn(s): %s" % [
+		def.title if def else String(id).capitalize(),
+		int(loan.get("turns_left", 0)),
+		def.penalty_text if def else "the debt comes due"]
+	if ResourceLoader.exists(LOAN_ICON):
+		var icon := TextureRect.new()
+		icon.texture = load(LOAN_ICON)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(33, 33)
+		icon.modulate = tint
+		icon.tooltip_text = hint
+		icon.mouse_filter = Control.MOUSE_FILTER_PASS
+		_status_row.add_child(icon)
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", tint)
+	label.text = "%d " % int(loan.get("turns_left", 0))
+	label.tooltip_text = hint
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	_status_row.add_child(label)
 
 
 ## One human-readable explanation for a status/keyword, used by every hover
@@ -389,7 +430,7 @@ func _refresh_mark() -> void:
 
 
 ## `entry` is the intents_shown payload: intent dict + display_per_hit /
-## display_instances (strength-buffed values) + optional blackjack fields.
+## display_instances (Strength/Multistrike/Rage-adjusted values).
 ## Icons belong on enemy intents, not player ability text (patch 0.17): each
 ## debuff/buff gets its status icon inline, ahead of its stack count.
 func show_intent(entry: Dictionary) -> void:
@@ -412,11 +453,15 @@ func show_intent(entry: Dictionary) -> void:
 		_add_intent_chunk(&"heal_allies", "%d" % int(intent.get("heal_allies")))
 	if intent.get("ally_attack_again", false):
 		_add_intent_chunk(&"encore", "")
+	if int(intent.get("self_block", 0)) > 0:
+		_add_intent_chunk(&"block", "%d" % int(intent.get("self_block")))
+	if int(intent.get("gift_chips", 0)) > 0:
+		_add_intent_chunk(&"gift", "%d" % int(intent.get("gift_chips")))
+	if intent.get("absorb", false):
+		_add_intent_chunk(&"absorb", "")
 	var instances := int(entry.get("display_instances", intent.get("instances", 0)))
 	var per_hit := int(entry.get("display_per_hit", intent.get("per_hit", 0)))
-	if entry.get("bust", false):
-		_add_intent_text("BUST!")
-	elif instances > 1:
+	if instances > 1:
 		_add_intent_chunk(&"attack", "%dx%d" % [instances, per_hit])
 	elif instances == 1:
 		_add_intent_chunk(&"attack", "%d" % per_hit)
@@ -425,12 +470,16 @@ func show_intent(entry: Dictionary) -> void:
 ## Non-status intent parts that still deserve an icon + a hover explanation.
 const INTENT_ICONS := {
 	&"attack": "res://assets/icons/intent_attack.png",
+	&"gift": "res://assets/icons/chip_spade.png",
+	&"absorb": "res://assets/icons/fx_explosion.png",
 	&"summon": "res://assets/icons/intent_summon.png",
 	&"heal_allies": "res://assets/icons/fx_heal.png",
 	&"encore": "res://assets/icons/keyword_go_again.png",
 }
 const INTENT_HINTS := {
 	&"attack": "Attack — [instances] x [damage per hit].",
+	&"gift": "Gift — you receive this many random chips next turn.",
+	&"absorb": "Absorb — every chip you have placed on an ability is taken.",
 	&"summon": "Summon — brings new enemies onto the field.",
 	&"heal_allies": "Heal Allies — restores health to every living enemy.",
 	&"encore": "Encore — another enemy attacks a second time.",

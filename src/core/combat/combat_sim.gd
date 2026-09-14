@@ -12,11 +12,20 @@ extends RefCounted
 ##                      acts and its own debuffs after — then returns to
 ##                      ROUND_START (or ENDED on win/loss)
 
-enum Phase { ROUND_START, ASSIGNMENT, ENDED }
+## CHOICE is the doc's "Options In Combat": the round pauses after the intents
+## are shown, the presenter dims the field and offers the player a decision,
+## and `choose()` resumes the round start (patch 0.22).
+enum Phase { ROUND_START, CHOICE, ASSIGNMENT, ENDED }
 
 const MAX_ENEMIES := 4      # patch 0.13: the field holds at most 4 fighters
 const EMBLEM_MULTIPLIER := 1.3
 const LUCKY_FOOT_CHANCE := 0.1
+## Rage X: "your next attack deals X bonus damage". The designer's call is that
+## the bonus lands on EVERY hit of that attack, so a Rage 10 into a 2x0 move
+## deals 20 (patch 0.22).
+const RAGE_PER_HIT := true
+## Loans are offered on the Loan Shark's 1st, 4th, 7th... round.
+const LOAN_FIRST_ROUND := 1
 
 var phase: Phase = Phase.ROUND_START
 var round_number := 0
@@ -38,8 +47,13 @@ var _db: ContentDB
 var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
 var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
-var _blackjack: Dictionary = {}     # enemy id -> {roll, bust} for this round
-var _bj_counters: Dictionary = {}   # enemy id -> cumulative damage count
+## Enemy passives (patch 0.22): running damage tally per enemy, for the
+## Dealer's Bust count and the Chip Golem's Break threshold.
+var _passive_counters: Dictionary = {}
+## Chips a Gift move promised; handed over after the next spin so the player
+## sees them arrive with the payout.
+var _pending_gift_chips := 0
+var _pending_choice: Dictionary = {}
 var _dmg_mult := 1.0
 var _hp_mult := 1.0
 var _events: Array[CombatEvent] = []
@@ -157,7 +171,6 @@ func begin_round() -> bool:
 
 	_intents.clear()
 	_intent_ids.clear()
-	_blackjack.clear()
 	var shown := []
 	for enemy in enemies:
 		if not enemy.is_alive():
@@ -168,14 +181,98 @@ func begin_round() -> bool:
 		var move: Dictionary = _db.get_enemy(enemy.def_id).moves.get(move_id, {})
 		_intents[enemy.id] = move
 		_intent_ids[enemy.id] = move_id
-		if move.get("intent", {}).get("blackjack", false):
-			_blackjack[enemy.id] = _raffle_blackjack(enemy.id)
 		var entry := _build_intent_entry(enemy, move_id)
 		shown.append(entry)
 	emit_event(&"intents_shown", {"intents": shown})
 
+	# An enemy may interrupt here to put a choice to the player (the Loan
+	# Shark). The machine is not spun until they have answered.
+	if _offer_pending_choice():
+		phase = Phase.CHOICE
+		return true
+	_finish_round_start()
+	return true
+
+
+## The rest of the round start, after any "Options In Combat" decision.
+func _finish_round_start() -> void:
 	_spin_machine()
+	_deliver_gift_chips()
 	phase = Phase.ASSIGNMENT
+
+
+## Gift X (sheet v0.120): "give the player X random chips at the start of their
+## next turn". Handed over after the spin so they are seen landing with the
+## payout rather than appearing out of nowhere.
+func _deliver_gift_chips() -> void:
+	if _pending_gift_chips <= 0:
+		return
+	var count := _pending_gift_chips
+	_pending_gift_chips = 0
+	for i in count:
+		_grant_random_chip(&"gift")
+
+
+func _grant_random_chip(source: StringName) -> void:
+	var suit: StringName = ContentDB.SUITS[
+		rng.stream(&"combat").randi_range(0, ContentDB.SUITS.size() - 1)]
+	tray.add(suit, 1)
+	emit_event(&"chips_generated", {"suit": suit, "count": 1, "source": source})
+
+
+## Loan passive: "at the start of every 3 rounds, offer 1 of 2 loans".
+func _offer_pending_choice() -> bool:
+	for enemy in enemies:
+		if not enemy.is_alive():
+			continue
+		var passive: Dictionary = _db.get_enemy(enemy.def_id).passive
+		if str(passive.get("type", "")) != "loan":
+			continue
+		var every := maxi(1, int(passive.get("every_rounds", 3)))
+		if (round_number - LOAN_FIRST_ROUND) % every != 0 or round_number < LOAN_FIRST_ROUND:
+			continue
+		var pool: Array = _db.all_loan_ids().duplicate()
+		if pool.is_empty():
+			continue
+		var offers: Array = []
+		var wanted := mini(int(passive.get("offers", 2)), pool.size())
+		for i in wanted:
+			var index := rng.stream(&"combat").randi_range(0, pool.size() - 1)
+			var loan: Defs.LoanDef = _db.get_loan(pool[index])
+			pool.remove_at(index)
+			offers.append({
+				"id": String(loan.id), "title": loan.title, "turns": loan.turns,
+				"reward_text": loan.reward_text, "penalty_text": loan.penalty_text,
+			})
+		_pending_choice = {"actor": enemy.id, "kind": "loan", "options": offers}
+		emit_event(&"choice_offered", _pending_choice.duplicate(true))
+		return true
+	return false
+
+
+func pending_choice() -> Dictionary:
+	return _pending_choice
+
+
+## The player picks one of the offered options; its reward lands immediately
+## and the round start resumes (doc: "Selecting an option immediately executes
+## its corresponding outcome before resuming standard battle progression").
+func choose(index: int) -> bool:
+	if phase != Phase.CHOICE:
+		return false
+	var options: Array = _pending_choice.get("options", [])
+	if index < 0 or index >= options.size():
+		return false
+	var loan: Defs.LoanDef = _db.get_loan(StringName(str(options[index].id)))
+	_pending_choice = {}
+	if loan == null:
+		_finish_round_start()
+		return true
+	EffectInterpreter.execute(loan.reward, self, hero, targeting.effective_target(enemies))
+	hero.loans.append({"id": loan.id, "turns_left": loan.turns})
+	emit_event(&"loan_taken", {"loan": loan.id, "title": loan.title,
+		"turns": loan.turns, "penalty_text": loan.penalty_text})
+	_finish_round_start()
 	return true
 
 
@@ -204,18 +301,31 @@ func _build_intent_entry(enemy: CombatActor, move_id: String) -> Dictionary:
 	var move: Dictionary = _intents.get(enemy.id, {})
 	var intent: Dictionary = move.get("intent", {})
 	var entry := {"actor": enemy.id, "move": move_id, "intent": intent}
-	if intent.get("blackjack", false):
-		var raffle: Dictionary = _blackjack.get(enemy.id, {"roll": 0, "bust": true, "count": 0})
-		entry["blackjack_total"] = raffle.roll
-		entry["blackjack_count"] = raffle.count
-		entry["bust"] = raffle.bust
-		entry["display_per_hit"] = 0 if raffle.bust else raffle.roll
-		entry["display_instances"] = 0 if raffle.bust else 1
-	else:
-		entry["display_per_hit"] = StatusRules.attack_damage(
-			int(round(int(intent.get("per_hit", 0)) * _dmg_mult)), enemy, _weak_pct)
-		entry["display_instances"] = int(intent.get("instances", 0))
+	# Multistrike and Rage move the announced numbers, so the intent has to
+	# show what will actually land (patch 0.22).
+	entry["display_per_hit"] = StatusRules.attack_damage(
+		_move_per_hit(enemy, intent), enemy, _weak_pct)
+	entry["display_instances"] = _move_instances(enemy, intent)
+	if not _db.get_enemy(enemy.def_id).passive.is_empty():
+		entry["passive"] = _db.get_enemy(enemy.def_id).passive
+		entry["passive_count"] = int(_passive_counters.get(enemy.id, 0))
 	return entry
+
+
+## Instances of damage this move will deal, Multistrike included.
+func _move_instances(enemy: CombatActor, intent: Dictionary) -> int:
+	var instances := int(intent.get("instances", 0))
+	if instances <= 0:
+		return 0
+	return instances + enemy.status_stacks(&"multistrike")
+
+
+## Damage per hit, dmg_mult and Rage included.
+func _move_per_hit(enemy: CombatActor, intent: Dictionary) -> int:
+	var per_hit := int(round(int(intent.get("per_hit", 0)) * _dmg_mult))
+	if int(intent.get("instances", 0)) > 0 and RAGE_PER_HIT:
+		per_hit += enemy.status_stacks(&"rage")
+	return per_hit
 
 
 ## Current intent numbers for one enemy, recomputed with its live statuses —
@@ -276,7 +386,10 @@ func end_assignment() -> bool:
 	# The hero's turn ends here, BEFORE the enemy phase: his debuffs each
 	# covered a full turn of his (patch 0.22).
 	hero.tick_turn_end()
+	_tick_loans()
 	emit_event(&"turn_ended", {"actor": hero.id})
+	if phase == Phase.ENDED:
+		return true
 
 	_run_enemy_phase()
 	if phase == Phase.ENDED:
@@ -286,6 +399,62 @@ func end_assignment() -> bool:
 	_fire_relics(&"round_ended")
 	phase = Phase.ROUND_START
 	return true
+
+
+## Every point of damage an enemy takes runs through here, so its passive can
+## react (patch 0.22). Called by EffectInterpreter right after `damage_dealt`.
+func on_enemy_damaged(actor: CombatActor, hp_lost: int) -> void:
+	if actor == null or actor.is_hero or hp_lost <= 0:
+		return
+	var passive: Dictionary = _db.get_enemy(actor.def_id).passive
+	if passive.is_empty():
+		return
+	var tally: int = int(_passive_counters.get(actor.id, 0)) + hp_lost
+	match str(passive.get("type", "")):
+		"bust":
+			# Dealer: "count all damage taken; when it reaches 21, stun me and
+			# reduce my Strength to 0."
+			var threshold := maxi(1, int(passive.get("threshold", 21)))
+			if tally >= threshold:
+				tally = 0
+				actor.statuses.erase(&"strength")
+				actor.apply_status(&"stun", 1)
+				emit_event(&"enemy_busted", {"actor": actor.id, "threshold": threshold})
+				emit_event(&"status_applied",
+					{"actor": actor.id, "status": &"stun", "stacks": 1})
+		"break":
+			# Chip Golem: "for every 20 health that I lose, give the player a
+			# random Chip."
+			var every := maxi(1, int(passive.get("every", 20)))
+			while tally >= every:
+				tally -= every
+				_grant_random_chip(&"break")
+	_passive_counters[actor.id] = tally
+
+
+## The loan countdown runs with the hero's own debuffs, at the end of his turn
+## (doc: "at the end of each turn, this number is reduced by one").
+func _tick_loans() -> void:
+	if hero.loans.is_empty():
+		return
+	var due: Array[Dictionary] = []
+	for loan: Dictionary in hero.loans:
+		loan.turns_left = int(loan.turns_left) - 1
+		emit_event(&"loan_ticked",
+			{"loan": loan.id, "turns_left": int(loan.turns_left)})
+		if int(loan.turns_left) <= 0:
+			due.append(loan)
+	for loan: Dictionary in due:
+		hero.loans.erase(loan)
+		var def: Defs.LoanDef = _db.get_loan(StringName(str(loan.id)))
+		if def == null:
+			continue
+		emit_event(&"loan_due", {"loan": def.id, "title": def.title,
+			"penalty_text": def.penalty_text})
+		EffectInterpreter.execute(def.penalty, self, hero, null)
+		_check_hero_death()
+		if phase == Phase.ENDED:
+			return
 
 
 func check_death(actor: CombatActor) -> void:
@@ -317,21 +486,6 @@ func _spin_machine() -> void:
 	tray.add_payout(result.payout)
 	emit_event(&"spin_resolved", {"symbols": result.symbols, "payout": result.payout})
 	_fire_relics(&"spin_resolved")
-
-
-## Each dealer attack deals a random 1-10 (patch 0.17 sheet sync) and a
-## per-dealer damage count accumulates across rounds. When the count would
-## pass 21, that attack is negated (the dealer sits the round out) and the
-## count resets.
-func _raffle_blackjack(enemy_id: StringName) -> Dictionary:
-	var roll := rng.stream(&"combat").randi_range(1, 10)
-	var count: int = _bj_counters.get(enemy_id, 0)
-	var bust := count + roll > 21
-	if bust:
-		_bj_counters[enemy_id] = 0
-	else:
-		_bj_counters[enemy_id] = count + roll
-	return {"roll": roll, "count": _bj_counters[enemy_id], "bust": bust}
 
 
 ## `enemies` is ordered from the centre of the field outward: index 0 is the
@@ -393,7 +547,7 @@ func _remove_actor(actor: CombatActor) -> void:
 	_brains.erase(actor.id)
 	_intents.erase(actor.id)
 	_intent_ids.erase(actor.id)
-	_blackjack.erase(actor.id)
+	_passive_counters.erase(actor.id)
 	emit_event(&"actor_removed", {"actor": actor.id})
 
 
@@ -463,17 +617,27 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 	var move: Dictionary = _intents.get(enemy.id, {})
 	var intent: Dictionary = move.get("intent", {})
 
-	if intent.get("blackjack", false):
-		var raffle: Dictionary = _blackjack.get(enemy.id, {"roll": 0, "bust": true})
-		if raffle.bust:
-			emit_event(&"enemy_move", {"actor": enemy.id, "skipped": true, "bust": true})
-			return
-		emit_event(&"enemy_move", {"actor": enemy.id, "skipped": false})
-		_hit_hero(enemy, int(raffle.roll))
-		_check_hero_death()
-		return
-
 	emit_event(&"enemy_move", {"actor": enemy.id, "skipped": false})
+
+	# Absorb (sheet v0.120): "remove all chips placed on abilities."
+	if intent.get("absorb", false):
+		var taken := 0
+		for ability in abilities:
+			for slot in ability.filled.size():
+				if ability.filled[slot] != &"":
+					taken += 1
+			ability.clear()
+		emit_event(&"chips_absorbed", {"actor": enemy.id, "count": taken})
+
+	if int(intent.get("self_block", 0)) > 0:
+		var shield := int(intent.get("self_block"))
+		enemy.gain_block(shield)
+		emit_event(&"block_gained", {"actor": enemy.id, "amount": shield})
+
+	if int(intent.get("gift_chips", 0)) > 0:
+		_pending_gift_chips += int(intent.get("gift_chips"))
+		emit_event(&"gift_promised",
+			{"actor": enemy.id, "count": int(intent.get("gift_chips"))})
 
 	var summon: Dictionary = intent.get("summon", {})
 	if not summon.is_empty():
@@ -499,12 +663,17 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 			if phase == Phase.ENDED:
 				return
 
-	var instances := int(intent.get("instances", 0))
-	var per_hit := int(round(int(intent.get("per_hit", 0)) * _dmg_mult))
+	var instances := _move_instances(enemy, intent)
+	var per_hit := _move_per_hit(enemy, intent)
 	for i in instances:
 		if not hero.is_alive():
 			break
 		_hit_hero(enemy, per_hit)
+	if instances > 0 and enemy.has_status(&"rage"):
+		# "Your NEXT attack deals X bonus damage" — spent by that attack.
+		var spent := enemy.status_stacks(&"rage")
+		enemy.statuses.erase(&"rage")
+		emit_event(&"rage_spent", {"actor": enemy.id, "amount": spent})
 	for debuff: Dictionary in intent.get("debuffs", []):
 		if not hero.is_alive():
 			break

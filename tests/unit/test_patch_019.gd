@@ -164,7 +164,7 @@ func test_same_type_enemies_roll_their_own_hp() -> void:
 		var sim := _sim(["dealer", "dealer", "dealer", "dealer"], ["card_sling"], seed_value)
 		var rolls := sim.enemies.map(func(e: CombatActor) -> int: return e.max_hp)
 		for hp: int in rolls:
-			assert_between(hp, 22, 27)
+			assert_between(hp, 43, 53)   # the Dealer's sheet range (patch 0.22)
 		if rolls.any(func(hp: int) -> bool: return hp != rolls[0]):
 			spreads += 1
 	assert_gt(spreads, 20, "four Dealers should almost never share one HP roll")

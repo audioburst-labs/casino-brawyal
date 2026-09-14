@@ -8,8 +8,13 @@
       "hp_max": 60,
       "brain": {
         "type": "pair_then",
-        "pair": ["door_check", "double_jab"],
-        "then": ["pump_up"]
+        "pair": [
+          "door_check",
+          "double_jab"
+        ],
+        "then": [
+          "pump_up"
+        ]
       },
       "moves": {
         "door_check": {
@@ -17,16 +22,32 @@
             "instances": 1,
             "per_hit": 6,
             "debuffs": [],
-            "self_status": [{"status": "taunt", "stacks": 2}]
+            "self_status": [
+              {
+                "status": "taunt",
+                "stacks": 2
+              }
+            ]
           }
         },
-        "double_jab": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}},
+        "double_jab": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 3,
+            "debuffs": []
+          }
+        },
         "pump_up": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
             "debuffs": [],
-            "self_status": [{"status": "strength", "stacks": 2}]
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 2
+              }
+            ]
           }
         }
       }
@@ -38,7 +59,11 @@
       "hp_max": 35,
       "brain": {
         "type": "weighted",
-        "weights": {"hot_plate": 1, "spilled_drink": 1, "glass_barrage": 1},
+        "weights": {
+          "hot_plate": 1,
+          "spilled_drink": 1,
+          "glass_barrage": 1
+        },
         "no_repeat_last": true
       },
       "moves": {
@@ -46,29 +71,93 @@
           "intent": {
             "instances": 1,
             "per_hit": 6,
-            "debuffs": [{"status": "vulnerable", "stacks": 2}]
+            "debuffs": [
+              {
+                "status": "vulnerable",
+                "stacks": 2
+              }
+            ]
           }
         },
         "spilled_drink": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
-            "debuffs": [{"status": "frail", "stacks": 2}]
+            "debuffs": [
+              {
+                "status": "frail",
+                "stacks": 2
+              }
+            ]
           }
         },
-        "glass_barrage": {"intent": {"instances": 2, "per_hit": 3, "debuffs": []}}
+        "glass_barrage": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 3,
+            "debuffs": []
+          }
+        }
       }
     },
     {
       "id": "dealer",
       "name": "Dealer",
-      "hp_min": 22,
-      "hp_max": 27,
-      "brain": {"type": "sequence", "loop": true, "steps": ["deal_the_cards"]},
+      "hp_min": 43,
+      "hp_max": 53,
+      "brain": {
+        "type": "sequence",
+        "loop": true,
+        "steps": [
+          "deal_low",
+          "deal_high",
+          "deal_fast"
+        ]
+      },
       "moves": {
-        "deal_the_cards": {
-          "intent": {"instances": 1, "per_hit": 0, "debuffs": [], "blackjack": true}
+        "deal_low": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 2,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 1
+              }
+            ]
+          }
+        },
+        "deal_high": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 2,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 1
+              }
+            ]
+          }
+        },
+        "deal_fast": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 2,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "multistrike",
+                "stacks": 1
+              }
+            ]
+          }
         }
+      },
+      "passive": {
+        "type": "bust",
+        "threshold": 21
       }
     },
     {
@@ -78,23 +167,48 @@
       "hp_max": 50,
       "brain": {
         "type": "intro_loop",
-        "intro": ["call_staff"],
-        "loop": ["clipboard_strike", "performance_review"]
+        "intro": [
+          "call_staff"
+        ],
+        "loop": [
+          "clipboard_strike",
+          "performance_review"
+        ]
       },
       "moves": {
-        "clipboard_strike": {"intent": {"instances": 1, "per_hit": 12, "debuffs": []}},
+        "clipboard_strike": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 12,
+            "debuffs": []
+          }
+        },
         "performance_review": {
           "intent": {
             "instances": 0,
             "per_hit": 0,
             "debuffs": [
-              {"status": "vulnerable", "stacks": 1},
-              {"status": "weak", "stacks": 1}
+              {
+                "status": "vulnerable",
+                "stacks": 1
+              },
+              {
+                "status": "weak",
+                "stacks": 1
+              }
             ]
           }
         },
         "call_staff": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "summon": {
+              "enemy": "server",
+              "count": 1
+            }
+          }
         }
       }
     },
@@ -105,22 +219,188 @@
       "hp_max": 120,
       "brain": {
         "type": "intro_loop",
-        "intro": ["call_bouncers", "money_barrage", "call_server", "big_hit", "bonuses"],
-        "loop": ["money_barrage", "big_hit", "bonuses"]
+        "intro": [
+          "call_bouncers",
+          "money_barrage",
+          "call_server",
+          "big_hit",
+          "bonuses"
+        ],
+        "loop": [
+          "money_barrage",
+          "big_hit",
+          "bonuses"
+        ]
       },
       "moves": {
         "call_bouncers": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "bouncer", "count": 1}}
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "summon": {
+              "enemy": "bouncer",
+              "count": 1
+            }
+          }
         },
-        "money_barrage": {"intent": {"instances": 3, "per_hit": 4, "debuffs": []}},
+        "money_barrage": {
+          "intent": {
+            "instances": 3,
+            "per_hit": 4,
+            "debuffs": []
+          }
+        },
         "call_server": {
-          "intent": {"instances": 0, "per_hit": 0, "debuffs": [], "summon": {"enemy": "server", "count": 1}}
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "summon": {
+              "enemy": "server",
+              "count": 1
+            }
+          }
         },
-        "big_hit": {"intent": {"instances": 1, "per_hit": 15, "debuffs": []}},
+        "big_hit": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 15,
+            "debuffs": []
+          }
+        },
         "bonuses": {
           "intent": {
-            "instances": 0, "per_hit": 0, "debuffs": [], "heal_allies": 20,
-            "self_status": [{"status": "strength", "stacks": 2}]
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "heal_allies": 20,
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 2
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "chip_golem",
+      "name": "Chip Golem",
+      "hp_min": 101,
+      "hp_max": 109,
+      "passive": {
+        "type": "break",
+        "every": 20
+      },
+      "brain": {
+        "type": "sequence",
+        "loop": true,
+        "steps": [
+          "bash",
+          "harden",
+          "crush"
+        ]
+      },
+      "moves": {
+        "bash": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 20,
+            "debuffs": [],
+            "gift_chips": 1
+          }
+        },
+        "harden": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_block": 20,
+            "absorb": true
+          }
+        },
+        "crush": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 8,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 3
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "loan_shark",
+      "name": "Loan Shark",
+      "hp_min": 75,
+      "hp_max": 85,
+      "passive": {
+        "type": "loan",
+        "every_rounds": 3,
+        "offers": 2
+      },
+      "brain": {
+        "type": "sequence",
+        "loop": true,
+        "steps": [
+          "collect",
+          "work_up",
+          "bleed",
+          "frenzy"
+        ]
+      },
+      "moves": {
+        "collect": {
+          "intent": {
+            "instances": 1,
+            "per_hit": 10,
+            "debuffs": [
+              {
+                "status": "weak",
+                "stacks": 2
+              }
+            ]
+          }
+        },
+        "work_up": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "rage",
+                "stacks": 10
+              }
+            ]
+          }
+        },
+        "bleed": {
+          "intent": {
+            "instances": 2,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_heal": 10
+          }
+        },
+        "frenzy": {
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "multistrike",
+                "stacks": 1
+              }
+            ]
           }
         }
       }

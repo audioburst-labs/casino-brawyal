@@ -56,6 +56,20 @@
       "stack_mode": "intensity",
       "kind": "debuff",
       "description": "Marked by Ace. Cash In removes a Mark for a bonus effect. Marks persist until cashed in."
+    },
+    {
+      "id": "multistrike",
+      "name": "Multistrike",
+      "stack_mode": "intensity",
+      "kind": "buff",
+      "description": "Each attack lands X extra times."
+    },
+    {
+      "id": "rage",
+      "name": "Rage",
+      "stack_mode": "intensity",
+      "kind": "buff",
+      "description": "The next attack deals X bonus damage on every hit, then Rage is spent."
     }
   ]
 }

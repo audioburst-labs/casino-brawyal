@@ -42,3 +42,22 @@ func test_story_events_exist_with_choices() -> void:
 		assert_between(event.choices.size(), 2, 4)
 		for choice: Dictionary in event.choices:
 			assert_true(choice.has("label"), "choice needs a label")
+
+
+## Patch 0.22: the sheet's Elites tab. They sit outside the stage ladder, so
+## `lineups_for_stage` never offers one as a normal fight.
+func test_elite_lineups_are_their_own_pool() -> void:
+	var elites := _db.elite_lineups()
+	assert_eq(elites.size(), 2)
+	var ids: Array[StringName] = []
+	for lineup: Dictionary in elites:
+		ids.append(lineup.id)
+		assert_eq((lineup.enemies as Array).size(), 1, "one mini-boss each")
+		assert_gte(int(lineup.gold_min), 77, "the sheet's elite reward")
+		assert_lte(int(lineup.gold_max), 83)
+	assert_has(ids, &"vault_golem")
+	assert_has(ids, &"loan_office")
+	for stage in range(1, 7):
+		for lineup: Dictionary in _db.lineups_for_stage(stage):
+			assert_false(bool(lineup.get("elite", false)),
+				"stage %d offers no elites" % stage)

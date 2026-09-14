@@ -38,15 +38,37 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				_grant_block(chips * int(effect.get("amount", 0)), sim, source)
 			"mark_random_unmarked":
 				_op_mark_random(sim, int(effect.get("count", 1)))
+			"heal":
+				var healed := int(effect.get("amount", 0))
+				source.heal(healed)
+				sim.emit_event(&"healed", {"actor": source.id, "amount": healed})
+			"lose_hp":
+				# A loan coming due hits like any other blow: Block can eat it,
+				# and it can kill (unlike a story wound, which RunEffects
+				# clamps to leave 1 HP).
+				var loss := int(effect.get("amount", 0))
+				var taken := sim.hero.take_damage(loss)
+				sim.emit_event(&"damage_dealt", {
+					"source": &"loan", "target": sim.hero.id,
+					"amount": loss, "hp_lost": taken,
+					"blocked": sim.hero.last_absorbed,
+				})
 			"heal_pct":
 				var amount := int(ceil(source.max_hp * float(effect.get("pct", 0.0))))
 				source.heal(amount)
 				sim.emit_event(&"healed", {"actor": source.id, "amount": amount})
 			"add_chips":
-				var suit := StringName(str(effect.get("suit", "")))
+				# "suit": "random" rolls per chip (the doc's Loans hand out
+				# random chips; patch 0.22).
 				var count := int(effect.get("count", 1))
-				sim.tray.add(suit, count)
-				sim.emit_event(&"chips_generated", {"suit": suit, "count": count})
+				var wanted := StringName(str(effect.get("suit", "")))
+				for i in count:
+					var suit := wanted
+					if suit == &"random":
+						suit = ContentDB.SUITS[sim.rng.stream(&"combat").randi_range(
+							0, ContentDB.SUITS.size() - 1)]
+					sim.tray.add(suit, 1)
+					sim.emit_event(&"chips_generated", {"suit": suit, "count": 1})
 			"convert_chips":
 				_op_convert_chips(effect, sim)
 			"respin_reel":
@@ -105,6 +127,7 @@ static func _deal_damage(amount: int, times: int, sim: CombatSim,
 			"amount": damage, "hp_lost": hp_lost,
 			"blocked": target.last_absorbed,
 		})
+		sim.on_enemy_damaged(target, hp_lost)
 		sim.check_death(target)
 
 
@@ -118,6 +141,7 @@ static func _deal_flat_damage(base: int, sim: CombatSim,
 		"amount": damage, "hp_lost": hp_lost,
 		"blocked": target.last_absorbed,
 	})
+	sim.on_enemy_damaged(target, hp_lost)
 	sim.check_death(target)
 
 

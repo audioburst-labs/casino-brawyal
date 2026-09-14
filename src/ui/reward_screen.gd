@@ -1,7 +1,7 @@
 extends ScreenBase
 ## Post-combat rewards: coins (auto-claimed), pick 1 of 3 abilities, and a
-## relic after Hard Combat. Picking one already owned upgrades it instead of
-## adding a second copy (doc "Ability Upgrades").
+## relic after an Elite (doc: "Relic (Elite Only)"). Picking an ability you
+## already own upgrades it instead of adding a second copy.
 
 var _ability_row: HBoxContainer
 
@@ -28,12 +28,29 @@ func setup(args: Dictionary) -> void:
 	Game.run.coins += coins
 	add_info_label("🪙 +%d coins" % coins, 30)
 
-	if args.get("hard", false):
+	if args.get("elite", false):
 		var relic := Rewards.random_unowned_relic(Db.content, Game.run, reward_rng)
 		if relic != &"":
 			Game.run.relic_ids.append(relic)
 			var def := Db.content.get_relic(relic)
-			add_info_label("Hard combat bonus — Relic: %s\n%s" % [def.name, def.description], 24)
+			# The relic the Elite dropped, with its own art (patch 0.22).
+			var relic_row := HBoxContainer.new()
+			relic_row.alignment = BoxContainer.ALIGNMENT_CENTER
+			relic_row.add_theme_constant_override("separation", 14)
+			relic_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			content.add_child(relic_row)
+			var icon := TextureRect.new()
+			icon.texture = SuitAssets.relic_texture(relic)
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.custom_minimum_size = Vector2(72, 72)
+			relic_row.add_child(icon)
+			var text := Label.new()
+			text.text = "Elite bonus — Relic: %s\n%s" % [def.name, def.description]
+			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			text.custom_minimum_size = Vector2(560, 0)
+			text.add_theme_font_size_override("font_size", 22)
+			relic_row.add_child(text)
 
 	var choices := Rewards.ability_choices(Db.content, Game.run, reward_rng)
 	if not choices.is_empty():

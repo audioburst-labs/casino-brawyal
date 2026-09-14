@@ -48,9 +48,13 @@ func test_encounter_factory_builds_valid_combat_configs() -> void:
 
 	for i in 4:
 		run.record_visit(&"combat")
-	var hard := EncounterFactory.combat_config(_db, run, rng,
-		{"type": &"hard_combat", "variant": "buffed"})
-	assert_eq(hard.hp_mult, 1.25)
+	# An Elite is its own fight against a mini-boss, not a buffed lineup.
+	var elite := EncounterFactory.combat_config(_db, run, rng, {"type": &"elite"})
+	assert_eq(elite.hp_mult, 1.0)
+	assert_eq(elite.dmg_mult, 1.0)
+	assert_eq((elite.enemies as Array).size(), 1)
+	assert_has([&"chip_golem", &"loan_shark"], elite.enemies[0])
+	assert_gte(int(elite.gold_min), 77)
 
 	for i in 4:
 		run.record_visit(&"combat")

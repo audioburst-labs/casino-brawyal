@@ -31,6 +31,20 @@ class EnemyDef:
 	var hp_max: int
 	var brain: Dictionary = {}                # {type: sequence|weighted|graph|phased, ...}
 	var moves: Dictionary = {}                # move id -> {intent: {...}}
+	## Always-on behaviour, see ContentDB.KNOWN_PASSIVES (patch 0.22):
+	## {"type": "bust"|"break"|"loan", ...}. Empty for a plain enemy.
+	var passive: Dictionary = {}
+
+
+## One "Options In Combat" loan (doc "Loan"): a reward now, a price in N turns.
+class LoanDef:
+	var id: StringName
+	var title: String
+	var turns: int = 3
+	var reward_text: String
+	var penalty_text: String
+	var reward: Array[Dictionary] = []
+	var penalty: Array[Dictionary] = []
 
 
 class KeywordDef:

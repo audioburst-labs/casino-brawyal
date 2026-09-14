@@ -1,7 +1,8 @@
 extends GutTest
 ## Patch 0.1 mechanics: HP ranges, graph brains, Mark/Cash In, per-turn limits,
 ## effect conditions, replace-bonuses, passives, summons, boss support moves,
-## the Dealer's blackjack raffle, and the new relic behaviors.
+## the Dealer's rotation (its blackjack raffle was retired in patch 0.22),
+## and the new relic behaviors.
 
 var _db: ContentDB
 
@@ -204,37 +205,6 @@ func test_summon_adds_a_new_enemy() -> void:
 	# Manager shifts one position outward.
 	assert_eq(sim.enemies[0].def_id, &"server")
 	assert_eq(sim.enemies[1].def_id, &"manager")
-
-
-func test_blackjack_dealer_counts_damage_across_rounds_and_busts() -> void:
-	# Patch 0.17 sheet sync: each attack deals random 1-10; the count
-	# accumulates across rounds; when it would pass 21 that attack is
-	# negated, the dealer is stunned for the round, and the count resets.
-	var sim := _sim(["dealer"], ["card_sling"], 4)
-	sim.hero.max_hp = 9999
-	sim.hero.hp = 9999
-	var counter := 0
-	var saw_bust := false
-	for round_index in 12:
-		sim.begin_round()
-		var shown: Dictionary = {}
-		for event in sim.drain_events():
-			if event.type == &"intents_shown":
-				shown = event.data.intents[0]
-		var roll := int(shown.get("blackjack_total", -1))
-		assert_between(roll, 1, 10, "each attack rolls 1-10 (patch 0.17)")
-		var hp_before := sim.hero.hp
-		sim.tray.discard_all()
-		sim.end_assignment()
-		if counter + roll > 21:
-			assert_true(bool(shown.get("bust", false)), "intent flags the bust")
-			assert_eq(sim.hero.hp, hp_before, "bust negates the attack")
-			counter = 0
-			saw_bust = true
-		else:
-			assert_eq(sim.hero.hp, hp_before - roll, "hit for the rolled amount")
-			counter += roll
-	assert_true(saw_bust, "12 rounds of 1-10 rolls should bust at least once")
 
 
 func test_bouncer_self_taunt_forces_targeting() -> void:

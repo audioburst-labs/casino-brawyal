@@ -11,6 +11,12 @@ const MAX_ROUNDS := 60
 static func play_combat(sim: CombatSim) -> bool:
 	while sim.phase != CombatSim.Phase.ENDED and sim.round_number < MAX_ROUNDS:
 		sim.begin_round()
+		# "Options In Combat": pick at random so the balance instrument still
+		# plays fights that offer a choice (patch 0.22).
+		while sim.phase == CombatSim.Phase.CHOICE:
+			if not sim.choose(sim.rng.stream(&"bot").randi_range(
+					0, maxi(0, sim.pending_choice().get("options", []).size() - 1))):
+				break
 		assign_greedily(sim)
 		if sim.phase == CombatSim.Phase.ASSIGNMENT:
 			sim.end_assignment()

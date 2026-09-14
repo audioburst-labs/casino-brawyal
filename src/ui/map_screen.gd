@@ -3,7 +3,7 @@ extends ScreenBase
 
 const TYPE_LABELS := {
 	&"combat": "Combat",
-	&"hard_combat": "Hard Combat",
+	&"elite": "Elite",
 	&"story": "Story",
 	&"rest": "Rest",
 	&"treasure": "Treasure",
@@ -13,7 +13,7 @@ const TYPE_LABELS := {
 }
 const TYPE_FLAVOR := {
 	&"combat": "The house always sends someone.",
-	&"hard_combat": "Greater risk, greater reward.",
+	&"elite": "A mini-boss with its own tricks. Beat it for a relic.",
 	&"story": "Something is happening here...",
 	&"rest": "A quiet corner to catch your breath.",
 	&"treasure": "Something glitters in the dark.",

@@ -1,15 +1,95 @@
 {
   "type": "keywords",
   "items": [
-    {"id": "mark", "name": "Mark", "text": "Enemy is marked. Cash In to gain bonus effects."},
-    {"id": "cash_in", "name": "Cash In", "text": "If an enemy is marked, Remove it to gain a bonus effect."},
-    {"id": "weak", "name": "Weak X", "text": "Enemies deal 25% less damage for the next X turns."},
-    {"id": "vulnerable", "name": "Vulnerable X", "text": "Takes 25% more damage for the next X turns."},
-    {"id": "block", "name": "Block", "text": "Absorbs incoming damage. Expires at your next round start."},
-    {"id": "strength", "name": "Strength", "text": "Adds bonus damage to every hit."},
-    {"id": "stun", "name": "Stun", "text": "Skips the next intended action."},
-    {"id": "taunt", "name": "Taunt", "text": "You must target this enemy."},
-    {"id": "go_again", "text": "Spin the machine again for extra chips.", "name": "Go Again"},
-    {"id": "repeat", "name": "Repeat X", "text": "Repeat the previous text on the card X times."}
+    {
+      "id": "mark",
+      "name": "Mark",
+      "text": "Enemy is marked. Cash In to gain bonus effects."
+    },
+    {
+      "id": "cash_in",
+      "name": "Cash In",
+      "text": "If an enemy is marked, Remove it to gain a bonus effect."
+    },
+    {
+      "id": "weak",
+      "name": "Weak X",
+      "text": "Enemies deal 25% less damage for the next X turns."
+    },
+    {
+      "id": "vulnerable",
+      "name": "Vulnerable X",
+      "text": "Takes 25% more damage for the next X turns."
+    },
+    {
+      "id": "block",
+      "name": "Block",
+      "text": "Absorbs incoming damage. Expires at your next round start."
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "text": "Adds bonus damage to every hit."
+    },
+    {
+      "id": "stun",
+      "name": "Stun",
+      "text": "Skips the next intended action."
+    },
+    {
+      "id": "taunt",
+      "name": "Taunt",
+      "text": "You must target this enemy."
+    },
+    {
+      "id": "go_again",
+      "text": "Spin the machine again for extra chips.",
+      "name": "Go Again"
+    },
+    {
+      "id": "repeat",
+      "name": "Repeat X",
+      "text": "Repeat the previous text on the card X times."
+    },
+    {
+      "id": "frail",
+      "name": "Frail X",
+      "text": "Gain 25% less Block from abilities for the next X turns."
+    },
+    {
+      "id": "multistrike",
+      "name": "Multistrike X",
+      "text": "Increase instances of damage by X."
+    },
+    {
+      "id": "rage",
+      "name": "Rage X",
+      "text": "The next attack deals X bonus damage."
+    },
+    {
+      "id": "gift",
+      "name": "Gift X",
+      "text": "Give the player X random chips at the start of their next turn."
+    },
+    {
+      "id": "absorb",
+      "name": "Absorb",
+      "text": "Remove all chips placed on abilities."
+    },
+    {
+      "id": "bust",
+      "name": "Bust",
+      "text": "Counts all damage taken; at 21 it is stunned and loses its Strength."
+    },
+    {
+      "id": "break",
+      "name": "Break",
+      "text": "For every 20 health it loses, you gain a random Chip."
+    },
+    {
+      "id": "loan",
+      "name": "Loan",
+      "text": "Offers you a choice of two loans: a reward now, a price later."
+    }
   ]
 }

@@ -142,3 +142,47 @@ func test_six_reels_still_fit_the_machine_area() -> void:
 		assert_lte(scale, 1.0)
 	assert_eq(ReelStrip.scale_for(4), 1.0, "up to four reels draw full size")
 	assert_lt(ReelStrip.scale_for(6), 1.0, "six shrink to fit")
+
+
+# ---- Elite replaces Hard Combat ----
+
+func test_elites_replace_hard_combat_end_to_end() -> void:
+	var run := RunState.new()
+	for i in 4:
+		run.record_visit(&"combat")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var config := EncounterFactory.combat_config(_db, run, rng, {"type": &"elite"})
+	assert_eq(config.hp_mult, 1.0, "no buffed variant any more")
+	assert_eq((config.enemies as Array).size(), 1)
+	assert_has([&"chip_golem", &"loan_shark"], config.enemies[0])
+
+
+func test_an_old_save_migrates_hard_combat_to_elite() -> void:
+	var run := RunState.new()
+	run.record_visit(&"combat")
+	var saved := run.to_dict()
+	saved.history = ["combat", "hard_combat", "shop"]
+	saved.pending_encounter = {"type": "hard_combat", "variant": "buffed"}
+	var restored := RunState.from_dict(saved)
+	assert_eq(restored.history[1], &"elite")
+	assert_eq(str(restored.pending_encounter.type), "elite")
+	assert_false(restored.pending_encounter.has("variant"))
+	assert_eq(restored.count_visited(&"elite"), 1)
+
+
+func test_the_elite_placement_rule_needs_a_two_encounter_gap() -> void:
+	var run := RunState.new()
+	for i in 4:
+		run.record_visit(&"combat")      # next encounter is #5
+	assert_true(MapGenerator._elite_allowed(run))
+	run.record_visit(&"elite")           # that was #5
+	assert_false(MapGenerator._elite_allowed(run), "#6 is too soon")
+	run.record_visit(&"combat")
+	assert_false(MapGenerator._elite_allowed(run), "#7 is too soon")
+	run.record_visit(&"combat")
+	assert_true(MapGenerator._elite_allowed(run), "#8 is two encounters later")
+	run.record_visit(&"elite")
+	run.record_visit(&"combat")
+	run.record_visit(&"combat")
+	assert_false(MapGenerator._elite_allowed(run), "never more than two")

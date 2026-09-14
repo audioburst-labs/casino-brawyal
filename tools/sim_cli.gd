@@ -35,6 +35,9 @@ func _run() -> void:
 
 	while sim.phase != CombatSim.Phase.ENDED and sim.round_number < MAX_ROUNDS:
 		sim.begin_round()
+		while sim.phase == CombatSim.Phase.CHOICE:
+			if not sim.choose(0):
+				break
 		GreedyBot.assign_greedily(sim)
 		if sim.phase == CombatSim.Phase.ASSIGNMENT:
 			sim.end_assignment()
