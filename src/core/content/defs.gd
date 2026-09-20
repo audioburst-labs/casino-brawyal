@@ -13,6 +13,13 @@ class AbilityDef:
 	var bonus_condition: String = ""          # e.g. "all_slots_bonus_suit"
 	var bonus_mode: String = "extra"          # "extra" adds bonus_effects; "replace" swaps them in
 	var bonus_effects: Array[Dictionary] = []
+	## A passive with no trigger fires at every round start (House Edge, Face
+	## Reader). One WITH a trigger fires when that thing happens instead -
+	## "when you Earn" (Chip Tricks), "when you Mark" (Sharp Edge).
+	var passive_trigger: String = ""
+	## A triggered passive's "Active:" half - what happens the turn you play it,
+	## as opposed to `effects`, which is what the trigger runs later.
+	var active_effects: Array[Dictionary] = []
 	var per_turn: int = 0                     # max activations per round; 0 = unlimited
 	var per_combat: int = 0                   # max activations per combat; 0 = unlimited
 	var passive: bool = false                 # once fired, effects recur at every round start

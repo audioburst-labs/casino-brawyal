@@ -40,11 +40,11 @@ func test_tiers_scale_the_sheets_numbers() -> void:
 	for tier in 3:
 		amounts.append(int(_db.get_ability(&"card_sling", tier).effects[0].amount))
 	assert_eq(amounts, [6, 8, 10] as Array[int])
-	# Flush: 30 / 35 / 40, all enemies at every tier (sheet v0.121)
+	# Flush: 20 / 25 / 30, all enemies at every tier (sheet v0.122)
 	for tier in 3:
 		var flush := _db.get_ability(&"flush", tier)
 		assert_eq(str(flush.effects[0].target), "all_enemies")
-	assert_eq(int(_db.get_ability(&"flush", 2).effects[0].amount), 40)
+	assert_eq(int(_db.get_ability(&"flush", 2).effects[0].amount), 30)
 
 
 func test_a_tier_can_override_a_limit_not_just_a_number() -> void:

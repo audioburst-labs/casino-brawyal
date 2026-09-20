@@ -144,6 +144,46 @@ func preview_damage(base: int, ability: AbilityState) -> int:
 ## What a block op's base would actually grant right now — Frail taxes it
 ## (patch 0.22: "Block numbers on abilities should be affected by
 ## buffs/debuffs and show the correct numbers when used").
+## The ability currently resolving, for effects that need to read the chips
+## that paid for it (Rainbow's two suits, Earn-the-used-chip).
+func active_ability() -> AbilityState:
+	return _active_ability
+
+
+## Earn (sheet v0.122): chips arriving in the tray from an ability. Fires the
+## "when you Earn" passives - Chip Tricks turns every Earn into Block.
+func on_chips_earned(count: int) -> void:
+	if count <= 0:
+		return
+	_fire_triggered_passives("earn")
+
+
+## Mark landing on an enemy fires the "when you Mark" passives (Sharp Edge).
+func on_enemy_marked(actor: CombatActor) -> void:
+	if actor == null:
+		return
+	_fire_triggered_passives("mark", actor)
+
+
+## Passives that wait for something to happen rather than for a round to
+## start. Re-entrancy is guarded: a triggered passive that Earns or Marks
+## again must not fire itself forever.
+var _triggering := false
+
+
+func _fire_triggered_passives(trigger: String, target: CombatActor = null) -> void:
+	if _triggering:
+		return
+	_triggering = true
+	for def: Defs.AbilityDef in passives:
+		if def.passive_trigger != trigger:
+			continue
+		emit_event(&"passive_fired", {"ability": def.id})
+		EffectInterpreter.execute(def.effects, self, hero,
+			target if target != null else targeting.effective_target(enemies))
+	_triggering = false
+
+
 func preview_block(base: int) -> int:
 	return StatusRules.block_gained(base, hero)
 
@@ -590,6 +630,9 @@ func _fire_relics(trigger: StringName) -> void:
 
 func _fire_passives() -> void:
 	for def: Defs.AbilityDef in passives:
+		# A passive with a trigger waits for that trigger instead (0.115).
+		if def.passive_trigger != "":
+			continue
 		emit_event(&"passive_fired", {"ability": def.id})
 		EffectInterpreter.execute(def.effects, self, hero,
 			targeting.effective_target(enemies))
@@ -611,8 +654,14 @@ func _fire_ability(ability: AbilityState) -> void:
 		# after (patch 0.113, designer's call). "At the start of your turn" —
 		# you are ON your turn; spending two chips for nothing read as broken
 		# math, which is what the Face Reader note was about.
+		#
+		# A TRIGGERED passive (Chip Tricks, Sharp Edge) is different: it has an
+		# active half that runs now, and its passive half waits for the trigger.
 		_active_ability = ability
-		EffectInterpreter.execute(ability.def.effects, self, hero, target)
+		if ability.def.passive_trigger == "":
+			EffectInterpreter.execute(ability.def.effects, self, hero, target)
+		else:
+			EffectInterpreter.execute(ability.def.active_effects, self, hero, target)
 		_active_ability = null
 	else:
 		_active_ability = ability

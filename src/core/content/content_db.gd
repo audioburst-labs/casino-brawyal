@@ -14,6 +14,10 @@ const KNOWN_OPS: Array[String] = [
 	"lose_hp", "lose_coins", "gain_max_hp",
 	"cash_in", "damage_missing_pct", "block_per_enemy",
 	"mark_random_unmarked", "block_per_chip", "heal",
+	# Sheet v0.122 (patch 0.115):
+	"damage_per_ability",     # The River: "for each ability expended this turn"
+	"damage_bonus_pct",       # All In: "deal 30% more damage this turn"
+	"rage_per_weak",          # Slow Playing: "Rage 1 for each Weak on an enemy"
 ]
 ## Enemy passives (sheet v0.120). These names live in their own namespace —
 ## `bust` is also an ABILITY id, and the two never meet.
@@ -32,7 +36,14 @@ const KNOWN_INTENT_KEYS: Array[String] = [
 ]
 const KNOWN_CONDITIONS: Array[String] = [
 	"no_enemy_marked", "enemy_marked", "solo_ability_this_round", "spin_has_triple",
+	# Sheet v0.122: Bluff Call and Safe Play both read Weak, and Rainbow reads
+	# two different suits independently - which the single `bonus_suit` slot
+	# cannot express, so suits became conditions (patch 0.115).
+	"target_weak", "target_not_weak", "any_enemy_weak", "no_enemy_weak",
+	"socket_has_suit", "socket_lacks_suit",
 ]
+## Passive abilities fire at a round start unless they name a trigger.
+const KNOWN_PASSIVE_TRIGGERS: Array[String] = ["", "earn", "mark"]
 const BOSS_STAGE := 6
 ## Doc "Ability Upgrades": base, silver, gold. An ability's `tiers` array holds
 ## the silver and gold entries as SPARSE overrides of the base item.
@@ -303,6 +314,13 @@ func _build_ability(item: Dictionary, tier: int) -> Defs.AbilityDef:
 	ability.per_turn = int(item.get("per_turn", 0))
 	ability.per_combat = int(item.get("per_combat", 0))
 	ability.passive = bool(item.get("passive", false))
+	ability.passive_trigger = str(item.get("passive_trigger", ""))
+	for effect: Dictionary in item.get("active_effects", []):
+		_validate_effect(effect, "%s (active)" % context)
+		ability.active_effects.append(effect)
+	if not KNOWN_PASSIVE_TRIGGERS.has(ability.passive_trigger):
+		errors.append("%s: unknown passive_trigger '%s'"
+			% [ability.id, ability.passive_trigger])
 	ability.exclusive = bool(item.get("exclusive", false))
 	for keyword_id in item.get("keywords", []):
 		var id := StringName(str(keyword_id))
@@ -320,6 +338,12 @@ func _validate_effect(effect: Dictionary, context: String) -> void:
 		errors.append("%s: unknown status '%s'" % [context, effect.get("status", "")])
 	if effect.has("condition") and not KNOWN_CONDITIONS.has(str(effect.condition)):
 		errors.append("%s: unknown condition '%s'" % [context, effect.condition])
+	var needs_suit := ["socket_has_suit", "socket_lacks_suit"]
+	if needs_suit.has(str(effect.get("condition", ""))):
+		var suit := StringName(str(effect.get("condition_suit", "")))
+		if not SUITS.has(suit):
+			errors.append("%s: condition %s needs a real condition_suit, got '%s'"
+				% [context, effect.condition, effect.get("condition_suit", "")])
 	# cash_in carries its own payoff (and its "instead" fallback) since v0.19 —
 	# those nested ops go through the same linting as any other.
 	for key in ["effects", "else_effects"]:

@@ -23,6 +23,9 @@ var loans: Array[Dictionary] = []
 ## (patch 0.113). The Dealer's Bust counts DOWN from 21 and fires at 0; the
 ## Chip Golem's Break counts down to its next chip. -1 means no passive.
 var passive_counter := -1
+## "Deal X% more damage this turn" (All In, sheet v0.122). Cleared at the
+## owner's turn start like Block, because "this turn" means exactly that.
+var damage_bonus_pct := 0.0
 
 
 func _init(actor_id: StringName, definition_id: StringName, name_text: String,
@@ -94,4 +97,5 @@ func _tick(ids: Array[StringName]) -> void:
 ## raised (the Chip Golem's Harden) would be gone before Ace could swing at it.
 func on_turn_start() -> void:
 	block = 0
+	damage_bonus_pct = 0.0
 	tick_turn_start()

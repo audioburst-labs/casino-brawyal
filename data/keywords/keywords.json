@@ -90,6 +90,11 @@
       "id": "loan",
       "name": "Loan",
       "text": "Offers you a choice of two loans: a reward now, a price later."
+    },
+    {
+      "id": "earn",
+      "name": "Earn",
+      "text": "Add chips to your chip pool."
     }
   ]
 }

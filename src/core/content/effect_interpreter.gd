@@ -11,7 +11,7 @@ extends RefCounted
 static func execute(effects: Array[Dictionary], sim: CombatSim,
 		source: CombatActor, target: CombatActor) -> void:
 	for effect in effects:
-		if not _condition_met(effect, sim):
+		if not _condition_met(effect, sim, target):
 			continue
 		match str(effect.get("op", "")):
 			"damage":
@@ -38,6 +38,30 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				_grant_block_per_unit(int(effect.get("amount", 0)), chips, sim, source)
 			"mark_random_unmarked":
 				_op_mark_random(sim, int(effect.get("count", 1)))
+			"damage_per_ability":
+				# The River: "for each ability that is expended for the turn". The
+				# River itself counts - `abilities_fired_this_round` is incremented
+				# before effects run - so it can never deal nothing.
+				var each := int(effect.get("amount", 0)) * sim.abilities_fired_this_round
+				for recipient in _damage_targets(effect, sim, target):
+					_deal_damage(each, 1, sim, source, recipient)
+			"damage_bonus_pct":
+				# All In: everything the hero throws for the rest of this turn.
+				source.damage_bonus_pct += float(effect.get("pct", 0.0))
+				sim.emit_event(&"damage_bonus",
+					{"actor": source.id, "pct": source.damage_bonus_pct})
+			"rage_per_weak":
+				# Slow Playing: "Gain Rage 1 for each Weak on an enemy" - counted in
+				# STACKS, so Weak 2 on one enemy is worth Weak 1 on two.
+				var stacks := 0
+				for enemy in sim.enemies:
+					if enemy.is_alive():
+						stacks += enemy.status_stacks(&"weak")
+				var rage := stacks * maxi(1, int(effect.get("amount", 1)))
+				if rage > 0:
+					source.apply_status(&"rage", rage)
+					sim.emit_event(&"status_applied",
+						{"actor": source.id, "status": &"rage", "stacks": rage})
 			"heal":
 				var healed := int(effect.get("amount", 0))
 				source.heal(healed)
@@ -58,8 +82,9 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				source.heal(amount)
 				sim.emit_event(&"healed", {"actor": source.id, "amount": amount})
 			"add_chips":
-				# "suit": "random" rolls per chip (the doc's Loans hand out
-				# random chips; patch 0.22).
+				# Earn, in the doc's vocabulary (sheet v0.122). "random" rolls per
+				# chip (Loans, Chip Tricks); "used" hands back a chip this ability
+				# was paid with.
 				var count := int(effect.get("count", 1))
 				var wanted := StringName(str(effect.get("suit", "")))
 				for i in count:
@@ -67,8 +92,18 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 					if suit == &"random":
 						suit = ContentDB.SUITS[sim.rng.stream(&"combat").randi_range(
 							0, ContentDB.SUITS.size() - 1)]
+					elif suit == &"used":
+						# Hit and All In hand back a chip they were paid with, which is
+						# what makes them nearly free.
+						var spent := _socketed(sim)
+						if spent.is_empty():
+							continue
+						suit = spent[mini(i, spent.size() - 1)]
 					sim.tray.add(suit, 1)
 					sim.emit_event(&"chips_generated", {"suit": suit, "count": 1})
+				# Earn: "when you Earn..." passives fire once per op, not per
+				# chip, so Chip Tricks pays the same for one chip or three.
+				sim.on_chips_earned(count)
 			"convert_chips":
 				_op_convert_chips(effect, sim)
 			"respin_reel":
@@ -79,7 +114,8 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				push_error("EffectInterpreter: unknown op '%s'" % unknown)
 
 
-static func _condition_met(effect: Dictionary, sim: CombatSim) -> bool:
+static func _condition_met(effect: Dictionary, sim: CombatSim,
+		target: CombatActor = null) -> bool:
 	match str(effect.get("condition", "")):
 		"":
 			return true
@@ -96,7 +132,36 @@ static func _condition_met(effect: Dictionary, sim: CombatSim) -> bool:
 				if sim.last_payout[suit] >= 3:
 					return true
 			return false
+		"target_weak":
+			return target != null and target.is_alive() and target.has_status(&"weak")
+		"target_not_weak":
+			return target == null or not target.is_alive() or not target.has_status(&"weak")
+		"any_enemy_weak":
+			return sim.enemies.any(func(e: CombatActor) -> bool:
+				return e.is_alive() and e.has_status(&"weak"))
+		"no_enemy_weak":
+			return not sim.enemies.any(func(e: CombatActor) -> bool:
+				return e.is_alive() and e.has_status(&"weak"))
+		"socket_has_suit":
+			return _socketed(sim).has(StringName(str(effect.get("condition_suit", ""))))
+		"socket_lacks_suit":
+			return not _socketed(sim).has(StringName(str(effect.get("condition_suit", ""))))
 	return false
+
+
+## The suits sitting in the ability currently resolving. Rainbow reads two of
+## them independently ("If Club - 10 instead. If Heart - apply Weak"), which
+## the single `bonus_suit` slot cannot express. Read before `ability.clear()`,
+## which runs after the effects.
+static func _socketed(sim: CombatSim) -> Array[StringName]:
+	var out: Array[StringName] = []
+	var active := sim.active_ability()
+	if active == null:
+		return out
+	for suit: StringName in active.filled:
+		if suit != &"":
+			out.append(suit)
+	return out
 
 
 static func _damage_targets(effect: Dictionary, sim: CombatSim,
@@ -194,6 +259,9 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 		recipient.apply_status(status, stacks)
 		sim.emit_event(&"status_applied",
 			{"actor": recipient.id, "status": status, "stacks": stacks})
+		# Sharp Edge: "when you Mark, also deal X" (sheet v0.122).
+		if status == &"mark" and not recipient.is_hero:
+			sim.on_enemy_marked(recipient)
 
 
 ## `count` marks that many distinct unmarked enemies — House Edge's silver tier
@@ -209,6 +277,7 @@ static func _op_mark_random(sim: CombatSim, count: int = 1) -> void:
 		unmarked.remove_at(index)
 		chosen.apply_status(&"mark", 1)
 		sim.emit_event(&"status_applied", {"actor": chosen.id, "status": &"mark", "stacks": 1})
+		sim.on_enemy_marked(chosen)
 
 
 static func _op_convert_chips(effect: Dictionary, sim: CombatSim) -> void:

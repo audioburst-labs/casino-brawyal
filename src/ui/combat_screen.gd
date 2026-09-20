@@ -960,6 +960,11 @@ func _play_events(events: Array[CombatEvent]) -> void:
 						var updated := sim.intent_display(event.data.actor)
 						if not updated.is_empty():
 							status_view.show_intent(updated)
+				# A Mark or a Weak landing on an ENEMY changes which cards are primed,
+				# so the glow is re-evaluated here as well as on the hero's own ticks
+				# (doc "Glow", patch 0.115).
+				for card in _ability_cards:
+					card.set_glowing(AbilityCard.wants_glow(card.ability_def(), sim))
 				await get_tree().create_timer(0.18).timeout
 			&"healed":
 				var healed_view := _view_of(event.data.actor)

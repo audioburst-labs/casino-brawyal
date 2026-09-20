@@ -40,7 +40,7 @@ func test_cash_in_replaces_the_base_damage() -> void:
 	assert_true(_fire(sim, 0, [&"spade"]))          # 6 damage + Mark
 	assert_eq(enemy.hp, hp_start - 6)
 	assert_true(_fire(sim, 1, [&"club", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 6 - 20, "20 instead of 10, not 10 plus 20")
+	assert_eq(enemy.hp, hp_start - 6 - 18, "18 instead of 11, not 11 plus 18")
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")
 
 
@@ -50,39 +50,40 @@ func test_cash_in_falls_back_to_the_base_damage_unmarked() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"club", &"spade"])
-	assert_eq(enemy.hp, hp_start - 10, "no mark -> the plain 10")
+	assert_eq(enemy.hp, hp_start - 11, "no mark -> the plain 11")
 
 
 func test_bust_does_nothing_without_a_mark() -> void:
-	# Bust is cash-in-only now: "Cash In: Deal 30 damage."
+	# Cash-in-only, and 24 since sheet v0.122. The cost reads Spade + Club,
+	# so the chips have to be socketed in that order.
 	var sim := _sim(["bouncer"], ["bust"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"club", &"spade"]))
+	assert_true(_fire(sim, 0, [&"spade", &"club"]))
 	assert_eq(enemy.hp, hp_start, "no mark, no damage")
 
 
-func test_bust_pays_thirty_on_a_marked_enemy() -> void:
+func test_bust_pays_its_cash_in_on_a_marked_enemy() -> void:
 	var sim := _sim(["bouncer"], ["bust"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	enemy.apply_status(&"mark", 1)
 	var hp_start := enemy.hp
-	assert_true(_fire(sim, 0, [&"club", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 30)
+	assert_true(_fire(sim, 0, [&"spade", &"club"]))
+	assert_eq(enemy.hp, hp_start - 24)
 	assert_eq(enemy.status_stacks(&"mark"), 0)
 
 
 func test_on_a_roll_cashes_in_then_re_marks() -> void:
-	# "Deal 20. Cash In: Deal 40 instead. Mark."
+	# "Deal 20. Cash In: Deal 30 instead and Mark." (sheet v0.122)
 	var sim := _sim(["bouncer"], ["on_a_roll"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	enemy.apply_status(&"mark", 1)
 	var hp_start := enemy.hp
 	assert_true(_fire(sim, 0, [&"heart", &"spade", &"club"]))
-	assert_eq(enemy.hp, hp_start - 40)
+	assert_eq(enemy.hp, hp_start - 30)
 	assert_eq(enemy.status_stacks(&"mark"), 1, "the trailing Mark re-applies")
 
 
@@ -115,11 +116,15 @@ func test_per_combat_limit_survives_the_round_reset() -> void:
 		"a per-combat ability stays spent after the round rolls over")
 
 
-func test_slow_playing_no_longer_locks_the_turn() -> void:
+## Sheet v0.122 rebuilt Slow Playing: it was "Gain 20 Block", it is now
+## "Apply Weak 2. Gain Rage 1 for each Weak on an enemy" for a single Heart.
+func test_slow_playing_stacks_weak_into_rage() -> void:
 	var sim := _sim(["bouncer"], ["slow_playing", "card_sling"])
 	sim.begin_round()
-	assert_true(_fire(sim, 0, [&"heart", &"diamond"]))
-	assert_eq(sim.hero.block, 20, "20 block, unconditionally")
+	var enemy := sim.enemies[0]
+	assert_true(_fire(sim, 0, [&"heart"]))
+	assert_eq(enemy.status_stacks(&"weak"), 2, "Weak 2 on the target")
+	assert_eq(sim.hero.status_stacks(&"rage"), 2, "one Rage per Weak stack")
 	sim.tray.add(&"spade", 1)
 	assert_true(sim.assign_chip(&"spade", 1, 0),
 		"other abilities stay usable")

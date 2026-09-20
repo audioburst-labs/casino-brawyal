@@ -39,6 +39,11 @@ static func _round_half_up(value: float) -> int:
 ## `weak_pct` can be overridden (High Stakes relic).
 static func attack_damage(base: int, attacker: CombatActor, weak_pct := WEAK_PCT) -> int:
 	var damage := base + attacker.status_stacks(&"strength")
+	# All In (sheet v0.122): a flat percentage on everything the hero throws
+	# this turn. Applied with Strength, before Weak, so a Weak attacker still
+	# loses its quarter of the boosted figure rather than of the base.
+	if attacker.damage_bonus_pct > 0.0:
+		damage = _round_half_up(damage * (1.0 + attacker.damage_bonus_pct))
 	if attacker.has_status(&"weak"):
 		damage = maxi(1, _round_half_up(damage * (1.0 - weak_pct)))
 	return damage

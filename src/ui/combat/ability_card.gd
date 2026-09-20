@@ -27,6 +27,40 @@ var _socket_labels: Array[Label] = []
 var _description: RichTextLabel
 var _highlight_suit: StringName = &""
 var _keyword_panel: PanelContainer = null
+var _glow: GlowRing = null
+var _glowing := false
+
+
+## Doc "Glow": "a golden aura encasing the card border". Drawn rather than
+## sprited so it follows the card's constant frame at any size, and pulsed
+## slowly so a primed card reads as alive without demanding attention.
+class GlowRing:
+	extends Control
+
+	var phase := 0.0
+
+	func _process(delta: float) -> void:
+		phase = fposmod(phase + delta * 1.8, TAU)
+		queue_redraw()
+
+	func _draw() -> void:
+		var breath := 0.5 + 0.5 * sin(phase)
+		var rect := Rect2(Vector2.ZERO, size)
+		# Three rings, widest and faintest outermost, so the edge glows rather
+		# than gaining a hard second border.
+		for i in 3:
+			var grow := 2.0 + float(i) * 3.5
+			var alpha := (0.42 - float(i) * 0.11) * (0.55 + 0.45 * breath)
+			_ring(rect.grow(grow), Color(1.0, 0.84, 0.35, alpha), 3.0 + float(i))
+
+	func _ring(rect: Rect2, tint: Color, width: float) -> void:
+		var radius := 14.0
+		var box := StyleBoxFlat.new()
+		box.draw_center = false
+		box.set_corner_radius_all(int(radius))
+		box.set_border_width_all(int(width))
+		box.border_color = tint
+		draw_style_box(box, rect)
 
 
 class SocketButton:
@@ -230,7 +264,75 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	refresh()
 
 
+## Whether this ability's condition is live right now (doc "Glow"):
+##   - Cash In, while any enemy carries the Mark
+##   - a Weak-synergy skill, while an eligible Weak target exists
+## "Knights" is in the doc's list too, but no Knight exists in the game yet.
+static func wants_glow(def: Defs.AbilityDef, sim: CombatSim) -> bool:
+	if def == null or sim == null:
+		return false
+	var marked := false
+	var weakened := false
+	for enemy in sim.enemies:
+		if not enemy.is_alive():
+			continue
+		marked = marked or enemy.has_status(&"mark")
+		weakened = weakened or enemy.has_status(&"weak")
+	if marked and _mentions(def, ["cash_in"], []):
+		return true
+	if weakened and _mentions(def, [], ["target_weak", "any_enemy_weak"]):
+		return true
+	return false
+
+
+## Walks the whole effect tree - a Cash In can sit nested inside another op,
+## and a condition can sit on any leaf.
+static func _mentions(def: Defs.AbilityDef, ops: Array, conditions: Array) -> bool:
+	var stacks: Array[Array] = [def.effects, def.bonus_effects, def.active_effects]
+	for effects: Array in stacks:
+		if _walk(effects, ops, conditions):
+			return true
+	return false
+
+
+static func _walk(effects: Array, ops: Array, conditions: Array) -> bool:
+	for effect: Dictionary in effects:
+		if ops.has(str(effect.get("op", ""))):
+			return true
+		if conditions.has(str(effect.get("condition", ""))):
+			return true
+		for nested: String in ["effects", "else_effects"]:
+			if effect.has(nested) and _walk(effect[nested], ops, conditions):
+				return true
+	return false
+
+
+## Turns the aura on or off. Cheap to call every refresh: it only builds or
+## frees a node when the state actually changes.
+## The def this card is showing, for callers that need to ask about it.
+func ability_def() -> Defs.AbilityDef:
+	return _state.def if _state != null else null
+
+
+func set_glowing(on: bool) -> void:
+	if on == _glowing:
+		return
+	_glowing = on
+	if not on:
+		if is_instance_valid(_glow):
+			_glow.queue_free()
+		_glow = null
+		return
+	_glow = GlowRing.new()
+	_glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_glow.show_behind_parent = true
+	_glow.z_index = -1
+	add_child(_glow)
+
+
 func refresh(highlight_suit: StringName = &"") -> void:
+	set_glowing(wants_glow(_state.def, _sim))
 	_highlight_suit = highlight_suit
 	modulate = Color(0.6, 0.58, 0.55) if _state.exhausted() else Color.WHITE
 	for slot in _sockets.size():
