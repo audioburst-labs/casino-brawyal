@@ -22,3 +22,4 @@ Thumbs.db
 
 # Art pipeline scratch
 tools/art/raw/
+.playwright-mcp/
