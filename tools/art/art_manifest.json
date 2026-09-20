@@ -1115,6 +1115,78 @@
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Redraw this exact same character - same predatory loan shark enforcer, same long maroon trench coat over a gold waistcoat, same wide-brimmed hat shadowing a hungry gold-toothed grin, same heavy ledger book chained to his wrist, identical art style and colors - in a LEDGER-SWING FOLLOW-THROUGH pose: the chain slack and the ledger swinging back toward him, his arm drifting down across his body, shoulders settling, hat straightened with the free hand, a satisfied predatory smirk. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "ability_chip_tricks",
+      "out": "assets/icons/ability_chip_tricks.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a stack of casino chips mid-cascade between two unseen hands, three chips spinning in the air trailing faint golden sparks, the stack below neatly fanned. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_hit",
+      "out": "assets/icons/ability_hit.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a single casino chip being flicked forward edge-on with a short sharp white motion streak behind it, a dealer's crisp tap. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_the_river",
+      "out": "assets/icons/ability_the_river.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: five playing cards laid face up in a row like a poker river, the last one turning over and blazing with teal and purple flame along its edge. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_card_trick",
+      "out": "assets/icons/ability_card_trick.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a fanned hand of playing cards with one card lifting out of the fan on its own, wreathed in a thin ribbon of golden smoke, a conjuror's reveal. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_fold",
+      "out": "assets/icons/ability_fold.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: two playing cards laid face down and squared together on a table, a heavy golden shield shape half-formed behind them, calm and defensive. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_sharp_edge",
+      "out": "assets/icons/ability_sharp_edge.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a playing card held like a blade, its leading edge honed to a bright metal gleam with a thin cut of light trailing from the tip. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_rainbow",
+      "out": "assets/icons/ability_rainbow.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: four suit symbols - spade, heart, club, diamond - arcing together in a bright rainbow sweep, each glowing in its own color, arranged as a fan of light. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_bluff_call",
+      "out": "assets/icons/ability_bluff_call.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a poker face mask cracking down the middle to reveal a glowing eye behind it, chips scattering away from the break. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "ability_safe_play",
+      "out": "assets/icons/ability_safe_play.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square game ability icon on a fully transparent background: a casino chip standing upright behind a small polished golden shield, a steady defensive stance, soft warm glow. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
     }
   ]
 }

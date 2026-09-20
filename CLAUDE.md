@@ -40,7 +40,7 @@ tools\godot\Godot_v4.5.2-stable_win64.exe --path .
 node tools/art/generate_art.mjs [--dry-run] [--only <id,id>] [--force]
 ```
 
-The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded full runs, prints `RUN BOT STATS` (win rate / avg death encounter). Run it after any content or damage-math change; **0/40 wins with avg death at encounter ~4.5 and avg coins ~69 is the current baseline post patch-0.114, and it is a WARNING not a target**: sheet v0.122 raised every enemy's health and rebuilt the Manager, while Ace's matching 25-ability kit is still unimplemented (pass 2). The bot dies four encounters earlier than it did in 0.113 because it is fighting the new enemies with the old hero. Expect this to swing back hard when the kit lands — do not tune anything against 4.5; 1/40, 8.1, 84 coins at 0.113; 0/40, 7.0, 65 coins at 0.22 (Elites are real mini-bosses and enemy debuffs last a full turn longer); 2/40, 7.3, 50 coins at 0.21 (0/40, 7.0, 40 coins at 0.20 pass 1 — the free Casino spin and the final shop moving back to #9 lifted coins; encounter 6.8 at 0.19 pass 2, 1/40 after 0.19 pass 1) (0/40 at 0.18, 2/40 at 0.17 — a 40-run sample, so treat single-digit win counts as noise and watch avg-death instead; avg coins dropped 67 → 37 when the guaranteed shop moved to #8, because the bot now reaches it and spends) (random-play bot — humans do much better). This number moves whenever ability/enemy numbers change — don't treat a shift as a regression on its own, just note the new baseline here.
+The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded full runs, prints `RUN BOT STATS` (win rate / avg death encounter). Run it after any content or damage-math change; **0/40 wins with avg death at encounter ~4.7 and avg coins ~70 is the current baseline post patch-0.115.** The designer has seen this and asked to ship it as is: *"it was too easy before, maybe now it will be too hard - I want to see"*. So it is a deliberate setting, not a regression to chase. Note the bot barely moved when Ace's kit tripled in size (4.5 -> 4.7), because a random-play bot gets almost nothing from a kit whose value is in its conditions - treat the bot as a floor, not a measure of the new cards. Previously: **0/40, 4.5, 69 at 0.114, a WARNING not a target**: sheet v0.122 raised every enemy's health and rebuilt the Manager, while Ace's matching 25-ability kit is still unimplemented (pass 2). The bot dies four encounters earlier than it did in 0.113 because it is fighting the new enemies with the old hero. Expect this to swing back hard when the kit lands — do not tune anything against 4.5; 1/40, 8.1, 84 coins at 0.113; 0/40, 7.0, 65 coins at 0.22 (Elites are real mini-bosses and enemy debuffs last a full turn longer); 2/40, 7.3, 50 coins at 0.21 (0/40, 7.0, 40 coins at 0.20 pass 1 — the free Casino spin and the final shop moving back to #9 lifted coins; encounter 6.8 at 0.19 pass 2, 1/40 after 0.19 pass 1) (0/40 at 0.18, 2/40 at 0.17 — a 40-run sample, so treat single-digit win counts as noise and watch avg-death instead; avg coins dropped 67 → 37 when the guaranteed shop moved to #8, because the bot now reaches it and spends) (random-play bot — humans do much better). This number moves whenever ability/enemy numbers change — don't treat a shift as a regression on its own, just note the new baseline here.
 
 ## Architecture
 
@@ -62,6 +62,52 @@ The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded fu
 - Statuses: **Frail** (sheet v0.120, the Server's Spilled Drink replaced Weak 2 with Frail 2) is a duration status; `StatusRules.block_gained()` taxes every Block an ability op grants by 25% half-up, applied through `EffectInterpreter._grant_block()` for all three block ops, and `CombatSim.preview_block()` is the same function so a card's printed Block is what it actually grants (patch 0.22). Sheet v0.122 numbers (patch 0.114): Bouncer 56–60, Server 25–30, **Dealer 51–55 with the Bust passive** (2×3 on its first two moves), **Manager 61–65, rebuilt to Summon a Server → loop Strength 5, Deal 10** (it applies no Vulnerable or Weak at all any more — `performance_review` is gone, `take_charge` replaces it), Chip Golem 100–109 shedding a chip every **30** health (Bash 22, Crush 3×7), Loan Shark 100–109, boss **150–160**. The boss summons ONE Bouncer and his heal move is `heal_allies` 20 + Strength 3 — `heal_allies` includes the boss himself (pinned by `test_patch_113.gd`).
 - Economy: combat gold comes from each lineup's `gold_min/gold_max` (sheet values; patch 0.17 grew the lineup pool to 3 per stage — 15 non-boss lineups across stages 1–5). **Combat gold is the sheet's, per stage: 27–33 / 37–43 / 47–53 / 57–63 / 67–73, boss 0, Elites 77–83** — `test_patch_113.gd` pins every lineup and every gold band against a transcription of the sheet's Encounters tab, because nine of the sixteen lineups had quietly drifted from it by 0.22. (The doc's Rewards section used to say Encounter × 8–12; the designer confirmed the sheet wins in 0.18, 0.19 and again in 0.113.) Relic prices live on the relic defs (the doc now says "In Sheet", resolving the 0.18 conflict); shop reel **75+75/purchase** (doc v0.121, patch 0.113), stickers 10+5×enc, abilities 30–50. Machine caps at **6 reels** (doc v0.19, was 8). Balance is WIP — sheet numbers are the designer's, hero HP/start-reels/dealer-raffle were tuned here.
 - `EncounterFactory.combat_config()` is shared by the `Game` autoload and `RunBot` so flow rules can't drift.
+
+**Ace's kit is the sheet's `Abilities - Ace` tab, 25 abilities** (patch 0.115).
+The tab was swapped deliberately by the designer — the old roster is now
+`Abilities - Ace OLD` and is dead. Regenerate the JSON with the transcription
+script rather than hand-editing (`scratchpad/s024/kit_data.py`), and note the
+count is **25, not 29**: the extra entries in the trailing columns of rows 16–19
+are the designer's scratch space, confirmed with him.
+
+Five mechanics the kit introduced, each shared by several cards:
+- **Earn** is the doc's name for adding chips. Implemented as the existing
+  `add_chips` op with two new suits: `"random"` and **`"used"`**, which hands
+  back a chip the ability was paid with (Hit, All In). `"used"` reads
+  `CombatSim.active_ability().filled`, so it only works while an ability is
+  resolving — before `ability.clear()`, which runs after the effects.
+- **Triggered passives.** `passive: true` with no `passive_trigger` still fires
+  at every round start (House Edge, Face Reader). With a trigger it waits for
+  that instead — `"earn"` (Chip Tricks) or `"mark"` (Sharp Edge), fired from
+  `CombatSim.on_chips_earned()` / `on_enemy_marked()`. A triggered passive's
+  `active_effects` is the "Active:" half that runs the turn you play it;
+  `effects` is what the trigger runs later. `_fire_triggered_passives` guards
+  re-entrancy, or a passive that Earns would fire itself forever.
+- **`damage_per_ability`** (The River) multiplies by
+  `abilities_fired_this_round`, which is incremented *before* effects run — so
+  The River counts itself and can never deal nothing.
+- **`damage_bonus_pct`** (All In) sets `CombatActor.damage_bonus_pct`, applied
+  in `StatusRules.attack_damage` with Strength and *before* Weak, and cleared in
+  `on_turn_start()` beside Block because "this turn" means exactly that.
+- **`rage_per_weak`** (Slow Playing) counts Weak **stacks** across living
+  enemies, not enemies-with-Weak.
+
+**Suits can be conditions** (`socket_has_suit` / `socket_lacks_suit` +
+`condition_suit`): Rainbow reads Club and Heart *independently*, which the
+single `bonus_suit` slot cannot express. `target_weak` / `target_not_weak` and
+`any_enemy_weak` / `no_enemy_weak` serve Bluff Call and Safe Play — note Safe
+Play asks about the whole field, Bluff Call about the target.
+
+**A `bonus_suit` without `bonus_condition` is silently inert** —
+`AbilityState.bonus_active()` requires `bonus_condition == "all_slots_bonus_suit"`.
+That had quietly disarmed two cards' suit bonuses; the generator now always
+pairs them.
+
+**Card Glow** (doc "Glow", patch 0.115): `AbilityCard.wants_glow(def, sim)`
+walks the whole effect tree and returns true for a Cash In while anything is
+Marked, or a Weak-synergy card while a Weak enemy exists. The doc lists Knights
+too; no Knight exists in the game. The glow is re-evaluated on every card
+refresh *and* whenever a status lands on an enemy.
 
 **Ability upgrade tiers** (doc "Ability Upgrades", patch 0.19 pass 2): every ability ships a `tiers` array of exactly `ContentDB.MAX_TIER` (2) **sparse overrides** — silver then gold — merged over the base item, so a tier can change any field (Color Up's tiers change `per_turn`, House Edge's swap the op entirely), not just a number. `ContentDB` resolves one immutable `AbilityDef` per tier and `get_ability(id, tier)` clamps; the tiers must be separate objects because `AbilityState` holds its def **by reference**, so a shared mutated def would leak an upgrade into later runs. Ownership is `RunState.ability_tiers` (id -> 0/1/2) beside `ability_ids`, never encoded into the id — the id is the ability's identity at ~13 call sites. `acquire_ability()` upgrades a duplicate instead of stacking; `_forget()` clears the tier so a trashed gold ability returns to the pool at base. **There is no storage/"Unequipped" tier as of v0.20** (designer call; matches the doc's Ability Choosing Screen, which lists only Equipped and Trash — the doc's *Layout Tab* line still says otherwise and is stale): an owned ability is either equipped or in the single trash slot, a 7th goes straight to the bin, and `STORAGE_CAP`/`stored_ids()`/`unequip()` are gone. `EncounterFactory` passes `ability_tiers` into the combat config. `Rewards.upgradeable_pool()` is the single pool both the reward screen (1 of 3) and `ShopStock` (4 offers) draw from: everything with `can_upgrade()` true, owned or not, uniform, gold excluded. **"starter" only means Ace begins the run holding the base version** — starters are offered like anything else (designer call, 0.19); do not re-add a `pool != "starter"` filter. Upgrades cost the same 30-50 as a new ability. `TierStyle` (`src/ui/combat/tier_style.gd`) owns the shared silver/gold look so every surface agrees.
 
@@ -98,6 +144,36 @@ Patch 0.113 added a drawn **chassis** so the three bands read as one machine ins
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
 **Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+
+**Telemetry** (patch 0.115). The game spools play data to
+`user://telemetry/spool.ndjson` and POSTs batches to the ingest service in
+`services/telemetry/`; it never touches Postgres, and the service is what
+stamps the player's IP on a play (a desktop client cannot see its own public
+address). Rules worth keeping:
+- **Every decision lives in `src/core/telemetry/`** and is unit-tested; the
+  `Telemetry` autoload holds an `HTTPRequest`, a `Timer` and a file handle and
+  nothing else that needs thinking about. **It references no other autoload**,
+  so load and teardown order are irrelevant — callers push into it.
+- **One capture seam**: `combat_screen._drain()` is the only place
+  `sim.drain_events()` may be called (`grep -c` it — the answer must be 1).
+  `RunBot` never builds a presenter, so the 40-run balance instrument is silent
+  by construction rather than by a flag.
+- **Inertness** is one predicate: headless, editor, `CB_TELEMETRY=0`, no
+  endpoint, or opted out ⇒ no HTTPRequest, no Timer, no directory, no file, and
+  every public method returns on its first line.
+  `tests/integration/test_telemetry_inert.gd` pins that, and also scans
+  `src/core/` for autoload references with a word-boundary regex (a substring
+  match flags `CasinoGame.` and `DiceGame.`).
+- **Transport is at-least-once; storage is exactly-once.** The client keeps
+  spooled lines until a 2xx, so a lost response means a resend — the server's
+  `batch_id` PK and `moves (run_id, seq)` unique index are load-bearing. Do not
+  "fix" that into a handshake.
+- `JSON.parse_string` **pushes an engine error** on bad input; use
+  `JSON.new().parse()` anywhere a corrupt file is expected, or a player's log
+  fills with errors for something handled fine.
+- The ingest key ships inside the build and **is not a secret** (unencrypted
+  PCK). It is write-only, rate-limited, and rotating it is a one-line container
+  update plus a one-line repo change.
 
 **Cinematics** (`assets/video/*.ogv`) are optional: `Game.play_cinematic()` no-ops when the file is missing **or when running headless** (keeps tests deterministic).
 

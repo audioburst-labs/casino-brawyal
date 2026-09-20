@@ -25,24 +25,31 @@ const MAX_BODY = 1_048_576;   // 1 MB
 const MAX_EVENTS = 5_000;
 const RATE_PER_MIN = 60;
 
-if (!CONN) {
-  console.error("CB_TELEMETRY_PG_URL is not set - refusing to start");
-  process.exit(1);
+// A missing connection string is a configuration state, not a crash. Exiting
+// would put the container app in a restart loop that hides the real problem;
+// this stays up, says exactly what is missing on /healthz and on the
+// dashboard, and starts working the moment the secret is set.
+// A placeholder or a typo must read as "not configured", not as a URL to
+// parse - `new URL("UNSET")` throws at module load and puts the container in
+// a restart loop that hides the real problem.
+const CONFIGURED = /^postgres(ql)?:\/\//.test(CONN);
+if (!CONFIGURED) {
+  console.warn("CB_TELEMETRY_PG_URL is not set - serving in unconfigured mode");
 }
 
 // Azure Postgres requires TLS; a local container has none. Follow the URL
 // rather than hardcoding either, so the same image runs in both places.
-const sslmode = new URL(CONN).searchParams.get("sslmode") ?? "";
+const sslmode = CONFIGURED ? (new URL(CONN).searchParams.get("sslmode") ?? "") : "";
 const wantsTls = sslmode
   ? !["disable", "allow"].includes(sslmode)
   : !/@(localhost|127\.0\.0\.1)[:/]/.test(CONN);
 
-const pool = new pg.Pool({
+const pool = CONFIGURED ? new pg.Pool({
   connectionString: CONN,
   ssl: wantsTls ? { rejectUnauthorized: false } : false,
   max: 4,
   idleTimeoutMillis: 30_000,
-});
+}) : null;
 
 // ---------------------------------------------------------------- migrations
 // Applied on boot inside an advisory lock, so a scaled-out revision cannot
@@ -308,8 +315,24 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
     if (req.method === "GET" && url.pathname === "/healthz") {
+      if (!CONFIGURED) {
+        return json(res, 503, { ok: false, reason: "CB_TELEMETRY_PG_URL not set" });
+      }
       await pool.query("SELECT 1");
       return json(res, 200, { ok: true });
+    }
+    if (!CONFIGURED) {
+      // Everything else needs the database.
+      if (url.pathname === "/" || url.pathname === "/index.html") {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        return res.end("<!doctype html><meta charset=utf-8>" +
+          "<title>Casino Brawyal - Play Data</title>" +
+          "<body style='background:#0c1f16;color:#ecdfc4;font:16px system-ui;" +
+          "padding:48px'><h1 style='color:#d4af37'>Not configured yet</h1>" +
+          "<p>Set <code>CB_TELEMETRY_PG_URL</code> on this container app and " +
+          "restart the revision. See <code>services/telemetry/README.md</code>.");
+      }
+      return json(res, 503, { error: "CB_TELEMETRY_PG_URL not set" });
     }
     if (req.method === "POST" && url.pathname === "/v1/ingest") {
       return await ingest(req, res);
@@ -335,5 +358,9 @@ const server = createServer(async (req, res) => {
   }
 });
 
-await migrate();
-server.listen(PORT, () => console.log(`telemetry listening on :${PORT}`));
+if (CONFIGURED) {
+  await migrate();
+}
+server.listen(PORT, () =>
+  console.log(`telemetry listening on :${PORT}` +
+    (CONFIGURED ? "" : " (unconfigured - no database)")));

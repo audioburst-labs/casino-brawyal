@@ -12,9 +12,28 @@ func test_telemetry_is_not_live_under_headless() -> void:
 		"telemetry must be dead in tests, CI and the smoke boot")
 
 
-func test_no_spool_directory_is_created() -> void:
-	assert_false(DirAccess.dir_exists_absolute("user://telemetry"),
-		"an inert build touches no telemetry files at all")
+## The assertion that matters is that THIS run wrote nothing — not that the
+## directory has never existed. A developer who played the windowed build on
+## the same machine leaves a real spool behind, and that is not a failure.
+func test_this_run_wrote_no_telemetry() -> void:
+	assert_eq(_spool_fingerprint(), _fingerprint_at_start,
+		"an inert build neither creates nor grows the spool")
+
+
+const SPOOL := "user://telemetry/spool.ndjson"
+var _fingerprint_at_start := ""
+
+
+func before_all() -> void:
+	_fingerprint_at_start = _spool_fingerprint()
+
+
+## "absent", or the byte length — enough to catch a write.
+func _spool_fingerprint() -> String:
+	if not FileAccess.file_exists(SPOOL):
+		return "absent"
+	var file := FileAccess.open(SPOOL, FileAccess.READ)
+	return "absent" if file == null else str(file.get_length())
 
 
 func test_every_public_method_is_a_no_op() -> void:
@@ -26,8 +45,8 @@ func test_every_public_method_is_a_no_op() -> void:
 	Telemetry.run_ended({"outcome": "defeat"})
 	Telemetry.flush()
 	Telemetry.session_ended("test")
-	assert_false(DirAccess.dir_exists_absolute("user://telemetry"),
-		"still nothing on disk after every entry point has been called")
+	assert_eq(_spool_fingerprint(), _fingerprint_at_start,
+		"every entry point called, and not one byte written")
 	assert_true(true, "and nothing threw")
 
 

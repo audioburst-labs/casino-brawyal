@@ -1,4 +1,4 @@
 {
-  "_comment": "Where the game reports play data. Not a secret. The write key lives in telemetry_key.json, which is gitignored and baked in at export - see services/telemetry/README.md.",
-  "url": ""
+  "_comment": "Where the game reports play data. NOT a secret. The write key lives in telemetry_key.json, which is gitignored and baked in at export - see services/telemetry/README.md.",
+  "url": "https://casino-telemetry.gentleplant-d2968c96.westeurope.azurecontainerapps.io/v1/ingest"
 }
