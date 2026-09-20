@@ -752,6 +752,11 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				await _payout_flourish(event.data.symbols)
 				_tray_view.refresh()
 			&"chips_generated", &"chips_converted":
+				# Break (patch 0.114): the Chip Golem sheds a chip every time its
+				# counter runs out, and you should SEE it fall into the drawer
+				# rather than just find the tray one richer.
+				if StringName(str(event.data.get("source", ""))) == &"break":
+					await _golem_drops_chip(StringName(str(event.data.get("suit", ""))))
 				_tray_view.refresh()
 			&"chip_assigned":
 				# Paint the chip into its socket immediately so the final chip
@@ -852,12 +857,16 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					# Block only. An ability that both hits and blocks would otherwise
 					# snap the target's HP bar mid-animation (patch 0.113).
 					actor_view.refresh_block()
+					# Patch 0.114: every source animates the same, relics and
+					# start-of-turn passives included. Those fire at a round start,
+					# a beat before the reels spin, so the cue has to be big enough
+					# and slow enough to survive the player looking at the machine.
+					actor_view.play_block_gain(int(event.data.amount))
 					Fx.spawn_number(actor_view.sprite_center(),
 						"+%d" % event.data.amount, Color(0.6, 0.85, 1.0))
-					# Block Gain (doc animation): shield icon + blue flash.
 					_burst(actor_view.sprite_center(),
 						"res://assets/icons/status_block.png", Color(0.6, 0.85, 1.0))
-				await get_tree().create_timer(0.15).timeout
+				await get_tree().create_timer(0.34).timeout
 			&"status_applied":
 				var status_view := _view_of(event.data.actor)
 				if status_view != null:
@@ -1224,6 +1233,53 @@ func _burst_duo(at: Vector2, texture_path: String, tint_a: Color, tint_b: Color)
 	_burst(at, texture_path, tint_a)
 	await get_tree().create_timer(0.05).timeout
 	await _burst(at, texture_path, tint_b)
+
+
+## Break (doc "Chip Golem", patch 0.114): the golem drops a chip, and it falls
+## into the drawer the same way a paid-out chip does. Deliberately the same
+## flight as `_payout_flourish` so a chip arriving always looks like a chip
+## arriving, wherever it came from.
+func _golem_drops_chip(suit: StringName) -> void:
+	var golem: UnitView = null
+	for view: UnitView in _enemy_views.values():
+		if is_instance_valid(view) and view.actor != null \
+			and view.actor.def_id == &"chip_golem":
+			golem = view
+			break
+	if golem == null:
+		return
+	var texture := SuitAssets.chip_texture(suit)
+	if texture == null:
+		return
+	var from := golem.sprite_center()
+	var chip := TextureRect.new()
+	chip.texture = texture
+	chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	chip.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	chip.size = Vector2(54, 54)
+	chip.pivot_offset = Vector2(27, 27)
+	chip.z_index = 88
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(chip)
+	chip.global_position = from - Vector2(27, 27)
+	golem.play_hit()
+	_sparks(from, Color(0.75, 0.9, 1.0), 8)
+	var drawer := _cabinet.drawer_centre_global() - Vector2(27, 27)
+	var fall := create_tween()
+	fall.set_parallel(true)
+	# Shed downward first, so it reads as falling OFF the golem...
+	fall.tween_property(chip, "global_position",
+		chip.global_position + Vector2(0, 70), 0.20) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.tween_property(chip, "rotation", TAU * 0.6, 0.20)
+	# ...then across into the drawer.
+	fall.chain().tween_property(chip, "global_position", drawer, 0.42) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.parallel().tween_property(chip, "rotation", TAU * 1.6, 0.42)
+	await fall.finished
+	_sparks(_cabinet.drawer_centre_global(), Color(1.0, 0.9, 0.6), 6)
+	_cabinet.celebrate(0.7)
+	chip.queue_free()
 
 
 ## Go Again (doc animation): the Slot Machine shakes in joy, and the

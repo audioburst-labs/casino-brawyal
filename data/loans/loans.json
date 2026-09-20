@@ -4,9 +4,9 @@
     {
       "id": "pocket_change",
       "title": "Pocket Change",
-      "turns": 3,
+      "turns": 2,
       "reward_text": "Gain 1 random Chip.",
-      "penalty_text": "In 3 turns, take 10 damage.",
+      "penalty_text": "In 2 turns, take 10 damage.",
       "reward": [
         {
           "op": "add_chips",
@@ -38,14 +38,15 @@
           "op": "lose_hp",
           "amount": 20
         }
-      ]
+      ],
+      "requires": "wounded"
     },
     {
       "id": "double_stack",
       "title": "Double Stack",
       "turns": 4,
       "reward_text": "Gain 2 random Chips.",
-      "penalty_text": "In 4 turns, take 40 damage.",
+      "penalty_text": "In 4 turns, take 50 damage.",
       "reward": [
         {
           "op": "add_chips",
@@ -56,7 +57,7 @@
       "penalty": [
         {
           "op": "lose_hp",
-          "amount": 40
+          "amount": 50
         }
       ]
     },
@@ -64,20 +65,21 @@
       "id": "house_doctor",
       "title": "House Doctor",
       "turns": 3,
-      "reward_text": "Heal 20.",
-      "penalty_text": "In 3 turns, take 40 damage.",
+      "reward_text": "Heal 10.",
+      "penalty_text": "In 3 turns, take 30 damage.",
       "reward": [
         {
           "op": "heal",
-          "amount": 20
+          "amount": 10
         }
       ],
       "penalty": [
         {
           "op": "lose_hp",
-          "amount": 40
+          "amount": 30
         }
-      ]
+      ],
+      "requires": "wounded"
     },
     {
       "id": "cash_advance",

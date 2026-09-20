@@ -1,6 +1,6 @@
 extends GutTest
 ## CombatActor (hp/block/statuses) and StatusRules (damage math).
-## Damage order: base + Strength -> Weak (-25%) -> Vulnerable (+25%)
+## Damage order: base + Strength -> Weak (-25%) -> Vulnerable (+50%)
 ## -> Block absorbs -> HP. Rounding is half-up (patch 0.1), minimum 1 on Weak.
 
 
@@ -87,12 +87,13 @@ func test_strength_adds_to_each_hit_before_weak() -> void:
 	assert_eq(StatusRules.attack_damage(4, attacker), 5)  # (4+2)*0.75 = 4.5 -> 5
 
 
-func test_vulnerable_increases_taken_damage_by_quarter_half_up() -> void:
+## The sheet's figure is 50% (patch 0.114); we shipped 25% until then.
+func test_vulnerable_increases_taken_damage_by_half_half_up() -> void:
 	var target := _actor()
 	target.apply_status(&"vulnerable", 1)
-	assert_eq(StatusRules.damage_taken(10, target), 13)  # 10*1.25 = 12.5 -> 13
-	assert_eq(StatusRules.damage_taken(8, target), 10)   # 8*1.25 = 10 -> 10
-	assert_eq(StatusRules.damage_taken(5, target), 6)    # 5*1.25 = 6.25 -> 6
+	assert_eq(StatusRules.damage_taken(10, target), 15)  # 10*1.5 = 15
+	assert_eq(StatusRules.damage_taken(8, target), 12)   # 8*1.5 = 12
+	assert_eq(StatusRules.damage_taken(5, target), 8)    # 5*1.5 = 7.5 -> 8
 
 
 func test_mark_does_not_tick_at_turn_end() -> void:

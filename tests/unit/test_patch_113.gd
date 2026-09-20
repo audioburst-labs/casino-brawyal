@@ -129,9 +129,9 @@ func test_the_golem_counts_down_to_its_next_chip() -> void:
 	var sim := _sim(["chip_golem"])
 	sim.begin_round()
 	var golem := sim.enemies[0]
-	assert_eq(golem.passive_counter, 20)
-	sim.on_enemy_damaged(golem, 25)
-	assert_eq(golem.passive_counter, 15, "one chip paid, 15 to the next")
+	assert_eq(golem.passive_counter, 30, "30 on the sheet since v0.122")
+	sim.on_enemy_damaged(golem, 35)
+	assert_eq(golem.passive_counter, 25, "one chip paid, 25 to the next")
 
 
 ## The number the intent panel publishes is the one on the actor, so the UI
@@ -222,9 +222,10 @@ func test_gold_matches_the_sheets_band_for_each_stage() -> void:
 
 
 func test_enemy_health_matches_the_sheet() -> void:
+	# Sheet v0.122 (patch 0.114) put health up across the board.
 	var sheet := {
-		"bouncer": [50, 55], "server": [25, 30], "dealer": [43, 48],
-		"manager": [40, 45], "chip_golem": [100, 108], "loan_shark": [80, 85],
+		"bouncer": [56, 60], "server": [25, 30], "dealer": [51, 55],
+		"manager": [61, 65], "chip_golem": [100, 109], "loan_shark": [100, 109],
 	}
 	for id: String in sheet:
 		var def := _db.get_enemy(StringName(id))

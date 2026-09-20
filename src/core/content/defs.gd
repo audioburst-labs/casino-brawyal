@@ -43,6 +43,9 @@ class LoanDef:
 	var turns: int = 3
 	var reward_text: String
 	var penalty_text: String
+	## Sheet v0.122's Notes column: "" offers always, "wounded" hides the loan
+	## while the hero is on full health (a heal you cannot use is not a choice).
+	var requires: String = ""
 	var reward: Array[Dictionary] = []
 	var penalty: Array[Dictionary] = []
 

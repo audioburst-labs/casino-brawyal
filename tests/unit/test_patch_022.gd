@@ -172,18 +172,14 @@ func test_an_old_save_migrates_hard_combat_to_elite() -> void:
 	assert_eq(restored.count_visited(&"elite"), 1)
 
 
+## Patch 0.114: the gap is a property of the six authored Paths now, not a
+## predicate on the generator. Same rule, asserted against the shipped data.
 func test_the_elite_placement_rule_needs_a_two_encounter_gap() -> void:
-	var run := RunState.new()
-	for i in 4:
-		run.record_visit(&"combat")      # next encounter is #5
-	assert_true(MapGenerator._elite_allowed(run))
-	run.record_visit(&"elite")           # that was #5
-	assert_false(MapGenerator._elite_allowed(run), "#6 is too soon")
-	run.record_visit(&"combat")
-	assert_false(MapGenerator._elite_allowed(run), "#7 is too soon")
-	run.record_visit(&"combat")
-	assert_true(MapGenerator._elite_allowed(run), "#8 is two encounters later")
-	run.record_visit(&"elite")
-	run.record_visit(&"combat")
-	run.record_visit(&"combat")
-	assert_false(MapGenerator._elite_allowed(run), "never more than two")
+	for path: Dictionary in _db.all_paths():
+		var at: Array[int] = []
+		for index in path.encounters.size():
+			if (path.encounters[index] as Array).has(&"elite"):
+				at.append(index + 1)
+		assert_eq(at.size(), 2, "%s offers exactly two Elites" % path.id)
+		assert_gt(at[0], 3, "%s: the first Elite is after encounter 3" % path.id)
+		assert_gt(at[1] - at[0], 2, "%s: two encounters between them" % path.id)

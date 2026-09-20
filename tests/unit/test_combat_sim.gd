@@ -155,9 +155,9 @@ func test_ability_hits_the_selected_target() -> void:
 	assert_eq(sim.enemies[1].hp, hp_b)
 
 
-func test_enemy_debuff_is_applied_to_hero() -> void:
-	# Manager: call_staff (summon, round 1), clipboard_strike (1x12, round 2),
-	# then performance_review (Vulnerable 3, round 3) — intro_loop brain.
+func test_the_manager_summons_then_buffs_and_hits() -> void:
+	# Manager: call_staff (summon, round 1), then the loop — take_charge
+	# (Strength 5) and clipboard_strike (1x10) — intro_loop brain.
 	# The round-1 summon also acts from round 2 onward, so this checks the
 	# Manager's own events rather than pinning total hero hp/vulnerable stacks
 	# (which the summoned Server's own random move would otherwise perturb).
@@ -171,10 +171,14 @@ func test_enemy_debuff_is_applied_to_hero() -> void:
 		sim.end_assignment()
 		for event: CombatEvent in sim.drain_events():
 			if event.type == &"damage_dealt" and event.data.get("source") == manager_id \
-					and int(event.data.get("amount", 0)) == 12:
+					and int(event.data.get("amount", 0)) >= 15:
 				dealt_twelve = true
-			if event.type == &"status_applied" and event.data.get("actor") == &"hero" \
-					and event.data.get("status") == &"vulnerable":
+			if event.type == &"status_applied" and event.data.get("actor") == manager_id \
+					and event.data.get("status") == &"strength":
 				applied_vulnerable = true
-	assert_true(dealt_twelve, "clipboard_strike deals 12 to the hero")
-	assert_true(applied_vulnerable, "performance_review applies Vulnerable to the hero")
+	# Sheet v0.122 (patch 0.114): the Manager summons, then loops Strength 5 and
+	# Deal 10 — the buff lands first, so the swing arrives as at least 15. It is
+	# "at least" because the Server it summoned may have made the hero
+	# Vulnerable in the meantime, which scales the hit further.
+	assert_true(dealt_twelve, "clipboard_strike deals 10 + Strength 5 to the hero")
+	assert_true(applied_vulnerable, "take_charge gives the Manager Strength")

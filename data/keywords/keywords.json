@@ -19,7 +19,7 @@
     {
       "id": "vulnerable",
       "name": "Vulnerable X",
-      "text": "Takes 25% more damage for the next X turns."
+      "text": "Takes 50% more damage for the next X turns."
     },
     {
       "id": "block",

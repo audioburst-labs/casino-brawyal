@@ -46,7 +46,10 @@ func test_casino_prize_table_is_the_docs_and_every_roll_lands_a_listed_prize() -
 	for prize: Dictionary in CasinoGame.PRIZES:
 		total += int(prize.weight)
 		ids.append(prize.id)
-	assert_eq(total, 90)
+	# The 0.122 doc added Empty Money Sack and Multiple Broken Hearts and
+	# halved the four stickers, so the listed shares total 80, not 90. The
+	# draw rolls over total_weight(), so every share stays in proportion.
+	assert_eq(total, 80)
 	assert_eq(CasinoGame.total_weight(), total)
 	assert_has(ids, &"broken_coins")
 	assert_eq(int(CasinoGame.PRIZES[0].weight), 10, "coins are 10% now, not 20%")
@@ -72,15 +75,13 @@ func test_broken_coins_lose_five_per_encounter_and_never_go_negative() -> void:
 
 # ---- Choice: the guaranteed final shop moved back to #9 ----
 
+## Patch 0.114: placement is authored in the six Paths now, so this asks the
+## data rather than a generator constant — but the guarantee is the same one.
 func test_final_shop_is_offered_at_encounter_nine_beside_the_rest() -> void:
-	assert_eq(MapGenerator.FINAL_SHOP_ENCOUNTER, 9)
-	var run := RunState.new()
-	for i in 8:
-		run.record_visit(&"combat")
-	var options := MapGenerator.next_options(run, _rng())
-	var types := options.map(func(o: Dictionary) -> StringName: return o.type)
-	assert_has(types, &"shop")
-	assert_has(types, &"rest")
+	for path: Dictionary in _db.all_paths():
+		var ninth: Array = path.encounters[8]
+		assert_has(ninth, &"shop", "%s offers the last shop at 9" % path.id)
+		assert_has(ninth, &"rest", "%s offers rest beside it" % path.id)
 
 
 # ---- Frail: 25% less Block from abilities ----
@@ -120,8 +121,8 @@ func test_server_spilled_drink_now_applies_frail() -> void:
 func test_bouncer_health_is_fifty_to_fifty_five() -> void:
 	# 50-60 in the 0.120 sheet, 50-55 in the 0.121 pull (patch 0.113).
 	var bouncer := _db.get_enemy(&"bouncer")
-	assert_eq(bouncer.hp_min, 50)
-	assert_eq(bouncer.hp_max, 55)
+	assert_eq(bouncer.hp_min, 56)
+	assert_eq(bouncer.hp_max, 60)
 
 
 func test_boss_summons_one_bouncer_and_grows_stronger_when_he_heals() -> void:

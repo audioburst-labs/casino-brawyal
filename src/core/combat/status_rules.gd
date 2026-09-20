@@ -4,7 +4,7 @@ extends RefCounted
 ## only a handful of statuses alter the damage formula, and the ordering
 ## below is the contract the whole game balances against.
 ##
-## Order per hit: base + Strength -> Weak (-25%) -> Vulnerable on target (+25%)
+## Order per hit: base + Strength -> Weak (-25%) -> Vulnerable on target (+50%)
 ##                -> Block -> HP.
 ## Rounding is half-up (patch 0.1): 4.5 -> 5, 4.4 -> 4. Weak never drops a hit
 ## below 1. The High Stakes relic raises both modifiers to 50% via
@@ -22,7 +22,10 @@ const DURATION_DEBUFFS: Array[StringName] = [&"weak", &"vulnerable", &"stun", &"
 const DURATION_STATUSES: Array[StringName] = [&"weak", &"vulnerable", &"taunt", &"stun", &"frail"]
 
 const WEAK_PCT := 0.25
-const VULNERABLE_PCT := 0.25
+## 50%, not the 25% shipped through 0.113 — every version of the sheet has read
+## "Vulnurable X: Enemies take 50% more damage for the next X turns", and the
+## divergence went unnoticed for eleven patches (doc wins, patch 0.114).
+const VULNERABLE_PCT := 0.50
 ## Frail (sheet v0.120, the Server's Spilled Drink): "Gain 25% less Block from
 ## abilities." Applied to every Block an ability op grants, half-up.
 const FRAIL_PCT := 0.25
@@ -41,7 +44,9 @@ static func attack_damage(base: int, attacker: CombatActor, weak_pct := WEAK_PCT
 	return damage
 
 
-## Damage after the TARGET's modifiers (before block).
+## Damage after the TARGET's modifiers (before block). `CombatSim`'s intent
+## display runs through here too, so an announced number already carries the
+## hero's Vulnerable (patch 0.114).
 static func damage_taken(incoming: int, target: CombatActor, vulnerable_pct := VULNERABLE_PCT) -> int:
 	if target.has_status(&"vulnerable"):
 		return _round_half_up(incoming * (1.0 + vulnerable_pct))

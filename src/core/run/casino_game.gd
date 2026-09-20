@@ -9,12 +9,16 @@ extends RefCounted
 const PRIZES := [
 	{"id": &"coins", "weight": 10},          # +5 x encounter coins
 	{"id": &"broken_coins", "weight": 10},   # -5 x encounter coins (floor 0)
+	{"id": &"empty_sack", "weight": 5},      # -10 x encounter coins (0.114)
 	{"id": &"heart", "weight": 10},          # heal 1 x encounter
 	{"id": &"broken_heart", "weight": 10},   # lose 1 x encounter (never fatal)
-	{"id": &"sticker_spade", "weight": 10},
-	{"id": &"sticker_heart", "weight": 10},
-	{"id": &"sticker_club", "weight": 10},
-	{"id": &"sticker_diamond", "weight": 10},
+	{"id": &"broken_hearts", "weight": 5},   # lose 2 x encounter (0.114)
+	# The four stickers halved from 10 to 5 in the 0.122 doc, which is what
+	# made room for the two new losing faces.
+	{"id": &"sticker_spade", "weight": 5},
+	{"id": &"sticker_heart", "weight": 5},
+	{"id": &"sticker_club", "weight": 5},
+	{"id": &"sticker_diamond", "weight": 5},
 	{"id": &"relic", "weight": 5},
 	{"id": &"money_sack", "weight": 4},      # +10 x encounter coins
 	{"id": &"extra_reel", "weight": 1},
@@ -73,6 +77,10 @@ static func _award(symbol: StringName, db: ContentDB, run: RunState,
 			var lost: int = mini(5 * encounter, run.coins)
 			run.coins -= lost
 			return "Broken coins: -%d coins" % lost
+		&"empty_sack":
+			var emptied: int = mini(10 * encounter, run.coins)
+			run.coins -= emptied
+			return "Empty money sack: -%d coins" % emptied
 		&"money_sack":
 			run.coins += 10 * encounter
 			return "Money sack: +%d coins!" % (10 * encounter)
@@ -89,6 +97,10 @@ static func _award(symbol: StringName, db: ContentDB, run: RunState,
 			var loss: int = mini(1 * encounter, run.hp - 1)  # never fatal
 			run.hp -= loss
 			return "Broken heart: -%d HP" % loss
+		&"broken_hearts":
+			var wounds: int = mini(2 * encounter, run.hp - 1)  # never fatal
+			run.hp -= wounds
+			return "Broken hearts: -%d HP" % wounds
 		&"sticker_spade", &"sticker_heart", &"sticker_club", &"sticker_diamond":
 			var suit := StringName(String(symbol).trim_prefix("sticker_"))
 			run.sticker_inventory.append(suit)

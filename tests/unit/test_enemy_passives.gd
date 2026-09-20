@@ -34,7 +34,7 @@ func test_the_shipped_passives_parse() -> void:
 	assert_eq(str(_db.get_enemy(&"dealer").passive.type), "bust")
 	assert_eq(int(_db.get_enemy(&"dealer").passive.threshold), 21)
 	assert_eq(str(_db.get_enemy(&"chip_golem").passive.type), "break")
-	assert_eq(int(_db.get_enemy(&"chip_golem").passive.every), 20)
+	assert_eq(int(_db.get_enemy(&"chip_golem").passive.every), 30)
 	assert_eq(str(_db.get_enemy(&"loan_shark").passive.type), "loan")
 	assert_eq(int(_db.get_enemy(&"loan_shark").passive.every_rounds), 3)
 	assert_true(_db.get_enemy(&"bouncer").passive.is_empty(), "plain enemies have none")
@@ -101,16 +101,17 @@ func test_the_dealer_snowballs_strength_through_its_rotation() -> void:
 
 # ---- Break / Gift / Absorb (the Chip Golem) ----
 
-func test_break_gifts_a_chip_for_every_twenty_health_lost() -> void:
+## Sheet v0.122 moved the threshold from 20 to 30 (patch 0.114).
+func test_break_gifts_a_chip_for_every_thirty_health_lost() -> void:
 	var sim := _sim(["chip_golem"])
 	var golem := sim.enemies[0]
 	sim.tray.discard_all()
-	sim.on_enemy_damaged(golem, 19)
-	assert_eq(sim.tray.total(), 0, "19 is not a break")
+	sim.on_enemy_damaged(golem, 29)
+	assert_eq(sim.tray.total(), 0, "29 is not a break")
 	sim.on_enemy_damaged(golem, 1)
-	assert_eq(sim.tray.total(), 1, "20 is")
-	sim.on_enemy_damaged(golem, 45)
-	assert_eq(sim.tray.total(), 3, "45 more crosses two more thresholds")
+	assert_eq(sim.tray.total(), 1, "30 is")
+	sim.on_enemy_damaged(golem, 65)
+	assert_eq(sim.tray.total(), 3, "65 more crosses two more thresholds")
 
 
 func test_gift_chips_arrive_after_the_next_spin() -> void:
@@ -208,10 +209,12 @@ func test_self_block_shields_the_enemy() -> void:
 
 func test_the_dealer_no_longer_raffles_blackjack() -> void:
 	var dealer := _db.get_enemy(&"dealer")
-	assert_eq(dealer.hp_min, 43)
-	assert_eq(dealer.hp_max, 48)
+	assert_eq(dealer.hp_min, 51)
+	assert_eq(dealer.hp_max, 55)
+	# Sheet v0.122: the first two moves are 2x3, the third is still 2x2 with
+	# Multistrike (patch 0.114).
 	for move_id: String in dealer.moves:
 		var intent: Dictionary = dealer.moves[move_id].intent
 		assert_false(intent.has("blackjack"), "%s still raffles" % move_id)
-		assert_eq(int(intent.instances), 2, "%s is a 2x2" % move_id)
-		assert_eq(int(intent.per_hit), 2)
+		assert_eq(int(intent.instances), 2, "%s is a two-hitter" % move_id)
+		assert_between(int(intent.per_hit), 2, 3, move_id)

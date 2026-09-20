@@ -102,7 +102,8 @@ func resume_run() -> void:
 ## (e.g. the Abilities screen) don't re-roll the choice (patch 0.12).
 func map_options() -> Array[Dictionary]:
 	if _cached_for_encounter != run.encounter_number():
-		_cached_options = MapGenerator.next_options(run, rng.stream(&"map"))
+		_cached_options = MapGenerator.next_options(
+			Db.content, run, rng.stream(&"map"))
 		_cached_for_encounter = run.encounter_number()
 	return _cached_options
 

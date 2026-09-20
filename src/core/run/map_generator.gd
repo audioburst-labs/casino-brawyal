@@ -1,116 +1,71 @@
 class_name MapGenerator
 extends RefCounted
-## Generates the next encounter choice lazily from the run history.
-## Placement rules (design doc + patch 0.1 "Ori fixes"):
-##   #1 always Combat (auto-start) - #10 always Boss
-##   Rest offered only at #3, #6 and #9 - the final Shop appears at #9 (v0.120)
-##   Shop: max 3 visits, never right after a visited shop, never at #2,
-##   and at least 2 shop OFFERS per run (forced late if needed)
-##   Treasure: max 2 visits, only after #2, never right after a treasure
-##   Elite: only after #3, at most twice, with a gap of 2 encounters between
-##     them (doc v0.120; this replaced Hard Combat in patch 0.22)
-##   The two options always differ in type
+## The encounter choice at each step of a run.
+##
+## Patch 0.114 replaced ten patches of procedural placement rules with the
+## doc's new model: "At the start of a run, the system selects one of six
+## predefined *Paths*, which determines the pair of choices offered to the
+## player at each step." The six paths are transcribed from the sheet's
+## Encounter Choices tab into `data/encounters/act1_paths.json`.
+##
+## Everything the old rules used to enforce — #1 Combat, #10 Boss, Rest only at
+## #5 and #9, two Elites with a gap, a Shop before the boss — is now a property
+## OF the authored paths rather than code, and `test_map_generator.gd` checks
+## the shipped paths against those invariants instead of checking a generator.
+## That means the designer can change the shape of a run in the sheet without
+## a code change, and a path that breaks an invariant fails the build.
+
+## The path is chosen once per run and remembered on the RunState. A run that
+## predates 0.114 (or any run whose path was never rolled) picks one the first
+## time it asks for options, so an in-flight save keeps working.
+static func path_for(db: ContentDB, run: RunState,
+		rng: RandomNumberGenerator) -> Dictionary:
+	var paths := db.all_paths()
+	if paths.is_empty():
+		return {}
+	if run.path_id != &"":
+		for path: Dictionary in paths:
+			if StringName(str(path.id)) == run.path_id:
+				return path
+	var picked: Dictionary = paths[rng.randi_range(0, paths.size() - 1)]
+	run.path_id = StringName(str(picked.id))
+	return picked
 
 
-## Doc v0.19: rest is offered at these encounters and nowhere else.
-const REST_ENCOUNTERS: Array[int] = [3, 6, 9]
-## Doc v0.120: the run's guaranteed final Shop option is back at #9, sharing
-## the pair with that encounter's Rest (it sat alone at #8 in v0.19).
-const FINAL_SHOP_ENCOUNTER := 9
-
-
-static func next_options(run: RunState, rng: RandomNumberGenerator) -> Array[Dictionary]:
+static func next_options(db: ContentDB, run: RunState,
+		rng: RandomNumberGenerator) -> Array[Dictionary]:
 	var encounter := run.encounter_number()
-	if encounter == 1:
-		return [{"type": &"combat"}]
-	if encounter == 10:
-		return [{"type": &"boss"}]
-	# The guaranteed final Shop shares #9 with that encounter's Rest — the
-	# doc's last choice before the boss is always "restock or recover".
-	if encounter == FINAL_SHOP_ENCOUNTER and _shop_allowed(run):
-		run.shop_offers += 1
-		if REST_ENCOUNTERS.has(encounter):
-			return [{"type": &"shop"}, {"type": &"rest"}]
-		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
-
-	if REST_ENCOUNTERS.has(encounter):
-		return [_roll_option(run, rng, [&"rest"]), {"type": &"rest"}]
-
-	# At least 2 shop offers per run: if only the guaranteed one is left,
-	# force an earlier one into a free slot (#4, #5 and #7 qualify).
-	if encounter >= 4 and encounter < FINAL_SHOP_ENCOUNTER \
-			and run.shop_offers < 1 and _shop_allowed(run):
-		run.shop_offers += 1
-		return [{"type": &"shop"}, _roll_option(run, rng, [&"shop"])]
-
-	var first := _roll_option(run, rng, [])
-	var second := _roll_option(run, rng, [first.type])
-	for option in [first, second]:
+	var path := path_for(db, run, rng)
+	var options: Array[Dictionary] = []
+	var types := _types_at(path, encounter)
+	for type: StringName in types:
+		options.append({"type": type})
+	if options.is_empty():
+		# No path data at all: the run still has to be playable, so fall back
+		# to the two fixed encounters and plain combat in between.
+		options.append({"type": _fallback_type(encounter)})
+	# The shop counter still drives the "have I been offered a shop" reading
+	# other screens use; it is bookkeeping now, not a placement rule.
+	for option in options:
 		if option.type == &"shop":
 			run.shop_offers += 1
-	return [first, second]
+	return options
 
 
-static func _shop_allowed(run: RunState) -> bool:
-	return run.encounter_number() != 2 \
-		and run.count_visited(&"shop") < 3 \
-		and run.last_visited() != &"shop"
+## The encounter types offered at `encounter` (1-based) on `path`.
+static func _types_at(path: Dictionary, encounter: int) -> Array[StringName]:
+	var out: Array[StringName] = []
+	if path.is_empty():
+		return out
+	var steps: Array = path.get("encounters", [])
+	if encounter < 1 or encounter > steps.size():
+		return out
+	for name in steps[encounter - 1]:
+		out.append(StringName(str(name)))
+	return out
 
 
-static func _treasure_allowed(run: RunState) -> bool:
-	return run.encounter_number() > 2 \
-		and run.count_visited(&"treasure") < 2 \
-		and run.last_visited() != &"treasure"
-
-
-## Doc v0.120: "Elites only appear starting after Encounter #3, up to twice,
-## and there must be a gap of 2 encounters between them."
-static func _elite_allowed(run: RunState) -> bool:
-	if run.encounter_number() <= 3 or run.count_visited(&"elite") >= 2:
-		return false
-	var last := run.history.rfind(&"elite")
-	if last < 0:
-		return true
-	# `last` is a 0-based index, so that Elite was encounter `last + 1`; two
-	# encounters have to sit between it and this one.
-	return run.encounter_number() - (last + 1) > 2
-
-
-static func _casino_allowed(run: RunState) -> bool:
-	return run.encounter_number() > 1 \
-		and run.count_visited(&"casino") < 2 \
-		and run.last_visited() != &"casino"
-
-
-## Rolls one weighted option whose type is not in `exclude`.
-static func _roll_option(run: RunState, rng: RandomNumberGenerator,
-		exclude: Array[StringName]) -> Dictionary:
-	var pool: Array[Dictionary] = []  # {type, weight}
-	pool.append({"type": &"combat", "weight": 4})
-	pool.append({"type": &"story", "weight": 3})
-	if _elite_allowed(run):
-		pool.append({"type": &"elite", "weight": 2})
-	if _shop_allowed(run):
-		pool.append({"type": &"shop", "weight": 2})
-	if _treasure_allowed(run):
-		pool.append({"type": &"treasure", "weight": 2})
-	if _casino_allowed(run):
-		pool.append({"type": &"casino", "weight": 2})
-
-	var candidates := pool.filter(
-		func(entry: Dictionary) -> bool: return not exclude.has(entry.type))
-	var total := 0
-	for entry: Dictionary in candidates:
-		total += int(entry.weight)
-	var roll := rng.randi_range(1, total)
-	for entry: Dictionary in candidates:
-		roll -= int(entry.weight)
-		if roll <= 0:
-			return _finalize(entry.type, rng)
-	return _finalize(&"combat", rng)
-
-
-## Elites have no variants: they are their own fights against their own
-## mini-bosses now, not a buffed copy of a normal lineup (patch 0.22).
-static func _finalize(type: StringName, _rng: RandomNumberGenerator) -> Dictionary:
-	return {"type": type}
+static func _fallback_type(encounter: int) -> StringName:
+	if encounter >= 10:
+		return &"boss"
+	return &"combat"

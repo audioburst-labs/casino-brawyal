@@ -13,6 +13,8 @@ signal finished(lines: Array, relic_id: StringName)
 const PRIZE_TEXTURES := {
 	&"coins": "res://assets/icons/coin.png",
 	&"broken_coins": "res://assets/icons/icon_broken_coins.png",
+	&"empty_sack": "res://assets/icons/icon_broken_coins.png",
+	&"broken_hearts": "res://assets/icons/status_vulnerable.png",
 	&"money_sack": "res://assets/props/treasure_chest.png",
 	&"heart": "res://assets/icons/fx_heal.png",
 	&"broken_heart": "res://assets/icons/status_vulnerable.png",

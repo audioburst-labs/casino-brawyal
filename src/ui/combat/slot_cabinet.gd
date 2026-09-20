@@ -334,18 +334,18 @@ func draw_chassis(canvas: CanvasItem) -> void:
 	slab.shadow_offset = Vector2(0, 5.0 * art_scale)
 	canvas.draw_style_box(slab, Rect2(0, 0, body_width, size.y))
 
-	# A dark well behind each hole, so the reels and the chips sit INSIDE the
-	# machine rather than floating on the table behind it.
+	# A dark well behind the REEL window only, so the reels read against it.
+	# The drawer deliberately gets none (patch 0.114, designer's note: "remove
+	# the brown square area, leaving the wooden plank already in the slot
+	# machine") — the chips lie straight on the chassis's own maroon wood,
+	# which is the same wood the drawer frame is painted in. A well there, dark
+	# or brown, only hides the plank the machine already has.
 	var recess := StyleBoxFlat.new()
 	recess.bg_color = CHASSIS_RECESS
 	recess.set_corner_radius_all(int(6.0 * art_scale))
 	canvas.draw_style_box(recess, Rect2(
 		_window_holder.position - Vector2(4, 4) * art_scale,
 		_window_holder.size + Vector2(8, 8) * art_scale))
-	if show_drawer and _drawer_holder != null and _drawer_holder.visible:
-		canvas.draw_style_box(recess, Rect2(
-			_drawer_holder.position - Vector2(4, 4) * art_scale,
-			_drawer_holder.size + Vector2(8, 8) * art_scale))
 
 
 func draw_cabinet(canvas: CanvasItem) -> void:

@@ -17,7 +17,7 @@ static func play(db: ContentDB, seed_value: int) -> Dictionary:
 
 	var choice_rng := rng.stream(&"bot")
 	while run.encounter_number() <= 10:
-		var options := MapGenerator.next_options(run, rng.stream(&"map"))
+		var options := MapGenerator.next_options(db, run, rng.stream(&"map"))
 		var option: Dictionary = options[choice_rng.randi_range(0, options.size() - 1)]
 		run.record_visit(option.type)
 		match option.type:

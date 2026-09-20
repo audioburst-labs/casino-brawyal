@@ -18,6 +18,12 @@ const KNOWN_OPS: Array[String] = [
 ## Enemy passives (sheet v0.120). These names live in their own namespace —
 ## `bust` is also an ABILITY id, and the two never meet.
 const KNOWN_PASSIVES: Array[String] = ["bust", "break", "loan"]
+## Encounter types a Path may offer, and how many encounters a run has.
+const KNOWN_ENCOUNTER_TYPES: Array[String] = [
+	"combat", "elite", "boss", "story", "rest", "treasure", "casino", "shop"]
+const PATH_LENGTH := 10
+## Conditions a loan can carry before it may be offered (sheet v0.122).
+const KNOWN_LOAN_REQUIREMENTS: Array[String] = ["", "wounded"]
 ## Everything an enemy move's `intent` may carry. Whitelisted since patch 0.22
 ## because a typo in an intent extra used to fail silently.
 const KNOWN_INTENT_KEYS: Array[String] = [
@@ -47,6 +53,7 @@ var _statuses: Dictionary = {}
 var _relics: Dictionary = {}
 var _lineups: Array[Dictionary] = []
 var _loans: Dictionary = {}
+var _paths: Array[Dictionary] = []
 var _story_events: Dictionary = {}
 var _keywords: Dictionary = {}
 
@@ -99,6 +106,9 @@ func load_all(root: String) -> bool:
 			"loans":
 				for item: Dictionary in doc.get("items", []):
 					_parse_loan(item)
+			"paths":
+				for item: Dictionary in doc.get("items", []):
+					_parse_path(item)
 
 	_validate_summons()
 	return errors.is_empty()
@@ -157,6 +167,11 @@ func get_loan(id: StringName) -> Defs.LoanDef:
 
 func all_loan_ids() -> Array:
 	return _loans.keys()
+
+
+## The doc's six Paths (patch 0.114), in sheet order.
+func all_paths() -> Array[Dictionary]:
+	return _paths
 
 
 func all_lineups() -> Array[Dictionary]:
@@ -411,6 +426,34 @@ func _validate_summons() -> void:
 					errors.append("enemy %s move %s: unknown summon '%s'" % [enemy_id, move_id, target])
 
 
+## One Path (doc "Encounters", patch 0.114): ten encounters, each a list of the
+## types offered there. #1 and #10 carry a single option, the rest carry two.
+## Every type is linted against the ones the run flow knows, so a typo in the
+## sheet transcription fails the build rather than dropping a choice silently
+## at encounter seven.
+func _parse_path(item: Dictionary) -> void:
+	var id := StringName(str(item.get("id", "")))
+	if id == &"":
+		errors.append("path with missing id")
+		return
+	var steps: Array = item.get("encounters", [])
+	if steps.size() != PATH_LENGTH:
+		errors.append("path %s: %d encounters, expected %d"
+			% [id, steps.size(), PATH_LENGTH])
+	var encounters: Array = []
+	for index in steps.size():
+		var offered: Array[StringName] = []
+		for name in steps[index]:
+			var type := StringName(str(name))
+			if not KNOWN_ENCOUNTER_TYPES.has(String(type)):
+				errors.append("path %s: unknown encounter type '%s'" % [id, type])
+			offered.append(type)
+		if offered.is_empty():
+			errors.append("path %s: encounter %d offers nothing" % [id, index + 1])
+		encounters.append(offered)
+	_paths.append({"id": id, "encounters": encounters})
+
+
 ## One loan offer (doc "Loan"): a reward now, a penalty in `turns` turns.
 ## Both effect lists go through the same linter as any other op array.
 func _parse_loan(item: Dictionary) -> void:
@@ -423,6 +466,9 @@ func _parse_loan(item: Dictionary) -> void:
 	loan.turns = int(item.get("turns", 0))
 	loan.reward_text = str(item.get("reward_text", ""))
 	loan.penalty_text = str(item.get("penalty_text", ""))
+	loan.requires = str(item.get("requires", ""))
+	if not KNOWN_LOAN_REQUIREMENTS.has(loan.requires):
+		errors.append("loan %s: unknown requires '%s'" % [loan.id, loan.requires])
 	if loan.turns <= 0:
 		errors.append("loan %s: turns must be positive" % loan.id)
 	for effect: Dictionary in item.get("reward", []):

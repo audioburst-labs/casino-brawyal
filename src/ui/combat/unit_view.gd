@@ -115,6 +115,46 @@ class PassiveChip:
 		draw_string(font, at, body, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, lit)
 
 
+## The shield that sweeps up a unit when it gains Block (patch 0.114). Drawn
+## rather than sprited so it scales with the unit and needs no new art.
+class BlockFlash:
+	extends Control
+
+	var progress := 0.0:
+		set(v):
+			progress = v
+			queue_redraw()
+	var fade := 1.0:
+		set(v):
+			fade = v
+			queue_redraw()
+
+	func _draw() -> void:
+		if size.x <= 0.0 or fade <= 0.0:
+			return
+		var eased := clampf(progress, 0.0, 1.0)
+		# Sweeps from the feet to chest height as it grows.
+		var centre := Vector2(size.x * 0.5, size.y * (0.86 - 0.34 * eased))
+		var reach := size.x * (0.20 + 0.16 * eased)
+		var tint := Color(0.62, 0.86, 1.0, fade * (1.0 - eased * 0.35))
+		# A ring first, so the shield reads as arriving rather than appearing.
+		draw_arc(centre, reach * 1.25, 0.0, TAU, 40,
+			Color(tint.r, tint.g, tint.b, tint.a * 0.45), 4.0, true)
+		_shield(centre, reach, tint)
+
+	## A heater shield: shoulders, straight sides, a point at the bottom.
+	func _shield(at: Vector2, reach: float, tint: Color) -> void:
+		var points := PackedVector2Array()
+		points.append(at + Vector2(-reach, -reach * 0.78))
+		points.append(at + Vector2(reach, -reach * 0.78))
+		points.append(at + Vector2(reach, reach * 0.10))
+		points.append(at + Vector2(0.0, reach * 1.02))
+		points.append(at + Vector2(-reach, reach * 0.10))
+		draw_colored_polygon(points, Color(tint.r, tint.g, tint.b, tint.a * 0.30))
+		points.append(points[0])
+		draw_polyline(points, tint, 3.5, true)
+
+
 ## Seeing stars: the ring that orbits a stunned unit's head while it is out
 ## (patch 0.113). `phase` is driven by the unit's own tween.
 class StunStars:
@@ -973,6 +1013,35 @@ func play_debuff_shake() -> void:
 	tween.tween_property(target, "position:x", base_x - 8.0, 0.06)
 	tween.tween_property(target, "position:x", base_x, 0.07) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+## Block gained, from ANY source (patch 0.114): a golden shield sweeps up over
+## the unit and the HP panel pulses blue.
+##
+## The event was always emitted and the old cue was always played — but at a
+## round start the relic/passive grants land a beat BEFORE the reels spin, so a
+## small icon that faded in 0.4 s was over while the player was still watching
+## the machine. This is slower, larger, and lands on the unit itself, so it
+## reads wherever the block came from.
+func play_block_gain(amount: int) -> void:
+	if amount <= 0:
+		return
+	var shield := BlockFlash.new()
+	shield.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shield.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shield.z_index = 40
+	add_child(shield)
+	var rise := create_tween()
+	rise.set_parallel(true)
+	rise.tween_method(func(v: float) -> void: shield.progress = v, 0.0, 1.0, 0.42) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	rise.chain().tween_method(func(v: float) -> void: shield.fade = v, 1.0, 0.0, 0.26)
+	rise.chain().tween_callback(shield.queue_free)
+	# The panel answers too, so the number and the effect are one event.
+	if _hp_holder != null:
+		var pulse := create_tween()
+		pulse.tween_property(_hp_holder, "modulate", Color(0.72, 0.9, 1.15), 0.10)
+		pulse.tween_property(_hp_holder, "modulate", Color.WHITE, 0.34)
 
 
 ## Stun (patch 0.113, designer's note: "stun should have a stun animation").

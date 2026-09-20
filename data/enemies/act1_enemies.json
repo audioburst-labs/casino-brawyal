@@ -4,8 +4,8 @@
     {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp_min": 50,
-      "hp_max": 55,
+      "hp_min": 56,
+      "hp_max": 60,
       "brain": {
         "type": "pair_then",
         "pair": [
@@ -103,8 +103,8 @@
     {
       "id": "dealer",
       "name": "Dealer",
-      "hp_min": 43,
-      "hp_max": 48,
+      "hp_min": 51,
+      "hp_max": 55,
       "brain": {
         "type": "sequence",
         "loop": true,
@@ -118,7 +118,7 @@
         "deal_low": {
           "intent": {
             "instances": 2,
-            "per_hit": 2,
+            "per_hit": 3,
             "debuffs": [],
             "self_status": [
               {
@@ -131,7 +131,7 @@
         "deal_high": {
           "intent": {
             "instances": 2,
-            "per_hit": 2,
+            "per_hit": 3,
             "debuffs": [],
             "self_status": [
               {
@@ -163,40 +163,24 @@
     {
       "id": "manager",
       "name": "Manager",
-      "hp_min": 40,
-      "hp_max": 45,
+      "hp_min": 61,
+      "hp_max": 65,
       "brain": {
         "type": "intro_loop",
         "intro": [
           "call_staff"
         ],
         "loop": [
-          "clipboard_strike",
-          "performance_review"
+          "take_charge",
+          "clipboard_strike"
         ]
       },
       "moves": {
         "clipboard_strike": {
           "intent": {
             "instances": 1,
-            "per_hit": 12,
+            "per_hit": 10,
             "debuffs": []
-          }
-        },
-        "performance_review": {
-          "intent": {
-            "instances": 0,
-            "per_hit": 0,
-            "debuffs": [
-              {
-                "status": "vulnerable",
-                "stacks": 1
-              },
-              {
-                "status": "weak",
-                "stacks": 1
-              }
-            ]
           }
         },
         "call_staff": {
@@ -209,14 +193,28 @@
               "count": 1
             }
           }
+        },
+        "take_charge": {
+          "name": "Take Charge",
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 5
+              }
+            ]
+          }
         }
       }
     },
     {
       "id": "mr_moneybags",
       "name": "Mr. Moneybags",
-      "hp_min": 100,
-      "hp_max": 120,
+      "hp_min": 150,
+      "hp_max": 160,
       "brain": {
         "type": "intro_loop",
         "intro": [
@@ -289,10 +287,10 @@
       "id": "chip_golem",
       "name": "Chip Golem",
       "hp_min": 100,
-      "hp_max": 108,
+      "hp_max": 109,
       "passive": {
         "type": "break",
-        "every": 20
+        "every": 30
       },
       "brain": {
         "type": "sequence",
@@ -307,7 +305,7 @@
         "bash": {
           "intent": {
             "instances": 1,
-            "per_hit": 20,
+            "per_hit": 22,
             "debuffs": [],
             "gift_chips": 1
           }
@@ -323,8 +321,8 @@
         },
         "crush": {
           "intent": {
-            "instances": 2,
-            "per_hit": 8,
+            "instances": 3,
+            "per_hit": 7,
             "debuffs": [],
             "self_status": [
               {
@@ -339,8 +337,8 @@
     {
       "id": "loan_shark",
       "name": "Loan Shark",
-      "hp_min": 80,
-      "hp_max": 85,
+      "hp_min": 100,
+      "hp_max": 109,
       "passive": {
         "type": "loan",
         "every_rounds": 3,

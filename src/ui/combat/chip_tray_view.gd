@@ -16,34 +16,20 @@ var _shown: Dictionary = {}
 
 ## One chip button's footprint (patch 0.22: 96 -> 80, see _ready).
 const CHIP_SIZE := 80
-## Inside the slot machine's drawer the cabinet art IS the outer frame, so
-## the tray drops its own bevel (patch 0.22). The brown well below is drawn
-## either way.
+## Inside the slot machine's drawer the cabinet art IS the frame, so the tray
+## draws nothing of its own (patch 0.22).
+##
+## Patch 0.114: 0.113's brown well is gone. It was added to replace the frame
+## per chip, but the drawer art already has a wooden plank painted on it, and
+## the well simply covered it up. The chips now lie straight on that plank —
+## one background for all of them, which is what the note asked for, drawn by
+## the cabinet rather than by the tray.
 var framed := true
 
-## The drawer's felt: ONE constant brown well behind every chip, instead of a
-## frame per chip (patch 0.113, designer's note). The chips themselves are
-## frameless from here on, so the row reads as coins lying in a tray.
-const WELL_FILL := Color(0.26, 0.15, 0.09)
-const WELL_EDGE := Color(0.44, 0.27, 0.15)
 
-
-static func _well_style(bevelled: bool) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = WELL_FILL
-	box.set_corner_radius_all(10)
-	box.content_margin_left = 12.0
-	box.content_margin_right = 12.0
-	box.content_margin_top = 8.0
-	box.content_margin_bottom = 8.0
-	if bevelled:
-		box.set_border_width_all(3)
-		box.border_color = WELL_EDGE
-	# A soft drop shadow reads as depth: the chips sit IN the drawer.
-	box.shadow_color = Color(0.0, 0.0, 0.0, 0.5)
-	box.shadow_size = 6
-	box.shadow_offset = Vector2(0, 3)
-	return box
+static func _well_style(_bevelled: bool) -> StyleBoxEmpty:
+	# Deliberately empty: the drawer's own art is the background.
+	return StyleBoxEmpty.new()
 
 
 class ChipButton:

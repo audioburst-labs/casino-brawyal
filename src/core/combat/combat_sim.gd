@@ -228,7 +228,8 @@ func _offer_pending_choice() -> bool:
 		var every := maxi(1, int(passive.get("every_rounds", 3)))
 		if (round_number - LOAN_FIRST_ROUND) % every != 0 or round_number < LOAN_FIRST_ROUND:
 			continue
-		var pool: Array = _db.all_loan_ids().duplicate()
+		var pool: Array = _db.all_loan_ids().filter(
+			func(id: StringName) -> bool: return _loan_offerable(_db.get_loan(id)))
 		if pool.is_empty():
 			continue
 		var offers: Array = []
@@ -245,6 +246,17 @@ func _offer_pending_choice() -> bool:
 		emit_event(&"choice_offered", _pending_choice.duplicate(true))
 		return true
 	return false
+
+
+## Sheet v0.122: a loan that heals is not offered to a hero on full health —
+## it would buy a reward of nothing with a real penalty (patch 0.114).
+func _loan_offerable(loan: Defs.LoanDef) -> bool:
+	if loan == null:
+		return false
+	match loan.requires:
+		"wounded":
+			return hero.hp < hero.max_hp
+	return true
 
 
 func pending_choice() -> Dictionary:
@@ -299,9 +311,13 @@ func _build_intent_entry(enemy: CombatActor, move_id: String) -> Dictionary:
 	var intent: Dictionary = move.get("intent", {})
 	var entry := {"actor": enemy.id, "move": move_id, "intent": intent}
 	# Multistrike and Rage move the announced numbers, so the intent has to
-	# show what will actually land (patch 0.22).
-	entry["display_per_hit"] = StatusRules.attack_damage(
-		_move_per_hit(enemy, intent), enemy, _weak_pct)
+	# show what will actually land (patch 0.22) — and since 0.114 that means
+	# the HERO's Vulnerable too. Announcing the pre-Vulnerable figure and then
+	# hitting for 50% more is the intent lying about the one number the player
+	# plans their whole turn around.
+	entry["display_per_hit"] = StatusRules.damage_taken(
+		StatusRules.attack_damage(_move_per_hit(enemy, intent), enemy, _weak_pct),
+		hero, _vuln_pct)
 	entry["display_instances"] = _move_instances(enemy, intent)
 	if not _db.get_enemy(enemy.def_id).passive.is_empty():
 		entry["passive"] = _db.get_enemy(enemy.def_id).passive

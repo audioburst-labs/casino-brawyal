@@ -46,11 +46,14 @@ func test_the_sheets_five_loans_are_the_ones_shipped() -> void:
 	for id: StringName in _db.all_loan_ids():
 		var loan := _db.get_loan(id)
 		turns[loan.reward_text] = loan.turns
-	assert_eq(int(turns.get("Gain 1 random Chip.", -1)), 3)
-	assert_eq(int(turns.get("Heal 10.", -1)), 2)
+	# Sheet v0.122 (patch 0.114): Pocket Change came in to 2 turns and House
+	# Doctor now heals 10, so BOTH heal loans read "Heal 10." — they are told
+	# apart by their term, 2 turns against 3.
+	assert_eq(int(turns.get("Gain 1 random Chip.", -1)), 2)
 	assert_eq(int(turns.get("Gain 2 random Chips.", -1)), 4)
-	assert_eq(int(turns.get("Heal 20.", -1)), 3)
 	assert_eq(int(turns.get("Gain 20 Coins.", -1)), 2)
+	assert_eq(_db.get_loan(&"quick_patch").turns, 2)
+	assert_eq(_db.get_loan(&"house_doctor").turns, 3)
 
 
 # ---- the choice ----
@@ -199,7 +202,7 @@ func test_a_heal_loan_heals_and_a_coin_loan_reaches_the_run_layer() -> void:
 	sim.hero.max_hp = 100
 	sim.hero.hp = 50
 	EffectInterpreter.execute(_db.get_loan(&"house_doctor").reward, sim, sim.hero, null)
-	assert_eq(sim.hero.hp, 70)
+	assert_eq(sim.hero.hp, 60, "House Doctor heals 10 in sheet v0.122")
 
 	EffectInterpreter.execute(_db.get_loan(&"cash_advance").reward, sim, sim.hero, null)
 	var coins := sim.pending_rewards.filter(

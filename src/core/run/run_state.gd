@@ -25,6 +25,10 @@ var ability_tiers: Dictionary = {}
 var needs_loadout := false
 var relic_ids: Array[StringName] = []
 var seed_value := 0
+## Which of the doc's six Paths this run walks (patch 0.114). Rolled the first
+## time the map is asked for options; "" on a pre-0.114 save, which simply
+## means that save gets one at its next map screen.
+var path_id: StringName = &""
 var history: Array[StringName] = []   # encounter type per completed choice
 var seen_events: Array[StringName] = []
 var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
@@ -169,6 +173,7 @@ func to_dict() -> Dictionary:
 		"max_hp": max_hp,
 		"coins": coins,
 		"seed_value": seed_value,
+		"path_id": String(path_id),
 		"ability_ids": ability_ids.map(func(s: StringName) -> String: return String(s)),
 		"equipped_ids": equipped_ids.map(func(s: StringName) -> String: return String(s)),
 		"trash_id": String(trash_id),
@@ -199,6 +204,7 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.max_hp = int(data.get("max_hp", 1))
 	run.coins = int(data.get("coins", 0))
 	run.seed_value = int(data.get("seed_value", 0))
+	run.path_id = StringName(str(data.get("path_id", "")))
 	for id in data.get("ability_ids", []):
 		run.ability_ids.append(StringName(str(id)))
 	for id in data.get("equipped_ids", []):
