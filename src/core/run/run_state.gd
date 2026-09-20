@@ -29,6 +29,9 @@ var seed_value := 0
 ## time the map is asked for options; "" on a pre-0.114 save, which simply
 ## means that save gets one at its next map screen.
 var path_id: StringName = &""
+## A unique id for this run, for telemetry. `seed_value` cannot serve - a
+## replayed seed collides and the balance bot uses its loop index (0.115).
+var run_uid: String = ""
 var history: Array[StringName] = []   # encounter type per completed choice
 var seen_events: Array[StringName] = []
 var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
@@ -174,6 +177,7 @@ func to_dict() -> Dictionary:
 		"coins": coins,
 		"seed_value": seed_value,
 		"path_id": String(path_id),
+		"run_uid": run_uid,
 		"ability_ids": ability_ids.map(func(s: StringName) -> String: return String(s)),
 		"equipped_ids": equipped_ids.map(func(s: StringName) -> String: return String(s)),
 		"trash_id": String(trash_id),
@@ -205,6 +209,7 @@ static func from_dict(data: Dictionary) -> RunState:
 	run.coins = int(data.get("coins", 0))
 	run.seed_value = int(data.get("seed_value", 0))
 	run.path_id = StringName(str(data.get("path_id", "")))
+	run.run_uid = str(data.get("run_uid", ""))
 	for id in data.get("ability_ids", []):
 		run.ability_ids.append(StringName(str(id)))
 	for id in data.get("equipped_ids", []):

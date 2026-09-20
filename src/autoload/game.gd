@@ -50,6 +50,7 @@ func new_run(seed_value: int = -1, skip_cinematic := false) -> void:
 	var run_seed := seed_value if seed_value >= 0 else (randi() % 1_000_000_000)
 	run = RunState.new()
 	run.seed_value = run_seed
+	run.run_uid = TelemetryIds.uuid4()
 	run_elapsed_sec = 0.0
 	rng = GameRng.new(run_seed)
 	var hero := Db.content.get_hero(run.hero_id)
@@ -57,6 +58,11 @@ func new_run(seed_value: int = -1, skip_cinematic := false) -> void:
 	run.hp = hero.max_hp
 	for ability_id in hero.starting_abilities:
 		run.acquire_ability(ability_id)
+	# Before the cinematic branch, or a skipped intro reports the run late.
+	Telemetry.run_started(run.run_uid, {
+		"seed": run.seed_value, "max_hp": run.max_hp,
+		"abilities": run.ability_ids.map(func(id: StringName) -> String: return String(id)),
+	})
 	if skip_cinematic:
 		choose_encounter({"type": &"combat"})
 	else:
@@ -78,6 +84,10 @@ func continue_run() -> bool:
 	if loaded == null:
 		return false
 	run = loaded
+	if run.run_uid == "":
+		run.run_uid = TelemetryIds.uuid4()   # a save from before 0.115
+	Telemetry.set_run(run.run_uid)
+	Telemetry.record(&"run_resumed", {"encounter": run.encounter_number()})
 	run_elapsed_sec = 0.0
 	# Salt the RNG with progress so a reloaded run doesn't replay identical draws.
 	rng = GameRng.new(run.seed_value + run.history.size() * 7919)
@@ -109,6 +119,15 @@ func map_options() -> Array[Dictionary]:
 
 
 func choose_encounter(option: Dictionary) -> void:
+	# The pair that was OFFERED alongside the pick is the interesting signal -
+	# "they took the shop over the rest" says more than "they took the shop".
+	var offered: Array[String] = []
+	for candidate in _cached_options:
+		offered.append(String(candidate.get("type", "")))
+	Telemetry.record(&"encounter_chosen", {
+		"chose": String(option.type), "offered": offered,
+		"encounter": run.encounter_number(), "path": String(run.path_id),
+	})
 	run.record_visit(option.type)
 	# Remembered until the encounter is finished or banked, so a save taken
 	# mid-encounter resumes it rather than skipping it (0.0.111).
@@ -181,6 +200,7 @@ func encounter_finished() -> void:
 
 func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 	if not won:
+		Telemetry.run_ended(_run_report("defeat"))
 		RunSave.clear()
 		goto_screen("res://scenes/screens/game_over_screen.tscn")
 		return
@@ -188,6 +208,7 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 	run.hp = maxi(1, hero_hp)
 	RunEffects.apply(pending_rewards, Db.content, run, rng.stream(&"rewards"))
 	if run.last_visited() == &"boss":
+		Telemetry.run_ended(_run_report("victory"))
 		RunSave.clear()
 		goto_screen("res://scenes/screens/victory_screen.tscn")
 	else:
@@ -222,6 +243,37 @@ func _start_combat(option: Dictionary) -> void:
 ## Fullscreen skippable video overlay. Calls on_done immediately when the
 ## clip is missing (HeyGen videos are optional polish) or when running
 ## headless (tests/CI can't play video).
+## What the run looked like when it ended. Mirrors what `RunBot._result()`
+## reports, so human play can be compared directly against the 40-run balance
+## instrument - which is the single most useful thing this telemetry produces.
+func _run_report(outcome: String) -> Dictionary:
+	if run == null:
+		return {"outcome": outcome}
+	var abilities: Array[String] = []
+	for id: StringName in run.ability_ids:
+		abilities.append(String(id))
+	var relics: Array[String] = []
+	for id: StringName in run.relic_ids:
+		relics.append(String(id))
+	var tiers := {}
+	for id: StringName in run.ability_tiers:
+		tiers[String(id)] = run.ability_tiers[id]
+	return {
+		"outcome": outcome,
+		"seed": run.seed_value,
+		"path_id": String(run.path_id),
+		"final_encounter": run.encounter_number(),
+		"final_hp": run.hp,
+		"max_hp": run.max_hp,
+		"coins": run.coins,
+		"abilities": abilities,
+		"relics": relics,
+		"ability_tiers": tiers,
+		"reels": run.machine.reels.size() if run.machine != null else 0,
+		"duration_sec": int(run_elapsed_sec),
+	}
+
+
 func play_cinematic(path: String, on_done: Callable) -> void:
 	if not ResourceLoader.exists(path) or DisplayServer.get_name() == "headless":
 		on_done.call()

@@ -32,7 +32,7 @@ func _ready() -> void:
 			_close())
 	add_child(backdrop)
 
-	var panel_size := Vector2(520, 460)
+	var panel_size := Vector2(520, 512)   # +52 for the data row (patch 0.115)
 	var panel := PanelContainer.new()
 	panel.position = vp * 0.5 - panel_size * 0.5
 	panel.size = panel_size
@@ -125,6 +125,25 @@ func _ready() -> void:
 		control.mouse_exited.connect(_hide_volume)
 	_refresh_volume_readout()
 
+	# Telemetry opt-out (patch 0.115). One control, and the explanation on hover
+	# rather than a paragraph in the panel.
+	var data_row := HBoxContainer.new()
+	data_row.add_theme_constant_override("separation", 12)
+	column.add_child(data_row)
+	data_row.add_child(_label("Play Data"))
+	var data_toggle := Button.new()
+	data_toggle.toggle_mode = true
+	data_toggle.button_pressed = Telemetry.is_enabled()
+	data_toggle.text = "On" if Telemetry.is_enabled() else "Off"
+	data_toggle.tooltip_text = ("Sends anonymous play data, including your IP "
+		+ "address, so the game can be balanced. Turning it off also deletes "
+		+ "what is stored on this machine.")
+	data_toggle.pressed.connect(func() -> void:
+		var on := data_toggle.button_pressed
+		Telemetry.set_enabled(on)
+		data_toggle.text = "On" if on else "Off")
+	data_row.add_child(data_toggle)
+
 	column.add_child(HSeparator.new())
 
 	var continue_button := Button.new()
@@ -199,7 +218,23 @@ func _toggle_mute() -> void:
 	_refresh_volume_readout()
 
 
+## Leaving a run: the session stays open (the player may start another), but
+## an abandoned run gets an ending rather than becoming a run that never
+## finished.
+func _abandon_run() -> void:
+	if Game.run != null and Game.run.run_uid != "":
+		Telemetry.run_ended({
+			"outcome": "abandoned",
+			"seed": Game.run.seed_value,
+			"path_id": String(Game.run.path_id),
+			"final_encounter": Game.run.encounter_number(),
+			"final_hp": Game.run.hp,
+			"coins": Game.run.coins,
+		})
+
+
 func _exit_to_main_menu() -> void:
+	_abandon_run()
 	if Game.run != null:
 		RunSave.save_run(Game.run)
 	_close()
@@ -207,6 +242,8 @@ func _exit_to_main_menu() -> void:
 
 
 func _leave_game() -> void:
+	_abandon_run()
+	Telemetry.session_ended("quit_button")
 	if Game.run != null:
 		RunSave.save_run(Game.run)
 	get_tree().quit()

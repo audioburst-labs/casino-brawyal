@@ -53,6 +53,12 @@ const IMPACT_ANGLE := 2.4 + PI * 0.5
 
 var sim: CombatSim
 var run_mode := false   # true when launched by Game flow (reports results back)
+## Telemetry's running tally for this fight, or null outside a real run. The
+## sim knows nothing about it: the presenter feeds it as events drain, which
+## keeps `src/core/` free of autoloads and makes the 40-run balance bot silent
+## by construction - RunBot never builds a presenter (patch 0.115).
+var _summary: CombatSummary = null
+var _def_ids: Dictionary = {}
 
 var _background: TextureRect
 var _round_label: Label
@@ -365,6 +371,9 @@ func setup(config: Dictionary) -> void:
 		config["ability_tiers"] = tiers
 	run_mode = config.get("run_mode", false)
 	sim = CombatSim.new(Db.content, config)
+	# After the sim: the opening payload lists the enemies it just rolled.
+	if run_mode:
+		_open_summary(config)
 	_spawn_units()
 	_spawn_abilities()
 	_reel_strip.set_reel_count(sim.machine.reels.size())
@@ -584,7 +593,7 @@ func _next_round() -> void:
 	sim.begin_round()
 	# A pending "Options In Combat" choice is drained as a `choice_offered`
 	# event and awaited inside _play_events (patch 0.22).
-	await _play_events(sim.drain_events())
+	await _play_events(_drain())
 	_busy = false
 	_refresh_all()
 
@@ -595,7 +604,7 @@ func _on_socket_clicked(ability_index: int, slot_index: int) -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
 	if sim.unassign_chip(ability_index, slot_index):
-		sim.drain_events()
+		_drain()
 		_refresh_all()
 
 
@@ -604,7 +613,7 @@ func _on_chip_dropped(ability_index: int, slot_index: int, suit: StringName) -> 
 		return
 	if sim.assign_chip(suit, ability_index, slot_index):
 		_busy = true
-		await _play_events(sim.drain_events())
+		await _play_events(_drain())
 		_busy = false
 		_refresh_all()
 
@@ -612,6 +621,13 @@ func _on_chip_dropped(ability_index: int, slot_index: int, suit: StringName) -> 
 func _on_unit_clicked(actor_id: StringName) -> void:
 	if not _enemy_views.has(actor_id):
 		return
+	# `set_target` emits nothing, so the choice is recorded here. The enemy's
+	# def_id, not its runtime id - `enemy_0` is minted per combat and means
+	# nothing across runs.
+	if run_mode and _summary != null:
+		Telemetry.record(&"target_set",
+			{"target": str(_def_ids.get(actor_id, actor_id))},
+			_summary.combat_id, _summary.encounter_number, _summary.rounds)
 	sim.set_target(actor_id)
 	_update_target_markers()
 
@@ -619,9 +635,14 @@ func _on_unit_clicked(actor_id: StringName) -> void:
 func _on_end_turn() -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
+	# Pass. `end_assignment` emits `turn_ended` for both sides, so the hero's
+	# own decision is clearer recorded at the button.
+	if run_mode and _summary != null:
+		Telemetry.record(&"pass", {}, _summary.combat_id,
+			_summary.encounter_number, _summary.rounds)
 	_busy = true
 	sim.end_assignment()
-	await _play_events(sim.drain_events())
+	await _play_events(_drain())
 	_busy = false
 	if sim.phase == CombatSim.Phase.ROUND_START:
 		_next_round()
@@ -645,7 +666,7 @@ func _offer_choice(data: Dictionary) -> void:
 	var index: int = await overlay.picked
 	overlay.queue_free()
 	if sim.choose(index):
-		await _play_events(sim.drain_events())
+		await _play_events(_drain())
 	_refresh_all()
 
 
@@ -698,6 +719,45 @@ func _intent_strikes(actor_id: StringName) -> bool:
 	return int(entry.get("display_instances", intent.get("instances", 0))) > 0
 
 
+## Opens the per-fight tally and tells telemetry the fight has begun.
+func _open_summary(config: Dictionary) -> void:
+	if Game.run == null:
+		return
+	_def_ids.clear()
+	for enemy in sim.enemies:
+		_def_ids[enemy.id] = String(enemy.def_id)
+	_summary = CombatSummary.new(TelemetryIds.uuid4(), Game.run.run_uid)
+	_summary.encounter_number = Game.run.encounter_number()
+	_summary.encounter_type = str(config.get("type", "combat"))
+	_summary.lineup_id = str(config.get("lineup", ""))
+	_summary.combat_seed = int(config.get("seed", 0))
+	_summary.hp_before = sim.hero.hp
+	var ids: Array[String] = []
+	for enemy in sim.enemies:
+		ids.append(String(enemy.def_id))
+	_summary.enemy_ids = ids
+	Telemetry.set_run(Game.run.run_uid)
+	Telemetry.record(&"combat_started", _summary.opening(),
+		_summary.combat_id, _summary.encounter_number)
+
+
+## Closes the tally. `reason` is "won", "lost" or "abandoned" - a player who
+## walks out of a fight through the menu is a real outcome, not missing data.
+func _close_summary(reason: String) -> void:
+	if _summary == null or _summary.combat_id == "":
+		return
+	_summary.hp_after = sim.hero.hp if sim != null and sim.hero != null else 0
+	Telemetry.record(&"combat_ended", _summary.closing(reason),
+		_summary.combat_id, _summary.encounter_number)
+	_summary.combat_id = ""          # idempotent: _exit_tree must not double-fire
+
+
+## A fight left through the menu still gets an ending.
+func _exit_tree() -> void:
+	if run_mode and _summary != null and not _summary.finished:
+		_close_summary("abandoned")
+
+
 func _card_of(ability_id: StringName) -> AbilityCard:
 	for card in _ability_cards:
 		if card.ability_index >= 0 and sim.abilities[card.ability_index].def.id == ability_id:
@@ -732,6 +792,21 @@ func _remove_enemy_view(actor_id: StringName) -> void:
 		_enemies_row.remove_child(view)
 		view.queue_free()
 	_rebuild_enemy_row()
+
+
+## The ONLY place `sim.drain_events()` may be called. Telemetry taps it here,
+## synchronously and without awaiting - an await inside the tap would interleave
+## with the presenter's animation awaits and reorder the world.
+func _drain() -> Array[CombatEvent]:
+	var events := sim.drain_events()
+	if run_mode and _summary != null:
+		for event in events:
+			_summary.feed(event.type, event.data, sim.hero.id)
+			if TelemetryFilter.keeps(event.type):
+				Telemetry.record(event.type,
+					TelemetryFilter.project(event.type, event.data, sim.hero.id, _def_ids),
+					_summary.combat_id, _summary.encounter_number, _summary.rounds)
+	return events
 
 
 func _play_events(events: Array[CombatEvent]) -> void:
@@ -955,11 +1030,13 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"chips_discarded":
 				_tray_view.refresh()
 			&"combat_won":
+				_close_summary("won")
 				_show_banner("VICTORY!")
 				if run_mode:
 					await get_tree().create_timer(1.3).timeout
 					Game.combat_finished(true, sim.hero.hp, sim.pending_rewards)
 			&"combat_lost":
+				_close_summary("lost")
 				_show_banner("DEFEAT")
 				if run_mode:
 					await get_tree().create_timer(1.6).timeout

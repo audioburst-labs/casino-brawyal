@@ -29,3 +29,5 @@ func _ready() -> void:
 			$HudLayer.add_child(LayoutTab.new())
 	else:
 		Game.goto_screen("res://scenes/screens/main_menu.tscn")
+		if TelemetryNotice.should_show():
+			$HudLayer.add_child(TelemetryNotice.new())

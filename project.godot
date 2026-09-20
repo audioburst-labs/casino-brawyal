@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 Db="*res://src/autoload/db.gd"
 Game="*res://src/autoload/game.gd"
 Fx="*res://src/autoload/fx.gd"
+Telemetry="*res://src/autoload/telemetry.gd"
 
 [display]
 
