@@ -128,6 +128,11 @@ async function ingest(req, res) {
     return json(res, 401, { error: "bad key" });
   }
   if (rateLimited(ip)) return json(res, 429, { error: "slow down" });
+  if (!CONFIGURED) {
+    // Authenticated, but there is nowhere to put it yet. 503 is a RETRY for
+    // the client, so the batch stays spooled and arrives once we are wired up.
+    return json(res, 503, { error: "CB_TELEMETRY_PG_URL not set" });
+  }
 
   let payload;
   try {
@@ -321,8 +326,13 @@ const server = createServer(async (req, res) => {
       await pool.query("SELECT 1");
       return json(res, 200, { ok: true });
     }
+    if (req.method === "POST" && url.pathname === "/v1/ingest") {
+      return await ingest(req, res);
+    }
     if (!CONFIGURED) {
-      // Everything else needs the database.
+      // Everything past this point needs the database. Deliberately AFTER the
+      // ingest route, so the API key is still checked first and a client sees
+      // the same auth behaviour before and after the secret is set.
       if (url.pathname === "/" || url.pathname === "/index.html") {
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
         return res.end("<!doctype html><meta charset=utf-8>" +
@@ -333,9 +343,6 @@ const server = createServer(async (req, res) => {
           "restart the revision. See <code>services/telemetry/README.md</code>.");
       }
       return json(res, 503, { error: "CB_TELEMETRY_PG_URL not set" });
-    }
-    if (req.method === "POST" && url.pathname === "/v1/ingest") {
-      return await ingest(req, res);
     }
     const authed = !VIEW_KEY || url.searchParams.get("key") === VIEW_KEY;
     if (req.method === "GET" && url.pathname === "/api/stats") {
