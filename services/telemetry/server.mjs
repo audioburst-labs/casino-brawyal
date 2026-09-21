@@ -54,6 +54,13 @@ function makePool(conn, tls) {
 }
 
 let pool = CONFIGURED ? makePool(CONN, wantsTls) : null;
+// An idle-client error on a pg.Pool is an unhandled 'error' event, which ends
+// the process. Telemetry is never worth taking the service down for.
+function guard(p) {
+  if (p) p.on("error", (err) => console.error("pool error:", err.message));
+  return p;
+}
+guard(pool);
 let configured = CONFIGURED;
 
 // --------------------------------------------------------------- bootstrap
@@ -97,10 +104,27 @@ async function bootstrap() {
     }
     // It owns its own database and has no rights anywhere else on the server.
     await sys.query(`GRANT CONNECT ON DATABASE "${DB_NAME}" TO "${ROLE_NAME}"`);
+    // On Azure Postgres the server admin is NOT a superuser, so it cannot hand
+    // a database to a role it is not a member of - this grant is what makes
+    // the ownership transfer below legal (aclcheck_error without it).
+    await sys.query(`GRANT "${ROLE_NAME}" TO CURRENT_USER`);
     await sys.query(`ALTER DATABASE "${DB_NAME}" OWNER TO "${ROLE_NAME}"`);
     console.log("bootstrap: %s owns %s, and nothing else", ROLE_NAME, DB_NAME);
   } finally {
     await sys.end().catch(() => {});
+  }
+
+  // Postgres 15+ does not let a database owner write to `public` by default,
+  // so hand it over explicitly while we still have the admin connection.
+  const inDb = new pg.Client({
+    connectionString: new URL("/" + DB_NAME + admin.search, admin).toString(), ...base });
+  await inDb.connect();
+  try {
+    await inDb.query(`ALTER SCHEMA public OWNER TO "${ROLE_NAME}"`);
+    await inDb.query(`GRANT ALL ON SCHEMA public TO "${ROLE_NAME}"`);
+    console.log("bootstrap: schema public handed to", ROLE_NAME);
+  } finally {
+    await inDb.end().catch(() => {});
   }
   const url = new URL(admin.toString());
   url.username = ROLE_NAME;
@@ -407,6 +431,22 @@ const server = createServer(async (req, res) => {
       if (!authed) return json(res, 401, { error: "add ?key=" });
       return json(res, 200, await dashboardData());
     }
+    // Erasure. An install id is personal data once it is stamped with an IP
+    // (CJEU C-582/14), so there has to be a way to remove one without a psql
+    // session - nobody outside Azure can reach port 5432 on this server. The
+    // cascade takes the plays, runs, combats and moves with it; the accepted
+    // batch ids stay, so a client that resends an old batch cannot resurrect
+    // what was just erased.
+    if (req.method === "DELETE" && url.pathname.startsWith("/api/install/")) {
+      if (!authed) return json(res, 401, { error: "add ?key=" });
+      const id = decodeURIComponent(url.pathname.slice("/api/install/".length));
+      if (!/^[0-9a-f-]{36}$/i.test(id)) {
+        return json(res, 400, { error: "expected an install uuid" });
+      }
+      const gone = await pool.query(
+        "DELETE FROM installs WHERE install_id = $1", [id]);
+      return json(res, 200, { erased: gone.rowCount });
+    }
     if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
       if (!authed) {
         res.writeHead(401, { "content-type": "text/plain" });
@@ -426,7 +466,7 @@ const server = createServer(async (req, res) => {
 try {
   const provisioned = await bootstrap();
   if (provisioned && !configured) {
-    pool = makePool(provisioned, true);
+    pool = guard(makePool(provisioned, true));
     configured = true;
     console.log("bootstrap: connected as", ROLE_NAME);
   }
@@ -436,7 +476,15 @@ try {
   console.error("bootstrap failed:", err.message);
 }
 if (configured) {
-  await migrate();
+  try {
+    await migrate();
+  } catch (err) {
+    // A migration that cannot run leaves the service up and unconfigured
+    // rather than crash-looping - the log says why, and a fixed secret plus a
+    // restart is the remedy.
+    console.error("migrate failed:", err.message);
+    configured = false;
+  }
 }
 server.listen(PORT, () =>
   console.log(`telemetry listening on :${PORT}` +

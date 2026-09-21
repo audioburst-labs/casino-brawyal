@@ -175,6 +175,24 @@ address). Rules worth keeping:
   PCK). It is write-only, rate-limited, and rotating it is a one-line container
   update plus a one-line repo change.
 
+**The service is live** (patch 0.115): Azure Container App `casino-telemetry`
+in RG `abra-data-ai`, scaled to zero, writing to the `casino_brawyal` database
+on `voicevikkidb`. The designer's dashboard is the app root plus
+`?key=<CB_DASHBOARD_KEY>`; `/api/stats` is the JSON behind it.
+- **Port 5432 on `voicevikkidb` is blocked from the office network**, so there
+  is no `psql` path from a developer machine — every schema change ships as a
+  numbered file in `migrations/`, which the service applies on boot. Do not
+  add a step that assumes a local database client.
+- That is also why `server.mjs` carries `bootstrap()`, a one-shot that creates
+  the database and role from inside Azure when `CB_ADMIN_PG_URL` is set. **The
+  admin secret was removed the minute it ran** and must be again if it is ever
+  re-added — `voicevikkidb` hosts ten other applications. On Azure Postgres the
+  server admin is *not* a superuser, so `GRANT "<role>" TO CURRENT_USER` has to
+  precede `ALTER DATABASE ... OWNER TO` or it fails with `aclcheck_error`.
+- `DELETE /api/install/<uuid>` is the erasure path (and how test data gets
+  cleared, since nothing else can reach the database). It cascades but leaves
+  the accepted `batch_id`s, so a resend cannot resurrect an erased player.
+
 **Cinematics** (`assets/video/*.ogv`) are optional: `Game.play_cinematic()` no-ops when the file is missing **or when running headless** (keeps tests deterministic).
 
 ## Environment gotchas (all discovered the hard way)

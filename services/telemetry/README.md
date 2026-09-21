@@ -16,18 +16,42 @@ game.exe --HTTPS + X-Api-Key--> casino-telemetry --5432--> voicevikkidb/casino_b
 
 ## One-time setup
 
-The role needs the server administrator password, so you run this yourself:
+**Already done** — `casino_brawyal` exists, the `casino_telemetry` role owns it
+and reaches nothing else on `voicevikkidb`, and the schema is applied. This
+section is here for the day it has to be redone.
+
+Port 5432 on `voicevikkidb` is **not reachable from the office network**, so
+the provisioning runs inside Azure rather than from a developer machine. Set
+two one-shot secrets on the container app and restart it:
 
 ```bash
-pip install "psycopg[binary]"
-python services/telemetry/provision.py
+az containerapp secret set -n casino-telemetry -g abra-data-ai \
+  --secrets admin-pg-url="postgresql://vikkiadmin:<pw>@voicevikkidb.postgres.database.azure.com/postgres?sslmode=require" \
+            role-password="<new role password>"
+az containerapp update -n casino-telemetry -g abra-data-ai \
+  --set-env-vars CB_ADMIN_PG_URL=secretref:admin-pg-url \
+                 CB_TELEMETRY_ROLE_PASSWORD=secretref:role-password
 ```
 
-It creates the `casino_brawyal` database if it is missing, creates a
-`casino_telemetry` role that owns it **and can reach nothing else on the
-server**, and writes `CB_TELEMETRY_PG_URL` into the repo's gitignored `.env`.
-It does not apply the schema — the service does that on boot, so there is only
-one place that knows the shape of the database.
+`bootstrap()` in `server.mjs` then creates the database and the role, hands
+both to `casino_telemetry`, and logs what it did. It is idempotent, and it is
+gated entirely on `CB_ADMIN_PG_URL` being present.
+
+**Remove both the moment it has run.** An administrator credential for a server
+that hosts ten other applications should not sit in a container app any longer
+than the minute it is needed:
+
+```bash
+az containerapp update -n casino-telemetry -g abra-data-ai \
+  --remove-env-vars CB_ADMIN_PG_URL CB_TELEMETRY_ROLE_PASSWORD
+az containerapp secret remove -n casino-telemetry -g abra-data-ai \
+  --secret-names admin-pg-url role-password
+```
+
+`provision.py` does the same job from a machine that *can* reach 5432, and
+writes `CB_TELEMETRY_PG_URL` into the repo's gitignored `.env`. Neither path
+applies the schema — the service does that on boot, so there is only one place
+that knows the shape of the database.
 
 ## Run it locally
 
@@ -80,6 +104,13 @@ idle period pays a ~2 s cold start, which is invisible for a background flush.
 | `GET /healthz` | Liveness, and the client's connectivity probe. |
 | `GET /` | The dashboard. `?key=` must match `CB_DASHBOARD_KEY`. |
 | `GET /api/stats` | The JSON behind the dashboard. Same key. |
+| `DELETE /api/install/<uuid>` | Erases one player: the install row and, by cascade, every play, run, combat and move under it. Same key. Returns `{erased: 0\|1}`. |
+
+An install id becomes personal data the moment the service stamps an IP on it
+(CJEU C-582/14), so there has to be a way to remove one — and nobody outside
+Azure can open a `psql` session against this server. The accepted `batch_id`s
+are deliberately left behind: a client that resends an old batch after an
+erasure writes nothing, so the data cannot come back on its own.
 
 ## About the keys
 
