@@ -138,7 +138,7 @@ func _build_stack(suit: StringName, count: int) -> Control:
 	button.suit = suit
 	_strip_button_frames(button)
 	button.custom_minimum_size = Vector2(CHIP_SIZE, CHIP_SIZE)
-	button.tooltip_text = "%s chips: %d — drag onto an ability socket" % [suit, count]
+	button.tooltip_text = "%s chips: %d. Drag onto an ability socket." % [suit, count]
 	var texture := SuitAssets.chip_texture(suit)
 	if texture != null:
 		var chip := TextureRect.new()

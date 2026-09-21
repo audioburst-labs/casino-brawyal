@@ -10,7 +10,7 @@ const NAMES: Array[String] = ["", "Silver", "Gold"]
 ## Frame colours per tier. Base returns the panel's own gold trim, so an
 ## un-upgraded ability looks exactly as it always did.
 const COLORS: Array[Color] = [
-	Color(0.83, 0.69, 0.22),   # base — the standard trim
+	Color(0.83, 0.69, 0.22),   # base: the standard trim
 	Color(0.78, 0.83, 0.90),   # silver
 	Color(1.00, 0.80, 0.25),   # gold
 ]

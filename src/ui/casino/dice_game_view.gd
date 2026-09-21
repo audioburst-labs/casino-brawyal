@@ -171,4 +171,4 @@ func _on_cash_out() -> void:
 	if not _game.can_cash_out():
 		return
 	var payout := _game.cash_out(Game.run)
-	finished.emit(["Cashed out on %d — +%d coins" % [_game.total(), payout]] as Array, &"")
+	finished.emit(["Cashed out on %d: +%d coins" % [_game.total(), payout]] as Array, &"")

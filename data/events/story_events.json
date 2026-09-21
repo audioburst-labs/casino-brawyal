@@ -5,18 +5,18 @@
       "id": "high_roller",
       "title": "The High Roller",
       "image": "res://assets/story/story_high_roller.png",
-      "description": "A private back room. A figure in shadow slides a towering stack of chips across green felt and gestures at the empty chair. \"One hand. Your nerve against my money.\" You can't see their eyes — only the gold card in the center of the table.",
+      "description": "A private back room. A figure in shadow slides a towering stack of chips across green felt and gestures at the empty chair. \"One hand. Your nerve against my money.\" You can't see their eyes, only the gold card in the center of the table.",
       "choices": [
         {
           "label": "Take the bet",
           "summary": "Gain 40-60 coins, lose 8 HP",
-          "outcome": "You sit. The hand is brutal — they read your bluff and their ring catches your knuckles as you both grab the pot. But you walk out heavier than you walked in, and that's what counts.",
+          "outcome": "You sit. The hand is brutal. They read your bluff, and their ring catches your knuckles as you both grab the pot. But you walk out heavier than you walked in, and that's what counts.",
           "effects": [{"op": "gain_coins", "min": 40, "max": 60}, {"op": "lose_hp", "amount": 8}]
         },
         {
           "label": "Walk away",
           "summary": "Leave with your dignity",
-          "outcome": "You tip your hat and keep walking. Behind you, the shadow chuckles — but some games aren't worth the ante.",
+          "outcome": "You tip your hat and keep walking. Behind you, the shadow chuckles, but some games aren't worth the ante.",
           "effects": []
         }
       ]
@@ -25,18 +25,18 @@
       "id": "broken_machine",
       "title": "The Broken Machine",
       "image": "res://assets/story/story_broken_machine.png",
-      "description": "A service corridor. One slot machine hangs open, sparking — its guts glowing with a jammed jackpot no one has claimed. A red toolbox sits abandoned beside it.",
+      "description": "A service corridor. One slot machine hangs open, sparking, its guts glowing with a jammed jackpot no one has claimed. A red toolbox sits abandoned beside it.",
       "choices": [
         {
           "label": "Reach in and grab it",
           "summary": "Gain 30-50 coins, lose 6 HP",
-          "outcome": "The machine bites — a live wire kisses your wrist and the whole corridor smells like burnt hair. But your pockets jingle all the way to the next room.",
+          "outcome": "The machine bites. A live wire kisses your wrist, and the whole corridor smells like burnt hair. But your pockets jingle all the way to the next room.",
           "effects": [{"op": "gain_coins", "min": 30, "max": 50}, {"op": "lose_hp", "amount": 6}]
         },
         {
           "label": "Repair it properly",
           "summary": "Gain a random relic",
-          "outcome": "Twenty patient minutes with the toolbox. The machine purrs back to life and spits one strange, gleaming token into your palm — a thank-you from the house's oldest resident.",
+          "outcome": "Twenty patient minutes with the toolbox. The machine purrs back to life and spits one strange, gleaming token into your palm: a thank-you from the house's oldest resident.",
           "effects": [{"op": "grant_relic"}]
         },
         {
@@ -56,7 +56,7 @@
         {
           "label": "Tip generously",
           "summary": "Lose 25 coins, gain 5 max HP",
-          "outcome": "She catches the coins without missing a note, and sings the next verse straight to you. Something in your chest unknots — you feel tougher than you've felt in years.",
+          "outcome": "She catches the coins without missing a note, and sings the next verse straight to you. Something in your chest unknots, and you feel tougher than you've felt in years.",
           "effects": [{"op": "lose_coins", "amount": 25}, {"op": "gain_max_hp", "amount": 5}]
         },
         {
@@ -71,18 +71,18 @@
       "id": "dice_alley",
       "title": "Dice in the Alley",
       "image": "res://assets/story/story_dice_alley.png",
-      "description": "Behind the casino, three hustlers crouch around glowing dice on a crate under a flickering neon spade. They look up. \"Room for one more — if your coin's good.\"",
+      "description": "Behind the casino, three hustlers crouch around glowing dice on a crate under a flickering neon spade. They look up. \"Room for one more, if your coin's good.\"",
       "choices": [
         {
           "label": "Play a few rounds",
           "summary": "Gain 20-70 coins, lose 5 HP",
-          "outcome": "The dice love you tonight. The hustlers love you less — a farewell shove into the wall says so — but you leave with their coin.",
+          "outcome": "The dice love you tonight. The hustlers love you less. A farewell shove into the wall says so, but you leave with their coin.",
           "effects": [{"op": "gain_coins", "min": 20, "max": 70}, {"op": "lose_hp", "amount": 5}]
         },
         {
           "label": "Snatch the pot and run",
           "summary": "Gain 60-90 coins, lose 12 HP",
-          "outcome": "You're fast, but not untouchable — a bottle catches your shoulder as you vault the fence. Worth it. The pot sings in your pocket.",
+          "outcome": "You're fast, but not untouchable. A bottle catches your shoulder as you vault the fence. Worth it. The pot sings in your pocket.",
           "effects": [{"op": "gain_coins", "min": 60, "max": 90}, {"op": "lose_hp", "amount": 12}]
         },
         {
@@ -97,18 +97,18 @@
       "id": "security_office",
       "title": "The Security Office",
       "image": "res://assets/story/story_security_office.png",
-      "description": "A door left ajar: a wall of monitors, confiscated lucky charms in a glass case — and on one screen, your own face circled in gold ink. Somebody upstairs is watching you.",
+      "description": "A door left ajar: a wall of monitors, confiscated lucky charms in a glass case, and on one screen, your own face circled in gold ink. Somebody upstairs is watching you.",
       "choices": [
         {
           "label": "Break into the case",
           "summary": "Gain a random relic, lose 10 HP",
-          "outcome": "The case shatters louder than you'd like. You grab the nearest charm and dive out the window one heartbeat before the guards burst in — collecting bruises and a prize.",
+          "outcome": "The case shatters louder than you'd like. You grab the nearest charm and dive out the window one heartbeat before the guards burst in, collecting bruises and a prize.",
           "effects": [{"op": "grant_relic"}, {"op": "lose_hp", "amount": 10}]
         },
         {
           "label": "Slip away quietly",
           "summary": "Gain 10-20 coins from a dropped wallet",
-          "outcome": "You melt back into the corridor, pausing only to liberate a wallet somebody dropped in their hurry. Let them watch — you'll give them a show soon enough.",
+          "outcome": "You melt back into the corridor, pausing only to liberate a wallet somebody dropped in their hurry. Let them watch. You'll give them a show soon enough.",
           "effects": [{"op": "gain_coins", "min": 10, "max": 20}]
         }
       ]

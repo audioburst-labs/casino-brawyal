@@ -116,7 +116,7 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	var tier := Game.run.ability_tier(id) if Game.run != null else 0
 	var def := Db.content.get_ability(id, tier)
 	chit.tooltip_text = "%s%s\n%s" % [def.name,
-		" — %s" % TierStyle.label(tier) if tier > 0 else "",
+		" (%s)" % TierStyle.label(tier) if tier > 0 else "",
 		def.description] if def else String(id)
 	if tier > 0:
 		chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))

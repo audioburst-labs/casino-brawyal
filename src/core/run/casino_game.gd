@@ -43,7 +43,7 @@ static func spin(db: ContentDB, run: RunState, rng: RandomNumberGenerator) -> Di
 		relics.append(run.relic_ids[-1] if run.relic_ids.size() > before else &"")
 	var free_respin := symbols[0] == symbols[1] and symbols[1] == symbols[2]
 	if free_respin:
-		lines.append("THREE OF A KIND — free spin!")
+		lines.append("THREE OF A KIND: free spin!")
 	return {"symbols": symbols, "relics": relics, "lines": lines,
 		"free_respin": free_respin}
 

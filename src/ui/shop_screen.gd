@@ -225,7 +225,7 @@ func _refresh_offers() -> void:
 		var tile := _offer_tile("relic_%s" % offer.id, relic.name,
 			SuitAssets.relic_texture(offer.id), int(offer.price), RELIC_SIZE,
 			_buy_relic.bind(offer.id))
-		tile.tooltip_text = "%s — %s" % [relic.name, relic.description]
+		tile.tooltip_text = "%s: %s" % [relic.name, relic.description]
 		tile.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		_relic_row.add_child(tile)
 
@@ -441,7 +441,7 @@ func _show_preview(anchor: Control, id: StringName, tier: int) -> void:
 	_preview.add_child(column)
 
 	var title := Label.new()
-	title.text = def.name if tier == 0 else "%s — %s" % [def.name, TierStyle.label(tier)]
+	title.text = def.name if tier == 0 else "%s (%s)" % [def.name, TierStyle.label(tier)]
 	title.theme_type_variation = &"SubtitleLabel"
 	title.add_theme_font_size_override("font_size", 22)
 	if tier > 0:

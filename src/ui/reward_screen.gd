@@ -46,7 +46,7 @@ func setup(args: Dictionary) -> void:
 			icon.custom_minimum_size = Vector2(72, 72)
 			relic_row.add_child(icon)
 			var text := Label.new()
-			text.text = "Elite bonus — Relic: %s\n%s" % [def.name, def.description]
+			text.text = "Elite bonus. Relic: %s\n%s" % [def.name, def.description]
 			text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			text.custom_minimum_size = Vector2(560, 0)
 			text.add_theme_font_size_override("font_size", 22)

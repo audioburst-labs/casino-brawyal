@@ -12,12 +12,18 @@ extends Control
 ## the true viewport in the same frame it is created (the documented gotcha
 ## that bit the Options overlay in 0.22).
 
-const BODY := """Casino Brawyal sends anonymous play data — which encounters you
-reach, which abilities you use, how long you play, and your IP address — so the
-game can be balanced against how people actually play it.
-
-No account, no name, nothing you typed. You can turn it off any time in
-Settings, and turning it off deletes what is stored on this machine."""
+## One unbroken line per paragraph, with the only newlines being the break
+## between them. A `"""` block wraps its source lines into the string itself,
+## so the label was breaking twice: once where the file happened to end a line
+## and once where the panel ran out of width. That is what dropped "so the"
+## onto a line of its own mid-sentence. Let the autowrap do all of it.
+const BODY := (
+	"Casino Brawyal sends anonymous play data: which encounters you reach, "
+	+ "which abilities you use, how long you play, and your IP address. It is "
+	+ "what the game gets balanced against.\n\n"
+	+ "No account, no name, nothing you typed. You can turn it off any time in "
+	+ "Settings, and turning it off deletes what is stored on this machine."
+)
 
 
 func _ready() -> void:
@@ -39,9 +45,16 @@ func _ready() -> void:
 	panel.size = panel_size
 	add_child(panel)
 
+	# The panel's own stylebox leaves about 12 px, which puts the text right up
+	# against the border.
+	var pad := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 22)
+	panel.add_child(pad)
+
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 18)
-	panel.add_child(column)
+	pad.add_child(column)
 
 	var title := Label.new()
 	title.text = "Before you play"

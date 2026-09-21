@@ -201,7 +201,7 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 		if _state.def.per_combat > 0:
 			pills.add_child(_limit_pill(
 				"%d Per Fight" % _state.def.per_combat, PER_FIGHT_FILL,
-				"Usable %d time(s) this fight — never refreshed between turns."
+				"Usable %d time(s) this fight, and never refreshed between turns."
 				% _state.def.per_combat))
 
 	# Socket rows: odd costs of 5+ put 2 on top, the rest in rows of 3
@@ -581,7 +581,7 @@ func _show_keywords() -> void:
 			continue
 		var entry := PanelContainer.new()
 		var label := Label.new()
-		label.text = "%s — %s" % [keyword.name, keyword.text]
+		label.text = "%s: %s" % [keyword.name, keyword.text]
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.custom_minimum_size = Vector2(280, 0)
 		label.add_theme_font_size_override("font_size", 15)
@@ -589,10 +589,10 @@ func _show_keywords() -> void:
 		box.add_child(entry)
 	if _state.def.per_turn > 0:
 		box.add_child(_hover_entry(
-			"Per Turn — usable %d time(s) each turn." % _state.def.per_turn))
+			"Per Turn: usable %d time(s) each turn." % _state.def.per_turn))
 	if _state.def.per_combat > 0:
 		box.add_child(_hover_entry(
-			"Per Fight — usable %d time(s) this fight, and never refreshed."
+			"Per Fight: usable %d time(s) this fight, and never refreshed."
 			% _state.def.per_combat))
 	add_child(_keyword_panel)
 	# Above the card, clamped to the screen.

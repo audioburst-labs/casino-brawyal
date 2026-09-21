@@ -397,7 +397,7 @@ func _add_passive_chip() -> void:
 	var kind := str(def.passive.get("type", ""))
 	var tint: Color = PASSIVE_TINTS.get(kind, Color(0.9, 0.9, 0.95))
 	var keyword := Db.content.get_keyword(StringName(kind))
-	var hint := "%s — %s" % [
+	var hint := "%s: %s" % [
 		keyword.name if keyword != null else kind.capitalize(),
 		keyword.text if keyword != null else "a passive this enemy always has"]
 	var chip := PassiveChip.new()
@@ -430,7 +430,7 @@ func _add_loan_chip(loan: Dictionary) -> void:
 	var id := StringName(str(loan.get("id", "")))
 	var def := Db.content.get_loan(id)
 	var tint: Color = LOAN_TINTS.get(id, Color(0.8, 0.8, 0.9))
-	var hint := "%s — in %d turn(s): %s" % [
+	var hint := "%s, in %d turn(s): %s" % [
 		def.title if def else String(id).capitalize(),
 		int(loan.get("turns_left", 0)),
 		def.penalty_text if def else "the debt comes due"]
@@ -471,7 +471,7 @@ static func status_tooltip(status_id: StringName, stacks: int = 0) -> String:
 			body = status.description
 	if stacks > 0:
 		title = "%s %d" % [title, stacks]
-	return title if body == "" else "%s — %s" % [title, body]
+	return title if body == "" else "%s: %s" % [title, body]
 
 
 ## Builds the Mark's living-flame assembly: a soft additive glow, rising
@@ -657,12 +657,12 @@ const INTENT_ICONS := {
 	&"encore": "res://assets/icons/keyword_go_again.png",
 }
 const INTENT_HINTS := {
-	&"attack": "Attack — [instances] x [damage per hit].",
-	&"gift": "Gift — you receive this many random chips next turn.",
-	&"absorb": "Absorb — every chip you have placed on an ability is taken.",
-	&"summon": "Summon — brings new enemies onto the field.",
-	&"heal_allies": "Heal Allies — restores health to every living enemy.",
-	&"encore": "Encore — another enemy attacks a second time.",
+	&"attack": "Attack: [instances] x [damage per hit].",
+	&"gift": "Gift: you receive this many random chips next turn.",
+	&"absorb": "Absorb: every chip you have placed on an ability is taken.",
+	&"summon": "Summon: brings new enemies onto the field.",
+	&"heal_allies": "Heal Allies: restores health to every living enemy.",
+	&"encore": "Encore: another enemy attacks a second time.",
 }
 
 

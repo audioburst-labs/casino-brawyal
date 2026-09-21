@@ -145,7 +145,7 @@ func _on_finished(lines: Array, relic_id: StringName) -> void:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(96, 96)
 		var def := Db.content.get_relic(relic_id)
-		icon.tooltip_text = "%s — %s" % [def.name, def.description] if def else String(relic_id)
+		icon.tooltip_text = "%s: %s" % [def.name, def.description] if def else String(relic_id)
 		row.add_child(icon)
 	var text: Array[String] = []
 	for line in lines:
