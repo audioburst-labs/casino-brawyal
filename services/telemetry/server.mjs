@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import pg from "pg";
 
 import { dashboardPage } from "./dashboard.mjs";
+import { guidePage } from "./guide.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8080);
@@ -306,6 +307,11 @@ async function applyEvent(client, ev, ctx) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        ON CONFLICT (run_id) DO UPDATE SET
          outcome = COALESCE(EXCLUDED.outcome, runs.outcome),
+         -- The path is chosen at the FIRST map screen, which is after
+         -- run_started has already been sent, so it only ever arrives on
+         -- run_ended. Leaving it out of this list is what left every
+         -- runs.path_id null and the dashboard's Paths panel empty.
+         path_id = COALESCE(EXCLUDED.path_id, runs.path_id),
          ended_at = now(),
          final_encounter = COALESCE(EXCLUDED.final_encounter, runs.final_encounter),
          final_hp = COALESCE(EXCLUDED.final_hp, runs.final_hp),
@@ -316,7 +322,9 @@ async function applyEvent(client, ev, ctx) {
          reels = COALESCE(EXCLUDED.reels, runs.reels),
          duration_sec = GREATEST(runs.duration_sec, EXCLUDED.duration_sec)`,
       [runId, isUuid(dash(ev.sess)) ? dash(ev.sess) : null, ctx.installId,
-       d.seed ?? null, d.path_id ?? null, ev.ts ?? null,
+       // `|| null`, not `?? null`: the client sends "" before a path is
+       // picked, and an empty string would win the COALESCE above.
+       d.seed ?? null, (d.path_id ?? null) || null, ev.ts ?? null,
        t === "run_ended" ? (d.outcome ?? "defeat") : "in_progress",
        d.final_encounter ?? null, d.final_hp ?? null, d.max_hp ?? null,
        d.coins ?? null, d.relics ?? null, d.abilities ?? null,
@@ -446,6 +454,16 @@ const server = createServer(async (req, res) => {
       const gone = await pool.query(
         "DELETE FROM installs WHERE install_id = $1", [id]);
       return json(res, 200, { erased: gone.rowCount });
+    }
+    // The designer's guide to every panel. Behind the same key as the
+    // dashboard, because it describes what the numbers are.
+    if (req.method === "GET" && url.pathname === "/guide") {
+      if (!authed) {
+        res.writeHead(401, { "content-type": "text/plain" });
+        return res.end("Add ?key=<CB_DASHBOARD_KEY> to the URL.");
+      }
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      return res.end(guidePage(url.searchParams.get("key") ?? ""));
     }
     if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
       if (!authed) {

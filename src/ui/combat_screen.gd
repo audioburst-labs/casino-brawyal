@@ -329,6 +329,14 @@ func _ready() -> void:
 					suit = &"spade"
 				sim.tray.add(suit, 1)
 				_on_chip_dropped(autofire - 1, slot, suit)
+		# CB_DEBUG_ENEMY_STATUS="mark,weak": put these on every enemy at the
+		# start, so status-conditional UI (the card glow, the pips, the intent
+		# numbers) can be reviewed without playing into the state first.
+		var forced_status := OS.get_environment("CB_DEBUG_ENEMY_STATUS")
+		if forced_status != "":
+			for name in forced_status.split(",", false):
+				for enemy in sim.enemies:
+					enemy.apply_status(StringName(name.strip_edges()), 2)
 		# CB_DEBUG_HERO_HP=N: start Ace on N hp, to reach a death quickly.
 		var hero_hp := OS.get_environment("CB_DEBUG_HERO_HP").to_int()
 		if hero_hp > 0:

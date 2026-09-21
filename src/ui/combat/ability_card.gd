@@ -27,40 +27,8 @@ var _socket_labels: Array[Label] = []
 var _description: RichTextLabel
 var _highlight_suit: StringName = &""
 var _keyword_panel: PanelContainer = null
-var _glow: GlowRing = null
 var _glowing := false
-
-
-## Doc "Glow": "a golden aura encasing the card border". Drawn rather than
-## sprited so it follows the card's constant frame at any size, and pulsed
-## slowly so a primed card reads as alive without demanding attention.
-class GlowRing:
-	extends Control
-
-	var phase := 0.0
-
-	func _process(delta: float) -> void:
-		phase = fposmod(phase + delta * 1.8, TAU)
-		queue_redraw()
-
-	func _draw() -> void:
-		var breath := 0.5 + 0.5 * sin(phase)
-		var rect := Rect2(Vector2.ZERO, size)
-		# Three rings, widest and faintest outermost, so the edge glows rather
-		# than gaining a hard second border.
-		for i in 3:
-			var grow := 2.0 + float(i) * 3.5
-			var alpha := (0.42 - float(i) * 0.11) * (0.55 + 0.45 * breath)
-			_ring(rect.grow(grow), Color(1.0, 0.84, 0.35, alpha), 3.0 + float(i))
-
-	func _ring(rect: Rect2, tint: Color, width: float) -> void:
-		var radius := 14.0
-		var box := StyleBoxFlat.new()
-		box.draw_center = false
-		box.set_corner_radius_all(int(radius))
-		box.set_border_width_all(int(width))
-		box.border_color = tint
-		draw_style_box(box, rect)
+var _glow_phase := 0.0
 
 
 class SocketButton:
@@ -307,28 +275,55 @@ static func _walk(effects: Array, ops: Array, conditions: Array) -> bool:
 	return false
 
 
-## Turns the aura on or off. Cheap to call every refresh: it only builds or
-## frees a node when the state actually changes.
 ## The def this card is showing, for callers that need to ask about it.
 func ability_def() -> Defs.AbilityDef:
 	return _state.def if _state != null else null
 
 
+## Turns the aura on or off. Cheap to call on every refresh: it only flips a
+## flag and starts or stops the idle tick.
+##
+## Patch 0.116: the aura is drawn by the card ITSELF, not by a child node.
+## `AbilityCard` is a `PanelContainer`, and a container lays out every child
+## into its inner content rect, so the 0.115 `GlowRing` was clamped inside the
+## card and then hidden outright behind the panel's own opaque background by
+## `show_behind_parent`. It was built correctly on every qualifying card and
+## painted where nothing could see it. Drawing it here sidesteps the layout
+## entirely: a Control's `_draw` is not clipped to its own rect, so rings drawn
+## outside `size` land in the gap between cards.
 func set_glowing(on: bool) -> void:
 	if on == _glowing:
 		return
 	_glowing = on
-	if not on:
-		if is_instance_valid(_glow):
-			_glow.queue_free()
-		_glow = null
+	set_process(on)
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	_glow_phase = fposmod(_glow_phase + delta * 1.8, TAU)
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not _glowing:
 		return
-	_glow = GlowRing.new()
-	_glow.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_glow.show_behind_parent = true
-	_glow.z_index = -1
-	add_child(_glow)
+	var breath := 0.5 + 0.5 * sin(_glow_phase)
+	var rect := Rect2(Vector2.ZERO, size)
+	# Three rings, widest and faintest outermost, so the edge glows rather
+	# than gaining a hard second border. They stay inside the row's card gap.
+	for i in 3:
+		var grow := 1.0 + float(i) * 3.0
+		var alpha := (0.95 - float(i) * 0.26) * (0.6 + 0.4 * breath)
+		_draw_ring(rect.grow(grow), Color(1.0, 0.84, 0.35, alpha), 3.0 + float(i))
+
+
+func _draw_ring(rect: Rect2, tint: Color, width: float) -> void:
+	var box := StyleBoxFlat.new()
+	box.draw_center = false
+	box.set_corner_radius_all(14)
+	box.set_border_width_all(int(width))
+	box.border_color = tint
+	draw_style_box(box, rect)
 
 
 func refresh(highlight_suit: StringName = &"") -> void:

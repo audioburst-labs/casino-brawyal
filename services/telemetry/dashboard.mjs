@@ -75,6 +75,7 @@ svg text{font-family:"JetBrains Mono",monospace;font-size:11px;fill:var(--ink-di
     <span id="updated">loading…</span>
     <button id="refresh">Refresh</button>
     <label><input type="checkbox" id="auto" checked> auto every 30s</label>
+    <a id="guide" href="/guide" style="color:var(--gold);margin-left:4px">How to read this</a>
   </div>
 </div></header>
 
@@ -125,6 +126,8 @@ svg text{font-family:"JetBrains Mono",monospace;font-size:11px;fill:var(--ink-di
 
 <script>
 const KEY = ${k};
+if (KEY) document.getElementById("guide").href =
+  "/guide?key=" + encodeURIComponent(KEY);
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? "").replace(/[<>&"]/g, (c) =>
   ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
