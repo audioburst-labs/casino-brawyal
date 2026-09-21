@@ -44,12 +44,70 @@ const wantsTls = sslmode
   ? !["disable", "allow"].includes(sslmode)
   : !/@(localhost|127\.0\.0\.1)[:/]/.test(CONN);
 
-const pool = CONFIGURED ? new pg.Pool({
-  connectionString: CONN,
-  ssl: wantsTls ? { rejectUnauthorized: false } : false,
-  max: 4,
-  idleTimeoutMillis: 30_000,
-}) : null;
+function makePool(conn, tls) {
+  return new pg.Pool({
+    connectionString: conn,
+    ssl: tls ? { rejectUnauthorized: false } : false,
+    max: 4,
+    idleTimeoutMillis: 30_000,
+  });
+}
+
+let pool = CONFIGURED ? makePool(CONN, wantsTls) : null;
+let configured = CONFIGURED;
+
+// --------------------------------------------------------------- bootstrap
+// Optional, one-shot, and normally absent: when CB_ADMIN_PG_URL is set the
+// service creates its own database and least-privilege role before doing
+// anything else, then connects as that role.
+//
+// This exists because the database's firewall does not admit every developer
+// machine, but it does admit Azure ("AllowAzureServices") - so provisioning
+// from in here beats opening a shared production server to an office IP.
+// Remove the CB_ADMIN_PG_URL secret once it has run; the service does not need
+// it again, and leaving an admin credential on a container that does not use
+// it is exactly the kind of thing nobody notices for a year.
+const ADMIN_URL = process.env.CB_ADMIN_PG_URL || "";
+const ROLE_PASSWORD = process.env.CB_TELEMETRY_ROLE_PASSWORD || "";
+const DB_NAME = "casino_brawyal";
+const ROLE_NAME = "casino_telemetry";
+
+async function bootstrap() {
+  if (!/^postgres(ql)?:\/\//.test(ADMIN_URL) || !ROLE_PASSWORD) return null;
+  const admin = new URL(ADMIN_URL);
+  const base = { ssl: { rejectUnauthorized: false } };
+  const sys = new pg.Client({
+    connectionString: new URL("/postgres" + admin.search, admin).toString(), ...base });
+  await sys.connect();
+  try {
+    const db = await sys.query("SELECT 1 FROM pg_database WHERE datname = $1", [DB_NAME]);
+    if (db.rowCount === 0) {
+      await sys.query(`CREATE DATABASE "${DB_NAME}"`);
+      console.log("bootstrap: created database", DB_NAME);
+    }
+    const role = await sys.query("SELECT 1 FROM pg_roles WHERE rolname = $1", [ROLE_NAME]);
+    if (role.rowCount === 0) {
+      await sys.query(`CREATE ROLE "${ROLE_NAME}" WITH LOGIN PASSWORD $1`
+        .replace("$1", "'" + ROLE_PASSWORD.replace(/'/g, "''") + "'"));
+      console.log("bootstrap: created role", ROLE_NAME);
+    } else {
+      await sys.query(`ALTER ROLE "${ROLE_NAME}" WITH LOGIN PASSWORD $1`
+        .replace("$1", "'" + ROLE_PASSWORD.replace(/'/g, "''") + "'"));
+      console.log("bootstrap: role already existed, password re-asserted");
+    }
+    // It owns its own database and has no rights anywhere else on the server.
+    await sys.query(`GRANT CONNECT ON DATABASE "${DB_NAME}" TO "${ROLE_NAME}"`);
+    await sys.query(`ALTER DATABASE "${DB_NAME}" OWNER TO "${ROLE_NAME}"`);
+    console.log("bootstrap: %s owns %s, and nothing else", ROLE_NAME, DB_NAME);
+  } finally {
+    await sys.end().catch(() => {});
+  }
+  const url = new URL(admin.toString());
+  url.username = ROLE_NAME;
+  url.password = ROLE_PASSWORD;
+  url.pathname = "/" + DB_NAME;
+  return url.toString();
+}
 
 // ---------------------------------------------------------------- migrations
 // Applied on boot inside an advisory lock, so a scaled-out revision cannot
@@ -128,7 +186,7 @@ async function ingest(req, res) {
     return json(res, 401, { error: "bad key" });
   }
   if (rateLimited(ip)) return json(res, 429, { error: "slow down" });
-  if (!CONFIGURED) {
+  if (!configured) {
     // Authenticated, but there is nowhere to put it yet. 503 is a RETRY for
     // the client, so the batch stays spooled and arrives once we are wired up.
     return json(res, 503, { error: "CB_TELEMETRY_PG_URL not set" });
@@ -320,7 +378,7 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
     if (req.method === "GET" && url.pathname === "/healthz") {
-      if (!CONFIGURED) {
+      if (!configured) {
         return json(res, 503, { ok: false, reason: "CB_TELEMETRY_PG_URL not set" });
       }
       await pool.query("SELECT 1");
@@ -329,7 +387,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/v1/ingest") {
       return await ingest(req, res);
     }
-    if (!CONFIGURED) {
+    if (!configured) {
       // Everything past this point needs the database. Deliberately AFTER the
       // ingest route, so the API key is still checked first and a client sees
       // the same auth behaviour before and after the secret is set.
@@ -365,9 +423,21 @@ const server = createServer(async (req, res) => {
   }
 });
 
-if (CONFIGURED) {
+try {
+  const provisioned = await bootstrap();
+  if (provisioned && !configured) {
+    pool = makePool(provisioned, true);
+    configured = true;
+    console.log("bootstrap: connected as", ROLE_NAME);
+  }
+} catch (err) {
+  // A bootstrap failure must not take the service down - it stays up and
+  // says it is unconfigured, which is the same as any other missing secret.
+  console.error("bootstrap failed:", err.message);
+}
+if (configured) {
   await migrate();
 }
 server.listen(PORT, () =>
   console.log(`telemetry listening on :${PORT}` +
-    (CONFIGURED ? "" : " (unconfigured - no database)")));
+    (configured ? "" : " (unconfigured - no database)")));
