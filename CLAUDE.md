@@ -40,7 +40,7 @@ tools\godot\Godot_v4.5.2-stable_win64.exe --path .
 node tools/art/generate_art.mjs [--dry-run] [--only <id,id>] [--force]
 ```
 
-The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded full runs, prints `RUN BOT STATS` (win rate / avg death encounter). Run it after any content or damage-math change; **0/40 wins with avg death at encounter ~4.7 and avg coins ~70 is the current baseline post patch-0.115.** The designer has seen this and asked to ship it as is: *"it was too easy before, maybe now it will be too hard - I want to see"*. So it is a deliberate setting, not a regression to chase. Note the bot barely moved when Ace's kit tripled in size (4.5 -> 4.7), because a random-play bot gets almost nothing from a kit whose value is in its conditions - treat the bot as a floor, not a measure of the new cards. Previously: **0/40, 4.5, 69 at 0.114, a WARNING not a target**: sheet v0.122 raised every enemy's health and rebuilt the Manager, while Ace's matching 25-ability kit is still unimplemented (pass 2). The bot dies four encounters earlier than it did in 0.113 because it is fighting the new enemies with the old hero. Expect this to swing back hard when the kit lands — do not tune anything against 4.5; 1/40, 8.1, 84 coins at 0.113; 0/40, 7.0, 65 coins at 0.22 (Elites are real mini-bosses and enemy debuffs last a full turn longer); 2/40, 7.3, 50 coins at 0.21 (0/40, 7.0, 40 coins at 0.20 pass 1 — the free Casino spin and the final shop moving back to #9 lifted coins; encounter 6.8 at 0.19 pass 2, 1/40 after 0.19 pass 1) (0/40 at 0.18, 2/40 at 0.17 — a 40-run sample, so treat single-digit win counts as noise and watch avg-death instead; avg coins dropped 67 → 37 when the guaranteed shop moved to #8, because the bot now reaches it and spends) (random-play bot — humans do much better). This number moves whenever ability/enemy numbers change — don't treat a shift as a regression on its own, just note the new baseline here.
+The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded full runs, prints `RUN BOT STATS` (win rate / avg death encounter). Run it after any content or damage-math change; **0/40 wins with avg death at encounter ~4.7 and avg coins ~62 is the current baseline post patch-0.116** (coins fell from 70 because the sheet's stories pay per-encounter rather than the old flat 40-60, so an early story is worth much less; depth is unchanged). The designer has seen this and asked to ship it as is: *"it was too easy before, maybe now it will be too hard - I want to see"*. So it is a deliberate setting, not a regression to chase. Note the bot barely moved when Ace's kit tripled in size (4.5 -> 4.7), because a random-play bot gets almost nothing from a kit whose value is in its conditions - treat the bot as a floor, not a measure of the new cards. Previously: **0/40, 4.5, 69 at 0.114, a WARNING not a target**: sheet v0.122 raised every enemy's health and rebuilt the Manager, while Ace's matching 25-ability kit is still unimplemented (pass 2). The bot dies four encounters earlier than it did in 0.113 because it is fighting the new enemies with the old hero. Expect this to swing back hard when the kit lands — do not tune anything against 4.5; 1/40, 8.1, 84 coins at 0.113; 0/40, 7.0, 65 coins at 0.22 (Elites are real mini-bosses and enemy debuffs last a full turn longer); 2/40, 7.3, 50 coins at 0.21 (0/40, 7.0, 40 coins at 0.20 pass 1 — the free Casino spin and the final shop moving back to #9 lifted coins; encounter 6.8 at 0.19 pass 2, 1/40 after 0.19 pass 1) (0/40 at 0.18, 2/40 at 0.17 — a 40-run sample, so treat single-digit win counts as noise and watch avg-death instead; avg coins dropped 67 → 37 when the guaranteed shop moved to #8, because the bot now reaches it and spends) (random-play bot — humans do much better). This number moves whenever ability/enemy numbers change — don't treat a shift as a regression on its own, just note the new baseline here.
 
 ## Architecture
 
@@ -103,7 +103,17 @@ Play asks about the whole field, Bluff Call about the target.
 That had quietly disarmed two cards' suit bonuses; the generator now always
 pairs them.
 
-**Card Glow** (doc "Glow", patch 0.115): `AbilityCard.wants_glow(def, sim)`
+**A child node cannot draw outside an `AbilityCard`** (patch 0.116). The card
+is a `PanelContainer`, so a container lays out EVERY child into its inner
+content rect. The 0.115 glow ring was a child with `PRESET_FULL_RECT` plus
+`show_behind_parent`: the container clamped it inside the card and the panel's
+own opaque background then covered it. It was built correctly on every
+qualifying card and painted where nothing could see it, which is the worst
+shape a bug can have. Anything that has to reach past the card's border is
+drawn by the card's own `_draw` (a Control's draw is not clipped to its rect)
+or given `top_level = true` like `_keyword_panel`.
+
+**Card Glow** (doc "Glow", patch 0.115; made visible 0.116): `AbilityCard.wants_glow(def, sim)`
 walks the whole effect tree and returns true for a Cash In while anything is
 Marked, or a Weak-synergy card while a Weak enemy exists. The doc lists Knights
 too; no Knight exists in the game. The glow is re-evaluated on every card
@@ -111,7 +121,40 @@ refresh *and* whenever a status lands on an enemy.
 
 **Ability upgrade tiers** (doc "Ability Upgrades", patch 0.19 pass 2): every ability ships a `tiers` array of exactly `ContentDB.MAX_TIER` (2) **sparse overrides** — silver then gold — merged over the base item, so a tier can change any field (Color Up's tiers change `per_turn`, House Edge's swap the op entirely), not just a number. `ContentDB` resolves one immutable `AbilityDef` per tier and `get_ability(id, tier)` clamps; the tiers must be separate objects because `AbilityState` holds its def **by reference**, so a shared mutated def would leak an upgrade into later runs. Ownership is `RunState.ability_tiers` (id -> 0/1/2) beside `ability_ids`, never encoded into the id — the id is the ability's identity at ~13 call sites. `acquire_ability()` upgrades a duplicate instead of stacking; `_forget()` clears the tier so a trashed gold ability returns to the pool at base. **There is no storage/"Unequipped" tier as of v0.20** (designer call; matches the doc's Ability Choosing Screen, which lists only Equipped and Trash — the doc's *Layout Tab* line still says otherwise and is stale): an owned ability is either equipped or in the single trash slot, a 7th goes straight to the bin, and `STORAGE_CAP`/`stored_ids()`/`unequip()` are gone. `EncounterFactory` passes `ability_tiers` into the combat config. `Rewards.upgradeable_pool()` is the single pool both the reward screen (1 of 3) and `ShopStock` (4 offers) draw from: everything with `can_upgrade()` true, owned or not, uniform, gold excluded. **"starter" only means Ace begins the run holding the base version** — starters are offered like anything else (designer call, 0.19); do not re-add a `pool != "starter"` filter. Upgrades cost the same 30-50 as a new ability. `TierStyle` (`src/ui/combat/tier_style.gd`) owns the shared silver/gold look so every surface agrees.
 
+**No long dashes in anything a player reads** (designer's rule, patch 0.116).
+Em and en dashes are out: use a comma, a colon or a full stop.
+`tests/unit/test_copy_style.gd` scans `data/` and `src/ui/` and fails the build,
+because a rule nobody can see being broken gets broken again in a month. Source
+comments are ours, not the player's, and are out of scope.
+
 **Content is JSON, not .tres.** Everything (abilities, enemies, relics, statuses, lineups, story events) lives in `data/*/*.json` as `{"type": ..., "items": [...]}` and is parsed/validated by `ContentDB.load_all()` — unknown suits/ops/statuses/ids fail loudly, and `tests/unit/test_content_db.gd` doubles as the content linter. Behavior is a declarative effect-op DSL (`{"op": "damage", "amount": 3, "times": 2}` etc.) executed by `EffectInterpreter` (combat) and `RunEffects` (run level: coins/hp/relics). New ops must be registered in `ContentDB.KNOWN_OPS` and implemented in the matching interpreter. Relics declare a `trigger` from `ContentDB.KNOWN_TRIGGERS`; `CombatSim._fire_relics()` fires them at fixed points (skipped when `effects` is empty — a few relics like the Emblems/Lucky Foot are still special-cased directly in `CombatSim` instead of going through the op DSL). Enemy moves support `intent.debuffs` (hit the hero) and `intent.self_status` (buff the enemy); `EnemyBrain` types are `sequence` (loops a step list) / `weighted` (+`no_repeat_last`) / `pair_then` (a designer-notation reading of the sheet's "X → Y / Y → X, Z": a shuffled opening pair then a fixed tail, looping) / `intro_loop` (plays `intro` once in order, then loops `loop` — used by the boss and, since patch 0.17, the Manager) / `phased` (hp thresholds). The sheet's brain-order shorthand is genuinely ambiguous in places; treat any interpretation of it as a judgment call worth a quick sanity check against the resulting gameplay feel, not a literal spec.
+
+**Story encounters are the sheet's `Story - WIP` tab, five of them** (patch
+0.116): Lost Soul, Risky Dealings, Guarded Treasure, Quick Catch, Cheap Tricks.
+They replaced five placeholders that had shipped since v0.1 and had nothing to
+do with the sheet. Regenerate with `scratchpad/s024/stories.py`. The tab is
+1000 rows tall because that is Google Sheets' default empty grid, not because
+there are 1000 stories; there are five.
+
+Three run-level ops arrived with them (`RunEffects`, and registered in
+`ContentDB.KNOWN_OPS`):
+- **`per_encounter`** on `gain_coins` / `lose_coins` / `lose_hp`, because the
+  sheet prices almost everything as "[Encounter Value X n]". It multiplies by
+  `run.encounter_number()`, so encounter 1 still pays. An explicit `amount`
+  still wins.
+- **`grant_sticker`** with a named suit or `"random"` (Cheap Tricks).
+- **`casino_spin`**, one pull on `CasinoGame`'s prize table, resolved in place.
+  The sheet's note on Lost Soul is "grants a use of the Slot Machine in the
+  Casino Encounter": the reward is the spin, not a visit, so it does not route
+  to the casino screen.
+
+**A story choice can pick a fight** (Guarded Treasure): `"then": "combat"` plus
+`bonus_rewards`. `Game.story_started_a_fight()` re-points the pending encounter
+at a combat (`record_visit` already ran when the story was chosen, so it must
+not add a second entry to the history) and stages the prize on
+`RunState.bonus_rewards`. **`combat_finished` pays it on the win and clears it
+on the loss** — the relic is the prize for beating the guards, so the story
+screen must never hand it over itself.
 
 **Exactly three autoloads** (`project.godot` order matters: Db before Game): `Db` (loads ContentDB), `Game` (RunState + screen routing + cinematics + `current_screen_path`, used by HeaderHud to hide itself outside a run), `Fx` (shake/hit-stop/floating numbers, plus the custom cursor — `Fx.init_cursor()`/`Fx.set_cursor_grabbing()`). `Game.goto_screen()` swaps children under Main's ScreenRoot — it must `remove_child` before `queue_free` (same-name siblings get auto-renamed otherwise). The **shop** (`src/ui/shop_screen.gd`) is laid out to the mock in the doc, which the text export drops — pull the doc as `?export=zip` to get its images (`image4.png` is the shop, `image2.png` the Ultimate reference). It hides `ScreenBase`'s title/content stack and draws its own board, and reuses `LayoutTab.AbilityChit` / `LayoutTab.DropZone` rather than adding a third copy of the drag-and-drop classes. Screens extend `ScreenBase`; combat UI components (`src/ui/combat/`) are built procedurally in code rather than as .tscn files — scene files here are one-node skeletons. `AbilityCard` and `UnitView` keep **constant frames** and shrink their own text to fit (`_fit_description_font`, `_name_font_size`) — measure with `get_theme_font(...)` only after the Control is in the tree, or the theme variation's real font is not what you measured. Relic art goes through `SuitAssets.relic_texture(id)`, which falls back to the house chip — the two relic UIs used to interpolate the path by hand and silently render *nothing* on a miss, which is how Gambler's Confidence went invisible after its rename. A `Button.icon` is drawn at the texture's native size: suit/relic art is 1024px square, so put it in an inset child `TextureRect` (the socket pattern) rather than assigning `icon`.
 
@@ -131,6 +174,20 @@ Patch 0.113 added a drawn **chassis** so the three bands read as one machine ins
 
 **Combat layout and VFX** (patch 0.21): the bottom band spans the full width with a **fixed `MACHINE_WIDTH` area** for the machine on the left and the ability row filling the rest — `ReelStrip.scale_for(count)` shrinks reels to fit `MAX_ROW_WIDTH` (530 since the cabinet and its lever take the rest) at 5–6 reels, so buying reels never moves the cards, and six 190-wide cards fit. **Pass sits in its own strip between the enemies' band and the ability row**, right-aligned. The Dagger Slash is `SlashArc` (nested class in `combat_screen.gd`): three **non-overlapping rings** (purple, teal, white core) along a tapered circular arc plus seeded drybrush filaments, `material = _vfx._additive`, drawn in by `progress` over 0.10 s then dissolved — the rings must not overlap, because additive strokes piled on each other sum to white and the teal vanished. `_dagger_slash(at, angle, palette, scale)` takes a direction so Flush cuts from eight angles; `_impact()` is the same arc in red. **Patch 0.22: the default sweep is a quarter turn clockwise (`SLASH_ANGLE`, `ULTIMATE_ANGLES`, `IMPACT_ANGLE`) and the arc is offset by its own `belly()`** — the crescent is drawn on a circle centred on the node, so pinning that centre to the target put the target in the crescent's empty middle ("it goes around it"). It lands on **`UnitView.strike_landed`**, emitted on the strike/release frame of every pose animation (and after the plain-lunge fallback) — `play_slash()` only returns after the lunge, 0.09 s late. Flush's cut-in is the generated `ace_flush_splash.png` whipped in over a procedural purple `PaintStreak` (`_splash_cut_in()`, falling back to `_paint_streak_closeup()` when the art is missing). `Fx` handles `NOTIFICATION_DRAG_END` itself to reopen the hand cursor — the chip button that started the drag is rebuilt before the notification reaches it.
 
+**The Choice screen** (doc "Choice", rebuilt patch 0.116, `src/ui/map_screen.gd`):
+header, the offered encounters as framed cards carrying an icon, a name and a
+description, then `PathRibbon` (`src/ui/map/path_ribbon.gd`) underneath.
+- The ribbon is **drawn, not built from child nodes**: the road, the fork, the
+  dashes and the tokens all have to agree about one set of coordinates, and a
+  Container would own those coordinates instead. It degrades to a coloured
+  token with a letter when `assets/icons/encounter_<type>.png` is missing, so
+  it worked before the art existed.
+- Road solid up to the stop the player is on, then the fork, then dashed to
+  the boss. **The solid run stops one short (`i < here - 1`)** or a stub of
+  road draws straight through the split.
+- The screen no longer prints HP and coins. `HeaderHud` has owned both since
+  0.18 and this screen was drawing a second, quietly different copy.
+
 **Run flow** (patch 0.21): `RunState.pending_encounter` holds the encounter being played (type, plus lineup+seed for combat, event for story, the serialised `ShopStock` and SOLD keys for the shop). `Game.choose_encounter()` sets it, `resume_run()` reopens it from the beginning, `_after_encounter()`/`combat_finished()` clear it, and screens call `Game.commit_encounter()` the moment their outcome is banked (casino spin rolled, story choice made, rest taken, treasure opened) so a save from there resumes at the map instead of replaying a reward. Without this, exiting to the main menu skipped the encounter because `record_visit()` runs at choice time. `EncounterFactory.combat_config()` honours `option.lineup` and reports `lineup` in the config for that purpose. `RunState.swap_abilities(a, b)` backs the drop-to-swap in both loadout UIs (equipped↔equipped reorder, equipped↔trash rescue).
 
 **Block gain animates from every source** (patch 0.114): `UnitView.play_block_gain(amount)` draws a shield sweeping up the unit and pulses the HP panel, and the `block_gained` handler holds the beat for 0.34 s. The event was never missing — relic and start-of-turn passive grants fire at a round start, a beat *before* the reels spin, so the old 0.4 s icon was gone while the player was still watching the machine. Anything new that grants Block must go through `EffectInterpreter._grant_block` or emit `block_gained` itself, or it will be silent.
@@ -143,7 +200,7 @@ Patch 0.113 added a drawn **chassis** so the three bands read as one machine ins
 
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
-**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
 
 **Telemetry** (patch 0.115). The game spools play data to
 `user://telemetry/spool.ndjson` and POSTs batches to the ingest service in
@@ -189,6 +246,18 @@ on `voicevikkidb`. The designer's dashboard is the app root plus
   re-added — `voicevikkidb` hosts ten other applications. On Azure Postgres the
   server admin is *not* a superuser, so `GRANT "<role>" TO CURRENT_USER` has to
   precede `ALTER DATABASE ... OWNER TO` or it fails with `aclcheck_error`.
+- **`/guide` is the designer's guide to every panel**, behind the same key,
+  linked from the dashboard header. Keep it true when a panel changes: it is
+  the only place that says what a number does NOT mean.
+- **The Dockerfile copies `*.mjs`, not a hand-listed few.** Adding `guide.mjs`
+  and forgetting to list it crash-looped the revision on import while traffic
+  quietly stayed on the old one, which looks exactly like a deploy that did
+  nothing.
+- **`runs.path_id` only ever arrives on `run_ended`** (the path is chosen at
+  the first map screen, after `run_started` has been sent), so it has to be in
+  the `ON CONFLICT DO UPDATE` list, and the parameter needs `|| null` rather
+  than `?? null` because the client sends `""` before a path exists. Omitting
+  both is what left the Paths panel empty for every run before 0.116.
 - `DELETE /api/install/<uuid>` is the erasure path (and how test data gets
   cleared, since nothing else can reach the database). It cascades but leaves
   the accepted `batch_id`s, so a resend cannot resurrect an erased player.

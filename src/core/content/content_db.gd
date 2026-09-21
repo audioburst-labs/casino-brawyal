@@ -18,6 +18,10 @@ const KNOWN_OPS: Array[String] = [
 	"damage_per_ability",     # The River: "for each ability expended this turn"
 	"damage_bonus_pct",       # All In: "deal 30% more damage this turn"
 	"rage_per_weak",          # Slow Playing: "Rage 1 for each Weak on an enemy"
+	# Sheet's Story tab (patch 0.116). Run level only: the story screen and
+	# the reward layer understand these, `EffectInterpreter` does not.
+	"grant_sticker",          # Cheap Tricks: a sticker of a named or random suit
+	"casino_spin",            # Lost Soul: one pull on the Casino's prize table
 ]
 ## Enemy passives (sheet v0.120). These names live in their own namespace —
 ## `bust` is also an ABILITY id, and the two never meet.

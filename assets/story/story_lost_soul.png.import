@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8dlva04dw67y"
-path="res://.godot/imported/story_broken_machine.png-27d8fad3d960cb978970768c76f2b5de.ctex"
+uid="uid://bi3gu5tmffy42"
+path="res://.godot/imported/story_lost_soul.png-184bfbdced4246c219acce25e265d103.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/story/story_broken_machine.png"
-dest_files=["res://.godot/imported/story_broken_machine.png-27d8fad3d960cb978970768c76f2b5de.ctex"]
+source_file="res://assets/story/story_lost_soul.png"
+dest_files=["res://.godot/imported/story_lost_soul.png-184bfbdced4246c219acce25e265d103.ctex"]
 
 [params]
 

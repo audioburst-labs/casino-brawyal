@@ -198,14 +198,34 @@ func encounter_finished() -> void:
 	_after_encounter()
 
 
+## A story choice that picks a fight (patch 0.116). The encounter the player
+## is standing on becomes a combat, drawn for the current stage like any
+## other, and `run.bonus_rewards` rides along to be paid if it is won.
+## `record_visit` already ran when the story was chosen, so this re-points the
+## pending encounter rather than adding a second one to the history.
+func story_started_a_fight(bonus_rewards: Array) -> void:
+	run.bonus_rewards.clear()
+	for reward: Dictionary in bonus_rewards:
+		run.bonus_rewards.append(reward)
+	_open_encounter({"type": &"combat"})
+
+
 func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 	if not won:
+		# A staged prize dies with the fight it was staked on.
+		run.bonus_rewards.clear()
 		Telemetry.run_ended(_run_report("defeat"))
 		RunSave.clear()
 		goto_screen("res://scenes/screens/game_over_screen.tscn")
 		return
 	run.pending_encounter = {}
 	run.hp = maxi(1, hero_hp)
+	# A story choice can stake something on the next fight (the sheet's
+	# Guarded Treasure). It is paid here, on the win, and never by the story
+	# screen: "fight the guards, and if you win you also get a relic".
+	var owed := run.bonus_rewards.duplicate()
+	run.bonus_rewards.clear()
+	RunEffects.apply(owed, Db.content, run, rng.stream(&"rewards"))
 	RunEffects.apply(pending_rewards, Db.content, run, rng.stream(&"rewards"))
 	if run.last_visited() == &"boss":
 		Telemetry.run_ended(_run_report("victory"))

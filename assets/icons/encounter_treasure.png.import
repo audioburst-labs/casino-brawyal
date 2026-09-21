@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c7fi35ulqcknn"
-path="res://.godot/imported/story_security_office.png-9063f5cc94d083541d7b0782743906f3.ctex"
+uid="uid://dxk1rkp14jw74"
+path="res://.godot/imported/encounter_treasure.png-97a73ae5f1a83d8b65dbebb5848bc9d1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/story/story_security_office.png"
-dest_files=["res://.godot/imported/story_security_office.png-9063f5cc94d083541d7b0782743906f3.ctex"]
+source_file="res://assets/icons/encounter_treasure.png"
+dest_files=["res://.godot/imported/encounter_treasure.png-97a73ae5f1a83d8b65dbebb5848bc9d1.ctex"]
 
 [params]
 

@@ -50,4 +50,27 @@ func _pick(choice: Dictionary) -> void:
 	add_info_label(outcome, 24)
 	if not lines.is_empty():
 		add_info_label("\n".join(lines), 28)
+	# Some choices pick a fight rather than paying out (the sheet's Guarded
+	# Treasure). The prize rides on the run and is paid only if it is won, so
+	# there is no Continue here: the button walks into the combat instead.
+	if str(choice.get("then", "")) == "combat":
+		add_continue_button("Fight", func() -> void:
+			Game.story_started_a_fight(choice.get("bonus_rewards", [])))
+		return
 	add_continue_button()
+
+
+## CB_DEBUG_STORY="cheap_tricks": open this screen on its own with that event,
+## for reviewing the illustration and the choice cards without walking a run
+## into a story node. Does nothing once `setup` has run for real.
+func _ready() -> void:
+	var forced := OS.get_environment("CB_DEBUG_STORY")
+	if forced == "" or _event != null:
+		return
+	if Game.run == null:
+		Game.rng = GameRng.new(4242)
+		Game.run = RunState.new()
+		Game.run.max_hp = 80
+		Game.run.hp = 55
+		Game.run.coins = 120
+	setup({"event": StringName(forced)})

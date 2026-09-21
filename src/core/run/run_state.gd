@@ -35,6 +35,11 @@ var run_uid: String = ""
 var history: Array[StringName] = []   # encounter type per completed choice
 var seen_events: Array[StringName] = []
 var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
+## Run-level ops owed if the NEXT combat is won (patch 0.116). The sheet's
+## Guarded Treasure pays a relic for beating the guards, so the prize has to
+## outlive the story screen and be paid by `combat_finished`, not by the
+## choice itself. Cleared whether that fight is won or lost.
+var bonus_rewards: Array[Dictionary] = []
 var shop_offers := 0                           # shop options shown so far (>= 2 guaranteed)
 ## The encounter being played right now, saved with the run so that leaving
 ## for the main menu mid-encounter resumes it from its beginning instead of
@@ -190,6 +195,7 @@ func to_dict() -> Dictionary:
 		"reels": reels,
 		"shop_offers": shop_offers,
 		"pending_encounter": pending_encounter,
+		"bonus_rewards": bonus_rewards,
 	}
 
 
@@ -224,6 +230,8 @@ static func from_dict(data: Dictionary) -> RunState:
 		run.relic_ids.append(StringName(str(id)))
 	for suit in data.get("sticker_inventory", []):
 		run.sticker_inventory.append(StringName(str(suit)))
+	for reward: Dictionary in data.get("bonus_rewards", []):
+		run.bonus_rewards.append(reward)
 	for id in data.get("seen_events", []):
 		run.seen_events.append(StringName(str(id)))
 	for type in data.get("history", []):

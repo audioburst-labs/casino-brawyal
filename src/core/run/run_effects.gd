@@ -4,6 +4,16 @@ extends RefCounted
 ## RunState. Returns human-readable summary lines for the UI to show.
 
 
+const SUITS: Array[StringName] = [&"spade", &"heart", &"club", &"diamond"]
+
+
+## The sheet prices most story outcomes as "[Encounter Value X n]", so the
+## same card is worth more the deeper you take it. Encounter 1 still pays,
+## which is why this multiplies rather than using (n - 1).
+static func _scaled(effect: Dictionary, run: RunState) -> int:
+	return int(effect.get("per_encounter", 0)) * run.encounter_number()
+
+
 static func apply(effects: Array, db: ContentDB, run: RunState,
 		rng: RandomNumberGenerator) -> Array[String]:
 	var lines: Array[String] = []
@@ -13,16 +23,32 @@ static func apply(effects: Array, db: ContentDB, run: RunState,
 				var amount := rng.randi_range(int(effect.get("min", 0)), int(effect.get("max", 0)))
 				if effect.has("amount"):
 					amount = int(effect.get("amount"))
+				if effect.has("per_encounter"):
+					amount = _scaled(effect, run)
 				run.coins += amount
 				lines.append("+%d coins" % amount)
 			"lose_coins":
-				var loss: int = mini(run.coins, int(effect.get("amount", 0)))
+				var cost := _scaled(effect, run) if effect.has("per_encounter") \
+					else int(effect.get("amount", 0))
+				var loss: int = mini(run.coins, cost)
 				run.coins -= loss
 				lines.append("-%d coins" % loss)
 			"lose_hp":
-				var hp_loss := int(effect.get("amount", 0))
+				var hp_loss := _scaled(effect, run) if effect.has("per_encounter") \
+					else int(effect.get("amount", 0))
 				run.hp = maxi(1, run.hp - hp_loss)  # story wounds never kill outright
 				lines.append("-%d HP" % hp_loss)
+			"grant_sticker":
+				var suit := StringName(str(effect.get("suit", "random")))
+				if suit == &"random":
+					suit = SUITS[rng.randi_range(0, SUITS.size() - 1)]
+				run.sticker_inventory.append(suit)
+				lines.append("Sticker: %s" % String(suit).capitalize())
+			"casino_spin":
+				# The sheet's note on Lost Soul: the reward IS a pull on the
+				# Casino's prize table, so it resolves here rather than routing
+				# to the casino screen for a visit the player did not spend.
+				lines.append_array(CasinoGame.spin(db, run, rng).lines)
 			"heal_pct":
 				var heal := int(ceil(run.max_hp * float(effect.get("pct", 0.0))))
 				var healed: int = mini(heal, run.max_hp - run.hp)

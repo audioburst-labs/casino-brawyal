@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c884wq5ncnx5q"
-path="res://.godot/imported/story_high_roller.png-769b1fd45702bcd59d8cb9063cc23085.ctex"
+uid="uid://cqw5q50x67vwu"
+path="res://.godot/imported/encounter_unknown.png-6c029e87dafe83f5e09a3da7b08dcc27.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/story/story_high_roller.png"
-dest_files=["res://.godot/imported/story_high_roller.png-769b1fd45702bcd59d8cb9063cc23085.ctex"]
+source_file="res://assets/icons/encounter_unknown.png"
+dest_files=["res://.godot/imported/encounter_unknown.png-6c029e87dafe83f5e09a3da7b08dcc27.ctex"]
 
 [params]
 

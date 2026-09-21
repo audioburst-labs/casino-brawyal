@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://txtnyt2h5b1b"
-path="res://.godot/imported/story_lounge_singer.png-b7a0190af80404c6ea3bc159f5ba5313.ctex"
+uid="uid://bqsnl6nklufhm"
+path="res://.godot/imported/encounter_elite.png-a91c4042729053f1377c3188670d5a84.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/story/story_lounge_singer.png"
-dest_files=["res://.godot/imported/story_lounge_singer.png-b7a0190af80404c6ea3bc159f5ba5313.ctex"]
+source_file="res://assets/icons/encounter_elite.png"
+dest_files=["res://.godot/imported/encounter_elite.png-a91c4042729053f1377c3188670d5a84.ctex"]
 
 [params]
 

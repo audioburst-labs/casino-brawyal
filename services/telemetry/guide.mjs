@@ -113,7 +113,7 @@ footer{color:var(--ink-dim);font-size:14px;padding:10px 0 50px;text-align:center
     <tr><td>plays</td><td>Total launches. Against players, this is your
       <i>return rate</i>: 12 plays from 3 players means people are coming back.</td></tr>
     <tr><td>runs</td><td>Total attempts at Act I.</td></tr>
-    <tr><td>wins</td><td>Runs that beat Mr. Moneyman, and the percentage of runs that
+    <tr><td>wins</td><td>Runs that beat the boss, and the percentage of runs that
       did. This is the number the whole difficulty conversation hangs on.</td></tr>
     <tr><td>fights</td><td>Total combats. Divided by runs, it tells you how deep the
       average run gets before it stops.</td></tr>

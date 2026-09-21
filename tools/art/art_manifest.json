@@ -472,41 +472,6 @@
       "prompt": "A cartoon casino lounge background for a rest screen: a quiet plush VIP lounge corner with a deep maroon velvet sofa, a small gold side table with a steaming drink, a crackling ornate fireplace with green marble trim, dim warm lighting, soft haze, a window showing the casino floor glowing far below. Calm and inviting. Rich saturated colors. No people, no text."
     },
     {
-      "id": "story_high_roller",
-      "out": "assets/story/story_high_roller.png",
-      "size": "1536x1024",
-      "transparent": false,
-      "prompt": "A cartoon story illustration: a private high-roller table in a casino back room, a mysterious elegant figure in shadow gesturing to an empty velvet chair across a green felt table stacked with towering chip piles, a single golden card face-down in the center, cigar smoke curling through a cone of lamplight. Rich saturated maroon and gold palette, moody and tempting. No text."
-    },
-    {
-      "id": "story_broken_machine",
-      "out": "assets/story/story_broken_machine.png",
-      "size": "1536x1024",
-      "transparent": false,
-      "prompt": "A cartoon story illustration: a sparking broken slot machine in a dim casino service corridor, its front panel hanging open revealing glowing golden innards and a jackpot of coins jammed inside, warning sparks and little smoke puffs, a red toolbox abandoned nearby. Tempting risk-versus-reward mood, rich saturated colors. No people, no text."
-    },
-    {
-      "id": "story_lounge_singer",
-      "out": "assets/story/story_lounge_singer.png",
-      "size": "1536x1024",
-      "transparent": false,
-      "prompt": "A cartoon story illustration: a smoky casino lounge stage where an elegant fox-like singer in a shimmering emerald gown performs under a single warm spotlight at a golden microphone, silhouetted audience at small round tables with candle lamps, maroon curtains behind. Melancholy beautiful mood, rich saturated colors. No text."
-    },
-    {
-      "id": "story_dice_alley",
-      "out": "assets/story/story_dice_alley.png",
-      "size": "1536x1024",
-      "transparent": false,
-      "prompt": "A cartoon story illustration: a back-alley dice game behind the casino at night, three shady cartoon figures crouched around glowing dice on a crate under a flickering neon spade sign, scattered coins and chips, cool blue night shadows cut by warm gold lamplight from a doorway. Risky underworld mood, rich saturated colors. No text."
-    },
-    {
-      "id": "story_security_office",
-      "out": "assets/story/story_security_office.png",
-      "size": "1536x1024",
-      "transparent": false,
-      "prompt": "A cartoon story illustration: the casino security office, a wall of glowing monitors showing casino floor feeds, a big chair turned away from the desk with only a gold-ringed hand visible tapping a spade-topped cane, confiscated lucky charms in a glass case, one monitor showing a wanted-poster silhouette of a card-slinging rogue. Ominous discovered-too-much mood, rich colors. No text."
-    },
-    {
       "id": "suit_any",
       "out": "assets/icons/suit_any.png",
       "size": "1024x1024",
@@ -1187,6 +1152,113 @@
       "transparent": true,
       "quality": "medium",
       "prompt": "A square game ability icon on a fully transparent background: a casino chip standing upright behind a small polished golden shield, a steady defensive stance, soft warm glow. Thick dark outlines, rich maroon and gold colors, dramatic lighting, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "story_lost_soul",
+      "out": "assets/story/story_lost_soul.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a hollow-eyed gaunt man slumped at a slot machine in an empty casino aisle, one arm stretched uselessly toward a brimming bucket of coins just out of reach, the machine's reels still lit and waiting on one last spin, dust in the light. Rich saturated maroon and gold palette, moody casino lighting, painterly. No text."
+    },
+    {
+      "id": "story_risky_dealings",
+      "out": "assets/story/story_risky_dealings.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a cash machine set into a casino wall, glowing with hungry neon, its money slot lined with rows of sharp metal teeth like a mouth, a few banknotes protruding as bait, a nervous hand hovering near it. Rich saturated maroon and gold palette, moody casino lighting, painterly. No text."
+    },
+    {
+      "id": "story_guarded_treasure",
+      "out": "assets/story/story_guarded_treasure.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a narrow side room seen past a doorway, two broad-shouldered casino guards standing watch in front of a glass display case, inside it a single ornate artifact lit from below by a spotlight. Rich saturated maroon and gold palette, moody casino lighting, painterly. No text."
+    },
+    {
+      "id": "story_quick_catch",
+      "out": "assets/story/story_quick_catch.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a wealthy casino patron seen from behind, looking away, gold coins spilling from one coat pocket while a strange wrapped object bulges from the other, a thief's hand entering frame between the two. Rich saturated maroon and gold palette, moody casino lighting, painterly. No text."
+    },
+    {
+      "id": "story_cheap_tricks",
+      "out": "assets/story/story_cheap_tricks.png",
+      "size": "1536x1024",
+      "transparent": false,
+      "prompt": "A cartoon story illustration: a tall dark figure in a sharp suit and top hat stepping out of deep shadow, face half-lit and smiling, fanning four playing cards face down toward the viewer, wisps of smoke around the brim. Rich saturated maroon and gold palette, moody casino lighting, painterly. No text."
+    },
+    {
+      "id": "encounter_combat",
+      "out": "assets/icons/encounter_combat.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: two crossed daggers over a casino chip. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_elite",
+      "out": "assets/icons/encounter_elite.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a skull wearing a small golden crown, crossed daggers behind it, menacing. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_story",
+      "out": "assets/icons/encounter_story.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: an open book with a glowing question mark rising from its pages in golden smoke. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_rest",
+      "out": "assets/icons/encounter_rest.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a crackling campfire inside a small circle of casino chips, warm and inviting. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_treasure",
+      "out": "assets/icons/encounter_treasure.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a small ornate treasure chest, lid ajar, golden light spilling out. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_casino",
+      "out": "assets/icons/encounter_casino.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a pair of dice beside a tiny slot machine lever, playful and bright. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_shop",
+      "out": "assets/icons/encounter_shop.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a merchant's coin purse spilling gold beside a price tag, inviting. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_boss",
+      "out": "assets/icons/encounter_boss.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: an imposing top hat over a fanned stack of banknotes and a gold dollar sign, the big boss. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "encounter_unknown",
+      "out": "assets/icons/encounter_unknown.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A square map-node icon on a fully transparent background: a single large golden question mark, slightly tilted, mysterious. Thick dark outlines, rich maroon and gold colors, bold and readable at small size, centered, fills the frame. Nothing else."
     }
   ]
 }

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c01q88am07t0g"
-path="res://.godot/imported/story_dice_alley.png-52ac21805bcab423dce8a58947a1c568.ctex"
+uid="uid://dy1awk5cs6ndg"
+path="res://.godot/imported/encounter_boss.png-2f07ae8045e9c62786e4678ff005c7de.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/story/story_dice_alley.png"
-dest_files=["res://.godot/imported/story_dice_alley.png-52ac21805bcab423dce8a58947a1c568.ctex"]
+source_file="res://assets/icons/encounter_boss.png"
+dest_files=["res://.godot/imported/encounter_boss.png-2f07ae8045e9c62786e4678ff005c7de.ctex"]
 
 [params]
 
