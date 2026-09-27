@@ -268,15 +268,37 @@ watches: past `BUSY_WATCHDOG_MS` it logs the event being played, records a
 `presenter_stuck` telemetry row, clears the flag and re-syncs. **The player's
 `godot.log` is the diagnostic**: a stuck fight now names its event there.
 Never remove the watchdog to "clean up"; make the handlers not throw instead.
+**What the designer's stuck run actually shows** (from the telemetry move log,
+run `fdb3827d…`, V117): the first Mark (round 2, Card Sling with a Spade) went
+through and that fight was WON; the run went Casino, then chose the encounter
+3 combat (`muscle_and_service`, Bouncer + Server, Ace 79/80), and the last
+recorded event is that fight's round 1 `spin_resolved`. Not one chip placed
+after it. His `godot.log` has no script error and ends in the normal exit
+lines. So the freeze is at the START of a fight that follows a Casino visit,
+and it is a silent stall, not a crash: an `await` that never resumes, or
+input that never reaches the sim. That exact lineup, driven in a real run,
+reaches round 2 here. The unexplored variable is whatever the Casino left on
+the run (a sticker, a relic, coins, health). `/api/runs` and
+`/api/run/<id>/moves` + `/combats` on the service exist for exactly this kind
+of question: read them before guessing.
 Also from that hunt: `CB_DEBUG_AUTOFIRE` and `CB_DEBUG_ENDTURN` now work
 inside a real run and `AUTOFIRE` takes a comma list (`"1,3"` = Card Sling then
 Double Down), which is what made a run-mode drive possible at all.
+
+**The card's number walker must know every damage op** (0.118): with Ace
+Weak, every printed figure dropped except The River's, because
+`AbilityCard._collect_damage` only knew `damage`. It now covers
+`damage_per_ability` and the passives' `active_effects`, and
+`test_patch_117.gd` checks every "Deal N" in every description against
+`damage_amounts()`, so a new op that prints a number cannot be missed again.
+`damage_missing_pct` is deliberately excluded: it bypasses the attacker's
+modifiers, so its printed number is right as it is.
 
 **Combat presenter contracts** (patch 0.19–0.20): the chip tray draws from `ChipTrayView._shown`, not from the live `ChipTray` — the sim resolves an ability the instant its last socket fills, so a Go Again's winnings are already in the tray before the reels are seen to spin for them. `chip_assigned` calls `spend(suit)`; only `spin_resolved` (after `_payout_flourish`) and the discard/unassign paths `refresh()`. `Targeting.effective_target()` **records every branch it resolves**, including the lone-enemy shortcut — leaving that one unrecorded is what let a summon steal the target (patch 0.20). Live ability numbers walk the effect tree recursively via `AbilityCard.damage_amounts()`: since the Cash In rework a damage op can be nested in `cash_in.effects`/`else_effects` or duplicated in `bonus_effects`, and a top-level-only walk silently skipped Double Down, Bust and On a Roll.
 
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
-**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
 
 **Telemetry** (patch 0.115). The game spools play data to
 `user://telemetry/spool.ndjson` and POSTs batches to the ingest service in
@@ -334,6 +356,10 @@ on `voicevikkidb`. The designer's dashboard is the app root plus
   the `ON CONFLICT DO UPDATE` list, and the parameter needs `|| null` rather
   than `?? null` because the client sends `""` before a path exists. Omitting
   both is what left the Paths panel empty for every run before 0.116.
+- **`/api/runs`, `/api/run/<uuid>/moves` and `/api/run/<uuid>/combats`** (0.118)
+  are the investigation tools: the last fifty runs with how they ended, every
+  recorded move of one run in order, and its fights with lineup and seed. A
+  stuck fight is a move log that simply stops; read it before reproducing.
 - `DELETE /api/install/<uuid>` is the erasure path (and how test data gets
   cleared, since nothing else can reach the database). It cascades but leaves
   the accepted `batch_id`s, so a resend cannot resurrect an erased player.

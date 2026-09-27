@@ -439,6 +439,40 @@ const server = createServer(async (req, res) => {
       if (!authed) return json(res, 401, { error: "add ?key=" });
       return json(res, 200, await dashboardData());
     }
+    // The last runs, newest first, with how they ended - the index for the
+    // move log below. Added while hunting a freeze the dashboard's totals
+    // could not see (0.118): "what did this player do right before it stuck".
+    if (req.method === "GET" && url.pathname === "/api/runs") {
+      if (!authed) return json(res, 401, { error: "add ?key=" });
+      const { rows } = await pool.query(
+        `SELECT r.run_id, r.started_at, r.ended_at, r.outcome, r.final_encounter,
+                r.duration_sec, r.path_id, p.game_version, p.ip, p.ended_cleanly,
+                (SELECT count(*) FROM moves m WHERE m.run_id = r.run_id) AS moves
+           FROM runs r LEFT JOIN plays p ON p.play_id = r.play_id
+          ORDER BY r.started_at DESC LIMIT 50`);
+      return json(res, 200, rows);
+    }
+    // Every recorded move of one run, in order. A stuck fight ends in a
+    // sequence that simply stops; the last kind and its detail are the clue.
+    // The fights of one run: which lineup, how it went. The stuck run of
+    // 0.117 ended on a fight's opening spin, and only this table knew which.
+    const runCombats = url.pathname.match(/^\/api\/run\/([0-9a-f-]{36})\/combats$/i);
+    if (req.method === "GET" && runCombats) {
+      if (!authed) return json(res, 401, { error: "add ?key=" });
+      const { rows } = await pool.query(
+        `SELECT combat_id, encounter_number, encounter_type, lineup_id, enemy_ids,
+                combat_seed, started_at, ended_at, rounds, won, hp_before, hp_after
+           FROM combats WHERE run_id = $1 ORDER BY encounter_number ASC`, [runCombats[1]]);
+      return json(res, 200, rows);
+    }
+    const runMoves = url.pathname.match(/^\/api\/run\/([0-9a-f-]{36})\/moves$/i);
+    if (req.method === "GET" && runMoves) {
+      if (!authed) return json(res, 401, { error: "add ?key=" });
+      const { rows } = await pool.query(
+        `SELECT seq, at, round_number, kind, detail, combat_id
+           FROM moves WHERE run_id = $1 ORDER BY seq ASC LIMIT 5000`, [runMoves[1]]);
+      return json(res, 200, rows);
+    }
     // Erasure. An install id is personal data once it is stamped with an IP
     // (CJEU C-582/14), so there has to be a way to remove one without a psql
     // session - nobody outside Azure can reach port 5432 on this server. The

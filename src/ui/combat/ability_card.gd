@@ -429,13 +429,19 @@ static func damage_amounts(def: Defs.AbilityDef) -> Array[int]:
 	var amounts: Array[int] = []
 	_collect_damage(def.effects, amounts)
 	_collect_damage(def.bonus_effects, amounts)
+	_collect_damage(def.active_effects, amounts)
 	return amounts
 
 
 static func _collect_damage(effects: Array, into: Array[int]) -> void:
 	for effect: Dictionary in effects:
 		match str(effect.get("op", "")):
-			"damage":
+			# `damage_per_ability` too (0.118): The River's "deal 10" is a per-
+			# ability base that Weak, Strength and All In all move, and it was
+			# the one figure on the bar that stayed put under Weak. Not
+			# `damage_missing_pct`: that op bypasses the attacker's modifiers
+			# on purpose, so its number is correct as printed.
+			"damage", "damage_per_ability":
 				var amount := int(effect.get("amount", 0))
 				if amount > 0 and not into.has(amount):
 					into.append(amount)

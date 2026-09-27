@@ -255,3 +255,28 @@ func test_placement_rejects_a_suit_with_nowhere_to_go() -> void:
 	var state := AbilityState.new(def)
 	assert_eq(state.placement_slot(&"heart"), -1)
 	assert_eq(state.placement_slot(&"club"), 0)
+
+
+# ---------------------------------------------------------------- Weak
+
+## "Weak should change all damage instances on an ability." With Ace Weak,
+## every printed damage figure dropped except The River's: its op is
+## damage_per_ability and the card's number walker only knew plain damage.
+func test_the_rivers_figure_is_a_damage_amount_the_card_can_modify() -> void:
+	var river := db.get_ability(&"the_river")
+	assert_eq(AbilityCard.damage_amounts(river), [10] as Array[int])
+
+
+func test_every_kit_ability_that_deals_damage_prints_a_modifiable_figure() -> void:
+	# Any ability whose description says "Deal N" must expose N, or Weak,
+	# Strength and All In cannot move the number on the card.
+	var regex := RegEx.new()
+	# "deal 30% more damage" (All In) is a percentage, not a figure to modify.
+	regex.compile("[Dd]eal ([0-9]+)(?![0-9%])")
+	for id in db.all_ability_ids():
+		var def := db.get_ability(StringName(id))
+		var printed := AbilityCard.damage_amounts(def)
+		for m in regex.search_all(def.description):
+			var figure := int(m.get_string(1))
+			assert_has(printed, figure,
+				"%s prints %d but the card cannot modify it" % [id, figure])

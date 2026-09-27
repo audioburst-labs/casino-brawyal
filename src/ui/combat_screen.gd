@@ -412,6 +412,14 @@ func _process(_delta: float) -> void:
 
 
 func _debug_drive() -> void:
+	# CB_DEBUG_HERO_STATUS="weak,frail": put these on ACE at the start, so the
+	# cards' live numbers under a debuff can be reviewed (0.118, the designer's
+	# "Weak should change all damage instances" note).
+	var hero_status := OS.get_environment("CB_DEBUG_HERO_STATUS")
+	if hero_status != "":
+		for name in hero_status.split(",", false):
+			sim.hero.apply_status(StringName(name.strip_edges()), 2)
+		_refresh_all()
 	# A comma list fires in sequence, 5 s apart: AUTOFIRE="1,3" plays Card
 	# Sling and then Double Down, so a Mark followed by its Cash In can be
 	# reviewed in one launch.
