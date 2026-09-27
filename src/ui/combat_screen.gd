@@ -376,6 +376,13 @@ func setup(config: Dictionary) -> void:
 	_reel_strip.set_reel_count(sim.machine.reels.size())
 	_cabinet.refresh_layout()
 	_tray_view.bind(sim.tray)
+	# A drag that outlived the screen it started on (a chit dragged as the
+	# reward or loadout screen closed) would swallow every drop in this fight
+	# and look exactly like a freeze. Nothing can be mid-drag as a fight
+	# begins, so any drag state here is stale (0.118).
+	if get_viewport().gui_is_dragging():
+		push_warning("combat opened mid-drag; cancelling the stale drag")
+		get_viewport().gui_cancel_drag()
 	_next_round.call_deferred()
 	_debug_drive.call_deferred()
 
@@ -437,10 +444,59 @@ func _debug_drive() -> void:
 				suit = &"spade"
 			sim.tray.add(suit, 1)
 			_on_chip_dropped(autofire - 1, slot, suit)
+	# CB_DEBUG_DRAG=N: drag the first tray chip onto ability N's first socket
+	# THROUGH THE REAL GUI (0.118): synthetic mouse events go into
+	# Input.parse_input_event, so Godot's own drag-and-drop machinery runs -
+	# _get_drag_data, the preview, _can_drop_data, _drop_data, DRAG_END. Every
+	# other driver here calls the drop handler directly and so had never once
+	# exercised the path a player actually uses.
+	var drag_to := OS.get_environment("CB_DEBUG_DRAG").to_int()
+	if drag_to > 0 and drag_to <= _ability_cards.size():
+		await get_tree().create_timer(4.0).timeout
+		await _debug_real_drag(_ability_cards[drag_to - 1])
 	var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
 	for i in end_turns:
 		await get_tree().create_timer(6.5).timeout
 		_on_end_turn()
+
+
+func _debug_real_drag(card: AbilityCard) -> void:
+	var chip := _tray_view.chip_button()
+	var socket := card.socket_button(0)
+	if chip == null or socket == null:
+		push_warning("CB_DEBUG_DRAG: nothing to drag (chip %s, socket %s)" % [chip, socket])
+		return
+	var from := chip.get_global_rect().get_center()
+	var to := socket.get_global_rect().get_center()
+	print("CB_DEBUG_DRAG: %s chip from %s to %s" % [chip.suit, from, to])
+	_mouse(from, InputEventMouseMotion.new(), 0)
+	await get_tree().process_frame
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	_mouse(from, press, MOUSE_BUTTON_MASK_LEFT)
+	await get_tree().process_frame
+	# Past the drag threshold in small steps, so the drag actually starts.
+	for step in range(1, 21):
+		var at := from.lerp(to, float(step) / 20.0)
+		var motion := InputEventMouseMotion.new()
+		motion.relative = (to - from) / 20.0
+		_mouse(at, motion, MOUSE_BUTTON_MASK_LEFT)
+		await get_tree().process_frame
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	_mouse(to, release, 0)
+	await get_tree().process_frame
+	print("CB_DEBUG_DRAG: released; gui dragging = %s; filled = %s"
+		% [get_viewport().gui_is_dragging(), card.ability_def().id])
+
+
+func _mouse(at: Vector2, event: InputEventMouse, mask: int) -> void:
+	event.position = at
+	event.global_position = at
+	event.button_mask = mask
+	Input.parse_input_event(event)
 
 
 func _build_layout() -> void:

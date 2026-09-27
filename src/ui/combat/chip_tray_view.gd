@@ -91,6 +91,26 @@ func _ready() -> void:
 	add_child(_row)
 
 
+## The first live chip button showing `suit` (any suit when &""), for the
+## debug driver that dispatches a REAL drag through the GUI (0.118).
+func chip_button(suit: StringName = &"") -> Button:
+	for stack in _row.get_children():
+		var found := _find_chip(stack, suit)
+		if found != null:
+			return found
+	return null
+
+
+func _find_chip(node: Node, suit: StringName) -> Button:
+	if node is ChipButton and (suit == &"" or (node as ChipButton).suit == suit):
+		return node
+	for child in node.get_children():
+		var found := _find_chip(child, suit)
+		if found != null:
+			return found
+	return null
+
+
 func bind(tray: ChipTray) -> void:
 	_tray = tray
 	refresh()

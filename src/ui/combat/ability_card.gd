@@ -341,6 +341,11 @@ static func _walk(effects: Array, ops: Array, conditions: Array) -> bool:
 	return false
 
 
+## Socket `i`'s button, for the debug driver that drops through the real GUI.
+func socket_button(i: int) -> Button:
+	return _sockets[i] if i >= 0 and i < _sockets.size() else null
+
+
 ## The def this card is showing, for callers that need to ask about it.
 func ability_def() -> Defs.AbilityDef:
 	return _state.def if _state != null else null
