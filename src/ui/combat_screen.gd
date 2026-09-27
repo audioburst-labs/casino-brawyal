@@ -20,7 +20,6 @@ const MACHINE_WIDTH := 640.0
 const ABILITY_ANIMS := {
 	&"card_sling": ["card_fling"],
 	&"quick_maneuvers": ["block"],
-	&"color_up": ["chip"],
 	&"double_down": ["dagger", "cash_in"],
 	&"heartsteal": ["block"],
 	&"pocket_rockets": ["card_fling", "card_fling"],
@@ -82,7 +81,15 @@ var _ability_row: HBoxContainer
 var _ability_cards: Array[AbilityCard] = []
 var _end_turn: Button
 var _vfx: CombatVfx
-var _busy := false
+var _busy := false:
+	set(v):
+		_busy = v
+		_busy_since = Time.get_ticks_msec() if v else 0
+var _busy_since := 0
+var _playing_event: StringName = &""
+## Longer than any legitimate event sequence (a Flush against four enemies
+## with the full flourish is about 12 s). Past this, the presenter is stuck.
+const BUSY_WATCHDOG_MS := 25_000
 
 
 ## Ultimate Animation (doc): "a streak of paint appears briefly on the screen".
@@ -316,19 +323,6 @@ func _ready() -> void:
 			"machine": machine,
 			"seed": randi(),
 		})
-		# CB_DEBUG_AUTOFIRE=N: fire the Nth listed ability automatically
-		# (1 = card_sling, 2 = quick_maneuvers, ...) for animation review.
-		# Every socket is filled, so multi-chip abilities fire too.
-		var autofire := OS.get_environment("CB_DEBUG_AUTOFIRE").to_int()
-		if autofire > 0:
-			await get_tree().create_timer(4.0).timeout
-			var state := sim.abilities[autofire - 1]
-			for slot in state.def.cost.size():
-				var suit: StringName = state.def.cost[slot]
-				if suit == &"any":
-					suit = &"spade"
-				sim.tray.add(suit, 1)
-				_on_chip_dropped(autofire - 1, slot, suit)
 		# CB_DEBUG_ENEMY_STATUS="mark,weak": put these on every enemy at the
 		# start, so status-conditional UI (the card glow, the pips, the intent
 		# numbers) can be reviewed without playing into the state first.
@@ -347,11 +341,6 @@ func _ready() -> void:
 		if banner != "":
 			await get_tree().create_timer(1.0).timeout
 			_show_banner("VICTORY!" if banner == "victory" else "DEFEAT")
-		# CB_DEBUG_ENDTURN=N: auto-end N turns so enemy attacks play out too.
-		var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
-		for i in end_turns:
-			await get_tree().create_timer(6.5).timeout
-			_on_end_turn()
 
 
 func setup(config: Dictionary) -> void:
@@ -388,6 +377,62 @@ func setup(config: Dictionary) -> void:
 	_cabinet.refresh_layout()
 	_tray_view.bind(sim.tray)
 	_next_round.call_deferred()
+	_debug_drive.call_deferred()
+
+
+## CB_DEBUG_AUTOFIRE=N and CB_DEBUG_ENDTURN=N, from ANY launch (patch 0.117).
+## They used to live inside the standalone block, which meant a fight inside a
+## real run (telemetry live, header attached, run_mode on) could not be
+## driven for review: the 0.117 "stuck on the first Mark" freeze only
+## reproduces in a real run, and this is how it was reproduced.
+##   AUTOFIRE=N fires the Nth equipped ability (1-based), every socket filled
+##   with the suit it asks for (Spade for "any"), so multi-chip abilities fire.
+##   ENDTURN=N then ends N turns, 6.5 s apart, so enemy phases play out.
+## The freeze guard (0.117). If a handler in _play_events dies with a script
+## error, the await above it never resumes and _busy stays true: every drop,
+## click and Pass is ignored while the glow keeps pulsing, which is exactly
+## "the game gets completely stuck". This cannot be caught, so it is watched:
+## after BUSY_WATCHDOG_MS the last event being played is written to the log
+## (so a player's godot.log names the culprit) and control is handed back
+## with a full re-sync, so the fight can continue.
+func _process(_delta: float) -> void:
+	if not _busy or _busy_since == 0:
+		return
+	if Time.get_ticks_msec() - _busy_since < BUSY_WATCHDOG_MS:
+		return
+	push_warning("combat presenter stuck for %d ms while playing '%s'; recovering"
+		% [Time.get_ticks_msec() - _busy_since, String(_playing_event)])
+	if run_mode:
+		Telemetry.record(&"presenter_stuck", {"event": String(_playing_event)})
+	_busy = false
+	if sim.phase == CombatSim.Phase.ROUND_START:
+		_next_round()
+	else:
+		_refresh_all()
+
+
+func _debug_drive() -> void:
+	# A comma list fires in sequence, 5 s apart: AUTOFIRE="1,3" plays Card
+	# Sling and then Double Down, so a Mark followed by its Cash In can be
+	# reviewed in one launch.
+	var first := true
+	for token in OS.get_environment("CB_DEBUG_AUTOFIRE").split(",", false):
+		var autofire := token.strip_edges().to_int()
+		if autofire <= 0 or autofire > sim.abilities.size():
+			continue
+		await get_tree().create_timer(4.0 if first else 5.0).timeout
+		first = false
+		var state := sim.abilities[autofire - 1]
+		for slot in state.def.cost.size():
+			var suit: StringName = state.def.cost[slot]
+			if suit == &"any":
+				suit = &"spade"
+			sim.tray.add(suit, 1)
+			_on_chip_dropped(autofire - 1, slot, suit)
+	var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
+	for i in end_turns:
+		await get_tree().create_timer(6.5).timeout
+		_on_end_turn()
 
 
 func _build_layout() -> void:
@@ -819,6 +864,7 @@ func _drain() -> Array[CombatEvent]:
 
 func _play_events(events: Array[CombatEvent]) -> void:
 	for event in events:
+		_playing_event = event.type
 		match event.type:
 			&"round_started":
 				_round_label.text = "Round %d" % event.data.round
@@ -833,13 +879,32 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_cabinet.pull_lever()
 				await _reel_strip.spin_to(event.data.symbols)
 				await _payout_flourish(event.data.symbols)
-				_tray_view.refresh()
-			&"chips_generated", &"chips_converted":
-				# Break (patch 0.114): the Chip Golem sheds a chip every time its
-				# counter runs out, and you should SEE it fall into the drawer
-				# rather than just find the tray one richer.
-				if StringName(str(event.data.get("source", ""))) == &"break":
-					await _golem_drops_chip(StringName(str(event.data.get("suit", ""))))
+				# Only the PAYOUT is shown here (0.117). A refresh() exposed the
+				# gift chips the Loan Shark had already put in the live tray,
+				# before their own arrival had played.
+				var payout: Dictionary = event.data.get("payout", {})
+				for suit: StringName in payout:
+					_tray_view.reveal(suit, int(payout[suit]))
+			&"chips_generated":
+				# Every chip that arrives outside a spin is SEEN arriving (0.117):
+				# Break falls from the Golem (0.114), a Gift flies from the enemy
+				# that promised it, and an Earn (Hit, Card Trick, Color Up,
+				# Chip Tricks...) flies from Ace to the drawer. The Earn animation
+				# used to hang off a hand-written table of the 0.13 roster, so
+				# the ten newer abilities never had one.
+				var suit := StringName(str(event.data.get("suit", "")))
+				var source := StringName(str(event.data.get("source", "")))
+				match source:
+					&"break":
+						await _golem_drops_chip(suit)
+					&"gift":
+						var giver := _view_of(StringName(str(event.data.get("actor", ""))))
+						await _chip_arrives(suit,
+							giver.sprite_center() if giver != null else _hero_view.sprite_center())
+					_:
+						await _chip_arrives(suit, _hero_view.sprite_center())
+				_tray_view.reveal(suit, int(event.data.get("count", 1)))
+			&"chips_converted":
 				_tray_view.refresh()
 			&"chip_assigned":
 				# Paint the chip into its socket immediately so the final chip
@@ -1057,17 +1122,33 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"choice_offered":
 				await _offer_choice(event.data)
 			&"loan_taken":
-				_hero_view.refresh()
+				# Statuses only (0.117). A full refresh() here snapped the HP
+				# bar to the sim's already-resolved value, so the damage_dealt
+				# that followed subtracted a second time and the next refresh
+				# sprang it back: "take damage, then heal back for your
+				# block". The 0.113 rule, three call sites late.
+				_hero_view.refresh_statuses()
 				Fx.spawn_number(_hero_view.sprite_center(),
 					str(event.data.get("title", "LOAN")), Color(0.85, 0.75, 1.0))
 				await get_tree().create_timer(0.3).timeout
 			&"loan_ticked":
-				_hero_view.refresh()
+				_hero_view.refresh_statuses()
 			&"loan_due":
 				Fx.spawn_number(_hero_view.sprite_center(), "DUE!", Color(1.0, 0.55, 0.5))
 				_vfx.vignette(0.4, 0.7)
-				_hero_view.refresh()
+				_hero_view.refresh_statuses()
 				await get_tree().create_timer(0.3).timeout
+			&"run_effect":
+				# A loan's coins land the moment they happen (0.117), not when
+				# the fight ends: "Cash Advance should always give coins".
+				if run_mode and Game.run != null:
+					RunEffects.apply([event.data], Db.content, Game.run,
+						Game.rng.stream(&"rewards"))
+					var delta := int(event.data.get("amount", 0))
+					if str(event.data.get("op", "")) == "lose_coins":
+						delta = -delta
+					Fx.spawn_number(_hero_view.sprite_center(),
+						"%+d coins" % delta, Color(1.0, 0.85, 0.4))
 			&"chips_absorbed":
 				for card in _ability_cards:
 					card.refresh()
@@ -1100,6 +1181,11 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var ticked := _view_of(event.data.actor)
 				if ticked != null:
 					ticked.refresh_statuses()
+					# Block is spent at the START of its owner's turn (0.22),
+					# so the shield reads zero on this very beat rather than
+					# at the next full refresh (designer, 0.117).
+					if event.type == &"turn_started":
+						ticked.refresh_block()
 				if event.data.actor == sim.hero.id:
 					for card in _ability_cards:
 						card.refresh()
@@ -1138,10 +1224,6 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				# off the sim's block_gained event (doc: "Block Gain animation"
 				# applies to every source of Block, not just abilities).
 				await get_tree().create_timer(0.15).timeout
-			"chip":
-				await _fly("res://assets/icons/chip_spade.png",
-					_hero_view.sprite_center(),
-					_tray_view.global_position + _tray_view.size * 0.5, false)
 			"mark_wave":
 				for view: UnitView in _enemy_views.values():
 					_burst_duo(view.sprite_center(), "res://assets/icons/status_mark.png",
@@ -1329,6 +1411,17 @@ func _burst_duo(at: Vector2, texture_path: String, tint_a: Color, tint_b: Color)
 ## into the drawer the same way a paid-out chip does. Deliberately the same
 ## flight as `_payout_flourish` so a chip arriving always looks like a chip
 ## arriving, wherever it came from.
+## The Earn / Gift arrival: a chip of `suit` arcs from `from` into the
+## drawer, the same flight the payout chips take (0.117).
+func _chip_arrives(suit: StringName, from: Vector2) -> void:
+	var texture := SuitAssets.chip_texture(suit)
+	if texture == null:
+		return
+	await _fly("res://assets/icons/chip_%s.png" % suit, from,
+		_cabinet.drawer_centre_global(), false)
+	_cabinet.celebrate(0.4)
+
+
 func _golem_drops_chip(suit: StringName) -> void:
 	var golem: UnitView = null
 	for view: UnitView in _enemy_views.values():

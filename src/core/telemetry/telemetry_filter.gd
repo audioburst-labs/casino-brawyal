@@ -36,6 +36,8 @@ const DROP: Array[StringName] = [
 	&"intents_shown", &"turn_started", &"turn_ended", &"round_ended",
 	&"actor_removed", &"chips_converted", &"chips_absorbed", &"gift_promised",
 	&"passive_gained", &"passive_fired", &"passive_counter", &"loan_ticked",
+	# The coins are already on the run row; a row per op would double-count.
+	&"run_effect",
 ]
 
 

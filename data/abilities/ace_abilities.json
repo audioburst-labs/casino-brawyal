@@ -290,11 +290,12 @@
           "suit": "any"
         }
       ],
-      "description": "Deal 12 damage. If both are Spades, Earn a Spade.",
+      "description": "Deal 6 damage twice. If both are Spades, Earn a Spade.",
       "effects": [
         {
           "op": "damage",
-          "amount": 12
+          "amount": 6,
+          "times": 2
         }
       ],
       "keywords": [
@@ -311,20 +312,22 @@
       ],
       "tiers": [
         {
-          "description": "Deal 14 damage. If both are Spades, Earn a Spade.",
+          "description": "Deal 7 damage twice. If both are Spades, Earn a Spade.",
           "effects": [
             {
               "op": "damage",
-              "amount": 14
+              "amount": 7,
+              "times": 2
             }
           ]
         },
         {
-          "description": "Deal 16 damage. If both are Spades, Earn a Spade.",
+          "description": "Deal 8 damage twice. If both are Spades, Earn a Spade.",
           "effects": [
             {
               "op": "damage",
-              "amount": 16
+              "amount": 8,
+              "times": 2
             }
           ]
         }

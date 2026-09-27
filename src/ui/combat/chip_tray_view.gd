@@ -110,6 +110,19 @@ func refresh() -> void:
 ## One chip of `suit` has left the tray for a socket. Stepping the display
 ## down directly, rather than re-reading the tray, is what keeps a Go Again's
 ## winnings hidden until the reels have shown them arriving.
+## Shows ONE more chip of `suit` (0.117). The sim resolves a whole round
+## before the first frame of it is drawn, so `refresh()` after the payout
+## flourish also exposed every gift and Earn chip that had already landed in
+## the live tray. Arrivals now step the shown count up one animation at a
+## time, and `refresh()` is for the discard/unassign paths that re-sync.
+func reveal(suit: StringName, count := 1) -> void:
+	if _tray == null:
+		return
+	var shown := int(_shown.get(suit, 0)) + count
+	_shown[suit] = mini(shown, _tray.count(suit))
+	_redraw()
+
+
 func spend(suit: StringName) -> void:
 	_shown[suit] = maxi(0, int(_shown.get(suit, 0)) - 1)
 	_redraw()

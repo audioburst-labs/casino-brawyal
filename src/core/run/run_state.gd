@@ -40,6 +40,10 @@ var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
 ## outlive the story screen and be paid by `combat_finished`, not by the
 ## choice itself. Cleared whether that fight is won or lost.
 var bonus_rewards: Array[Dictionary] = []
+## Every lineup this run has fought, in order (patch 0.117). The designer's
+## rule is that an Elite is fought at most once per run: two Elite nodes must
+## be two different Elites, so the factory excludes these from the pool.
+var fought_lineups: Array[StringName] = []
 var shop_offers := 0                           # shop options shown so far (>= 2 guaranteed)
 ## The encounter being played right now, saved with the run so that leaving
 ## for the main menu mid-encounter resumes it from its beginning instead of
@@ -50,6 +54,13 @@ var pending_encounter: Dictionary = {}
 
 
 ## 1-based number of the encounter the player is about to choose/play.
+## Remembers a fight the moment it is drawn, so a resumed save cannot re-roll
+## it and a later Elite node cannot offer it again.
+func record_lineup(lineup_id: StringName) -> void:
+	if lineup_id != &"" and not fought_lineups.has(lineup_id):
+		fought_lineups.append(lineup_id)
+
+
 func encounter_number() -> int:
 	return history.size() + 1
 
@@ -196,6 +207,7 @@ func to_dict() -> Dictionary:
 		"shop_offers": shop_offers,
 		"pending_encounter": pending_encounter,
 		"bonus_rewards": bonus_rewards,
+		"fought_lineups": fought_lineups.map(func(s: StringName) -> String: return String(s)),
 	}
 
 
@@ -232,6 +244,8 @@ static func from_dict(data: Dictionary) -> RunState:
 		run.sticker_inventory.append(StringName(str(suit)))
 	for reward: Dictionary in data.get("bonus_rewards", []):
 		run.bonus_rewards.append(reward)
+	for id in data.get("fought_lineups", []):
+		run.fought_lineups.append(StringName(str(id)))
 	for id in data.get("seen_events", []):
 		run.seen_events.append(StringName(str(id)))
 	for type in data.get("history", []):

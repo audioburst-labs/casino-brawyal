@@ -58,8 +58,13 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 	_equip_best(db, run)
 	var config := EncounterFactory.combat_config(db, run, rng.stream(&"map"), option)
 	config["seed"] = rng.stream(&"combat_seeds").randi()
+	run.record_lineup(StringName(str(config.lineup)))
 	var sim := CombatSim.new(db, config)
-	if not GreedyBot.play_combat(sim):
+	var won := GreedyBot.play_combat(sim)
+	# A loan's coins landed during the fight, won or lost (0.117); the
+	# presenter applies them as they happen, the bot applies them here.
+	RunEffects.apply(sim.run_ops, db, run, rng.stream(&"rewards"))
+	if not won:
 		return false
 	run.hp = maxi(1, sim.hero.hp)
 	RunEffects.apply(sim.pending_rewards, db, run, rng.stream(&"rewards"))

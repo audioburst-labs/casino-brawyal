@@ -142,7 +142,8 @@ func test_buffed_numbers_reach_damage_nested_in_cash_in() -> void:
 
 func test_damage_amounts_covers_bonus_effects_too() -> void:
 	var pocket := _db.get_ability(&"pocket_rockets")
-	assert_eq(AbilityCard.damage_amounts(pocket), [12] as Array[int],
+	# Sheet 0.117: "Deal 6 damage twice" - one figure, hit twice.
+	assert_eq(AbilityCard.damage_amounts(pocket), [6] as Array[int],
 		"one damage figure; the Spade bonus Earns rather than repeating")
 	var bust := _db.get_ability(&"bust")
 	assert_eq(AbilityCard.damage_amounts(bust), [24] as Array[int],

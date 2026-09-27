@@ -27,6 +27,14 @@ static func combat_config(db: ContentDB, run: RunState,
 		lineup_stage = ContentDB.BOSS_STAGE
 	var lineups := db.elite_lineups() if option.type == &"elite" \
 		else db.lineups_for_stage(lineup_stage)
+	if option.type == &"elite":
+		# An Elite is fought at most once per run (designer, 0.117): a second
+		# Elite node draws from what is left. Only if every Elite has been
+		# fought does the full pool come back, rather than the run breaking.
+		var fresh := lineups.filter(func(l: Dictionary) -> bool:
+			return not run.fought_lineups.has(StringName(str(l.id))))
+		if not fresh.is_empty():
+			lineups = fresh
 	var lineup: Dictionary = lineups[rng.randi_range(0, lineups.size() - 1)]
 	# A resumed encounter names the lineup it was fighting (0.0.111), so the
 	# same fight comes back rather than a fresh roll.
@@ -40,6 +48,10 @@ static func combat_config(db: ContentDB, run: RunState,
 		"lineup": lineup.id,
 		"hero": run.hero_id,
 		"hero_hp": run.hp,
+		# Max HP travels too (0.117): a run whose ceiling was raised by a story
+		# or relic showed the raised figure in the header and the hero def's 80
+		# on the panel, because only current HP ever reached the sim.
+		"hero_max_hp": run.max_hp,
 		"abilities": run.equipped_ids,
 		"ability_tiers": run.ability_tiers,
 		"machine": run.machine,

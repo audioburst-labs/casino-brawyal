@@ -113,10 +113,14 @@ func _build_ability_card(ability_id: StringName) -> Button:
 		title_label.add_theme_color_override("font_color", TierStyle.color(shown_tier))
 	box.add_child(title_label)
 
-	var cost_text := " ".join(def.cost.map(
-		func(suit: StringName) -> String: return String(suit).left(1).to_upper()))
+	# Suit art and the use-limit pills (designer, 0.117): the cost used to be
+	# letters ("H S"), and a once-per-turn card looked like any other here.
+	box.add_child(AbilityCard.cost_row(def))
+	var limits := AbilityCard.limits_row(def)
+	if limits.get_child_count() > 0:
+		box.add_child(limits)
 	var body_label := Label.new()
-	body_label.text = "Cost: %s\n%s" % [cost_text, def.description]
+	body_label.text = def.description
 	body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	body_label.custom_minimum_size = Vector2(CARD_WIDTH - 30.0, 0)

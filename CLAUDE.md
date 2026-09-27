@@ -55,6 +55,11 @@ The balance instrument is `tests/integration/test_full_run_bot.gd`: 40 seeded fu
 
 **Options In Combat / Loans** (doc "Options In Combat" + "Loan", patch 0.22): `Phase.CHOICE` sits between ROUND_START and ASSIGNMENT. `begin_round` shows the intents, then stops and emits `choice_offered` if a living enemy's `loan` passive is due (rounds 1, 4, 7…); `choose(index)` applies the reward, pushes `{id, turns_left}` onto `hero.loans` and calls `_finish_round_start()` (spin → gift chips → ASSIGNMENT). The countdown ticks with the hero's debuffs at the end of his turn and the penalty fires at zero — it can be blocked and it can kill. Loans live in `data/loans/loans.json`; `add_chips` accepts `"suit": "random"`, and `heal`/`lose_hp` work inside combat. **Both bots must resolve `Phase.CHOICE`** or they deadlock (`GreedyBot.play_combat`, `tools/sim_cli.gd`).
 - Unit positioning (doc "Behavior → Unit Positioning", patch 0.18; per-actor seating 0.21): each side has 4 fixed slots. `CombatSim.enemies` is ordered **centre-outward** (index 0 nearest the middle of the screen) and that order is also the enemy phase's left-to-right acting order. `combat_screen.initial_slots(n)` seats the opening line (**1 unit → slot 1** — designer's call in 0.21, the doc's table still says the third slot; 2 → 0,1, 3 → 0,1,2, 4 → all) and after that **a slot is assigned once per actor and never recomputed**: `_enemy_slot_of` persists, `seat_summon(order, seats, new_id)` (pure, unit-tested) gives a summon the free slot nearest its summoner on the inward side or, with no room, pushes the summoner and everything outward of it one slot further out (the doc's rule). Dead views move to `_corpse_views` and keep their slot until the sim's `actor_removed` clears the corpse — the 0.19–0.20 code recomputed slots from the head-count on every change *and* left dead views in the row while forgetting them, which is why the line shifted on every summon. Summons insert *inward* of their summoner in the sim (`_summon_slot()` reclaims a dead ally's inner slot first, emitting `actor_removed`).
+- **Mark is a toggle, not a stack** (designer, 0.118): `_op_apply_status`
+  sets it to 1 whatever the stacks asked for, and Cash In erases it outright.
+  Before, three Marks bought three separate Cash Ins. Every Mark still fires
+  the "when you Mark" triggers (Sharp Edge) even when the enemy was already
+  marked: the trigger is the act, not the count.
 - Ace's kit comes from the capabilities spreadsheet (see the Google Drive links above): Mark/**Cash In — since v0.19 each ability carries its own payoff**, `{"op": "cash_in", "effects": [...], "else_effects": [...]}`: it consumes one Mark **from the selected target only** and runs `effects`, or runs `else_effects` when nothing is marked (the sheet's "Deal X instead" wording; an ability with no `else_effects`, like Bust, does nothing unmarked). The old flat `CombatSim.CASH_IN_BONUS` is gone. Nested effect arrays are linted recursively by `ContentDB._validate_effect`. Also: per-turn limits (`per_turn`), **per-combat limits (`per_combat`, never reset by `begin_round` — House Edge and Face Reader)**, passives (fire each round start after activation), `bonus_mode: replace`, effect `condition`s (KNOWN_CONDITIONS), and a `target: "random_enemy"` damage variant (patch 0.17, High Roller relic). Enemies: hp_min/hp_max rolled per combat, brains (see below), `summon`/`heal_allies`/`ally_attack_again`/`blackjack`/`self_heal` intent extras.
 - **The map is authored, not generated** (doc v0.122, patch 0.114). The doc replaced ten patches of procedural placement rules with six predefined **Paths**: a run picks one at its first map screen and walks it to the boss. They are transcribed from the sheet's *Encounter Choices* tab into `data/encounters/act1_paths.json` (regenerate with the converter in `scratchpad/s024/paths.py` rather than retyping). `MapGenerator.next_options(db, run, rng)` just reads the pair for the current encounter; `RunState.path_id` remembers which path and is serialised, and a save without one is adopted into a path on its next ask. **The old guarantees are now properties of the data** — #1 combat, #10 boss, two Elites after #3 two encounters apart, a Shop at #9 beside the Rest — and `test_map_generator.gd` asserts them against the shipped paths, so a designer editing the sheet still gets a failing build rather than a broken run. `MapGenerator` takes the `ContentDB` as its first argument (it is `src/core/`, so it must never touch the `Db` autoload).
 - **Elite replaced Hard Combat in patch 0.22.** The type is `&"elite"` everywhere and it has **no buffed/advanced variants**: it draws from the sheet's own Elites pool via `ContentDB.elite_lineups()` (lineups carry `"elite": true` and sit at stage 0, so `lineups_for_stage` never offers one as a normal fight), and the relic is Elite-only (`reward_screen` and `RunBot._play_combat` each implement that rule — keep them in sync). `RunState.from_dict` migrates an in-flight save's `hard_combat` history and pending encounter to `elite`.
@@ -192,15 +197,86 @@ description, then `PathRibbon` (`src/ui/map/path_ribbon.gd`) underneath.
 
 **Block gain animates from every source** (patch 0.114): `UnitView.play_block_gain(amount)` draws a shield sweeping up the unit and pulses the HP panel, and the `block_gained` handler holds the beat for 0.34 s. The event was never missing — relic and start-of-turn passive grants fire at a round start, a beat *before* the reels spin, so the old 0.4 s icon was gone while the player was still watching the machine. Anything new that grants Block must go through `EffectInterpreter._grant_block` or emit `block_gained` itself, or it will be silent.
 
-**`UnitView.refresh()` vs `refresh_statuses()` vs `refresh_block()`** (patch 0.113 — "health drops more than it should, then rises back up to the correct number"): HP and Block are the two ANIMATED readouts, stepped hit by hit by `apply_damage_display(hp_lost, blocked)`. The sim resolves a whole multi-hit attack synchronously before its first hit is drawn, so any *absolute* re-sync landing between two `damage_dealt` animations snapped the bar to the final HP and the remaining hits then subtracted again — undershoot, then a bounce back up on the next refresh. `refresh()` now re-syncs everything, `refresh_block()` only the shield, and `refresh_statuses()` only the pips/passive/loans/Mark. **Every mid-attack call site must use the narrow ones**: `status_applied`, `turn_started`/`turn_ended`, `rage_spent`, `enemy_busted` and `passive_counter` take `refresh_statuses()`, `block_gained` takes `refresh_block()`; only `healed`, `round_ended`, `loan_*` and `_refresh_all` keep the full one. 0.22 added four of those call sites at once, which is when the bounce became visible.
+**Loan coins land immediately** (0.118, "Cash Advance should always give
+coins"): while a loan's reward or penalty executes, `CombatSim.settling_loan`
+is true and the interpreter routes `gain_coins`/`lose_coins` to
+`sim.run_ops` + a `run_effect` event instead of `pending_rewards` (which a lost
+fight never paid). The presenter applies each `run_effect` to `Game.run` as it
+plays; `RunBot` applies `sim.run_ops` after the fight whichever way it went.
+`RunEffects` already clamps `lose_coins` at zero: "taking as many as it can".
+`TelemetryFilter` DROPs `run_effect` (the coins are on the run row).
+
+**Every chip arrival is animated from where it came** (0.118): `chips_generated`
+carries `source` (`earn` from an ability's `add_chips`, `gift` with the
+promising enemy's `actor`, `break` from the Golem) and the presenter flies a
+chip from Ace, the giver or the Golem into the drawer, then
+`ChipTrayView.reveal(suit)` steps the shown count up by one. `spin_resolved`
+reveals only its own `payout`. **Do not call `_tray_view.refresh()` on an
+arrival**: the sim has already put every later chip in the live tray, so a
+refresh exposed the Loan Shark's gift before its flight (designer's note). The
+old `ABILITY_ANIMS` "chip" arm is gone; it only ever covered Color Up, which is
+why Hit and Card Trick had no Earn animation.
+
+**Combat carries the run's max HP** (0.118): `EncounterFactory` passes
+`hero_max_hp` and `CombatSim` builds the hero from it, not the hero def's 80.
+Before, a max HP raised by a story or relic showed in the header and not on
+the panel ("Max HP numbers in the UI and below the character are
+inconsistent").
+
+**An Elite is fought once per run** (designer, 0.118): `RunState.fought_lineups`
+(serialised) is recorded by `Game._start_combat` and `RunBot` the moment a
+lineup is drawn, and `EncounterFactory` draws an Elite from the ones not yet
+fought, falling back to the whole pool only when every Elite has been. A
+pinned (resumed) lineup still wins, so a save never re-rolls its fight.
+
+**`UnitView.refresh()` vs `refresh_statuses()` vs `refresh_block()`** (patch 0.113 — "health drops more than it should, then rises back up to the correct number"): HP and Block are the two ANIMATED readouts, stepped hit by hit by `apply_damage_display(hp_lost, blocked)`. The sim resolves a whole multi-hit attack synchronously before its first hit is drawn, so any *absolute* re-sync landing between two `damage_dealt` animations snapped the bar to the final HP and the remaining hits then subtracted again — undershoot, then a bounce back up on the next refresh. `refresh()` now re-syncs everything, `refresh_block()` only the shield, and `refresh_statuses()` only the pips/passive/loans/Mark. **Every mid-attack call site must use the narrow ones**: `status_applied`, `turn_started`/`turn_ended`, `rage_spent`, `enemy_busted` and `passive_counter` take `refresh_statuses()`, `block_gained` takes `refresh_block()`; only `healed`, `round_ended` and `_refresh_all` keep the full one. **The three `loan_*` handlers moved to `refresh_statuses()` in 0.118**: a loan coming due emits `loan_due` and THEN its `damage_dealt`, so the full refresh in `loan_due` snapped the bar to the already-resolved HP and the hit subtracted again ("you take damage and then heal back up for your block"). `turn_started` also calls `refresh_block()` now, because the sim spends Block at the start of its owner's turn and the shield should read zero on that beat. 0.22 added four of those call sites at once, which is when the bounce became visible.
+
+**Passive plaques are badges** (0.118): `PassiveChip` draws `icon` with the
+number in a strip under it (`passive_bust.png`, `passive_break.png`), and the
+Loan Shark shows the badge alone (`show_value = false`; its countdown "serves
+no purpose for the player"). The tooltip's number comes from the def
+(`every` / `threshold`), because the keyword prose said "every 20" for two
+patches after the sheet moved the Golem to 30.
+
+**Ability lists show the real cost and the limits** (0.118): the reward screen
+and both shop views use `AbilityCard.cost_row(def)` (suit art, the socket's own
+ghost textures) and `AbilityCard.limits_row(def)` (the Per Turn / Per Fight
+pills) instead of "Cost: H S" letters. Keep new ability surfaces on the same
+two helpers.
+
+**Chip placement on abilities** (doc, 0.118): `AbilityState.placement_slot(suit)`
+is the rule, pure and tested: the first empty slot asking for that suit, else
+the leftmost empty `any`, else -1. `AbilityCard._can_drop_data/_drop_data`
+accept a drop on the card body with it; the socket buttons keep their exact
+slot drop for aimed placement.
+
+The Rest node icon is a chair (`encounter_rest.png`, regenerated 0.118), not
+a campfire; Pocket Rockets is "Deal 6 damage twice" (sheet 0.117); the Absorb
+keyword reads "Consume all chips left on abilities."
 
 **Enemy passives are worn as permanent buffs** (patch 0.113): the running number lives on `CombatActor.passive_counter` (not in a sim-side dictionary), is seeded by `CombatSim.passive_start(def.passive)` at spawn, **counts DOWN** and fires at 0 — the Dealer's Bust from 21, the Chip Golem's Break from 20 — and every change emits `passive_counter {actor, value}` so `UnitView` can tick its plaque. `_build_intent_entry` publishes the same field, so the panel and the plaque cannot disagree. Before 0.113 it counted UP in `_passive_counters` and nothing showed it.
+
+**The presenter's busy flag is a single point of failure, and it is watched**
+(patch 0.118). Every interaction is gated on `_busy`; `_play_events` is awaited
+and sets it back. A script error inside ANY awaited handler aborts that
+coroutine, the `await` never resumes, and `_busy` stays true forever: every
+drop, click and Pass is ignored while the animations keep going. That is the
+designer's "the game gets completely stuck the first time you Mark an enemy",
+which did not reproduce here in six configurations (sim, standalone, three
+real-run drives, the exported exe). GDScript cannot catch it, so `_process`
+watches: past `BUSY_WATCHDOG_MS` it logs the event being played, records a
+`presenter_stuck` telemetry row, clears the flag and re-syncs. **The player's
+`godot.log` is the diagnostic**: a stuck fight now names its event there.
+Never remove the watchdog to "clean up"; make the handlers not throw instead.
+Also from that hunt: `CB_DEBUG_AUTOFIRE` and `CB_DEBUG_ENDTURN` now work
+inside a real run and `AUTOFIRE` takes a comma list (`"1,3"` = Card Sling then
+Double Down), which is what made a run-mode drive possible at all.
 
 **Combat presenter contracts** (patch 0.19–0.20): the chip tray draws from `ChipTrayView._shown`, not from the live `ChipTray` — the sim resolves an ability the instant its last socket fills, so a Go Again's winnings are already in the tray before the reels are seen to spin for them. `chip_assigned` calls `spend(suit)`; only `spin_resolved` (after `_payout_flourish`) and the discard/unassign paths `refresh()`. `Targeting.effective_target()` **records every branch it resolves**, including the lone-enemy shortcut — leaving that one unrecorded is what let a summon steal the target (patch 0.20). Live ability numbers walk the effect tree recursively via `AbilityCard.damage_amounts()`: since the Cash In rework a damage op can be nested in `cash_in.effects`/`else_effects` or duplicated in `bonus_effects`, and a top-level-only walk silently skipped Double Down, Bust and On a Roll.
 
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
-**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
 
 **Telemetry** (patch 0.115). The game spools play data to
 `user://telemetry/spool.ndjson` and POSTs batches to the ingest service in

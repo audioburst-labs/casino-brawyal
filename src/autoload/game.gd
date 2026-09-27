@@ -250,6 +250,9 @@ func _start_combat(option: Dictionary) -> void:
 		rng.stream(&"combat_seeds").randi()))
 	run.pending_encounter["lineup"] = String(config.lineup)
 	run.pending_encounter["seed"] = int(config.seed)
+	# Remembered the moment it is drawn (0.117): an Elite is fought once per
+	# run, so the factory needs to know this one before the next Elite node.
+	run.record_lineup(StringName(str(config.lineup)))
 	config["run_mode"] = true
 	_combat_gold = Vector2i(int(config.gold_min), int(config.gold_max))
 	var start := func() -> void:

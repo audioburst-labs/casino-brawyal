@@ -31,6 +31,20 @@ func can_accept(slot_index: int, suit: StringName) -> bool:
 	return required == &"any" or required == suit
 
 
+## Where a chip dropped on the CARD rather than on a socket should go (doc
+## "Chip Placement on Abilities", patch 0.117): the first empty slot that
+## asks for this exact suit, else the leftmost empty generic slot, else -1.
+## Pure, so the presenter's drop handler and the tests agree.
+func placement_slot(suit: StringName) -> int:
+	for i in filled.size():
+		if filled[i] == &"" and def.cost[i] == suit:
+			return i
+	for i in filled.size():
+		if filled[i] == &"" and def.cost[i] == &"any":
+			return i
+	return -1
+
+
 func fill(slot_index: int, suit: StringName) -> void:
 	filled[slot_index] = suit
 

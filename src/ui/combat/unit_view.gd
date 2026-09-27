@@ -81,6 +81,12 @@ class PassiveChip:
 	extends Control
 
 	var value := 0
+	## The passive's badge art (0.117, designer: "an icon with numbers below
+	## it, not a plain square"). With no icon the plaque falls back to the
+	## number alone. `show_value` false draws the badge only: the Loan Shark's
+	## countdown "serves no purpose for the player".
+	var icon: Texture2D = null
+	var show_value := true
 	var tint := Color(1.0, 0.78, 0.34)
 	var pulse := 0.0:
 		set(v):
@@ -99,6 +105,26 @@ class PassiveChip:
 		if pulse > 0.0:
 			draw_rect(plate.grow(2.0 + 6.0 * pulse),
 				Color(tint.r, tint.g, tint.b, 0.55 * pulse), false, 3.0)
+		if icon != null:
+			# The badge fills the plate's width; the number, if shown, sits
+			# in a strip underneath it.
+			var side := size.x - 6.0
+			draw_texture_rect(icon, Rect2(Vector2(3.0, 2.0), Vector2(side, side)), false)
+			if not show_value:
+				return
+			var font := get_theme_default_font()
+			if font == null:
+				return
+			var body := str(value)
+			var font_size := 15 if body.length() < 3 else 13
+			var extent := font.get_string_size(body, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+			var at := Vector2((size.x - extent.x) * 0.5, size.y - 3.0)
+			var lit := tint.lerp(Color.WHITE, 0.35 + 0.65 * pulse)
+			# A dark keyline so the digit reads over the art.
+			draw_string(font, at + Vector2(1, 1), body, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				font_size, Color(0, 0, 0, 0.8))
+			draw_string(font, at, body, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, lit)
+			return
 		draw_rect(plate, Color(0.07, 0.06, 0.10, 0.94), true)
 		# A doubled bezel reads as a token rather than a flat swatch.
 		draw_rect(plate, Color(tint.r, tint.g, tint.b, 0.95), false, 2.0)
@@ -397,13 +423,27 @@ func _add_passive_chip() -> void:
 	var kind := str(def.passive.get("type", ""))
 	var tint: Color = PASSIVE_TINTS.get(kind, Color(0.9, 0.9, 0.95))
 	var keyword := Db.content.get_keyword(StringName(kind))
-	var hint := "%s: %s" % [
-		keyword.name if keyword != null else kind.capitalize(),
-		keyword.text if keyword != null else "a passive this enemy always has"]
+	var text := keyword.text if keyword != null else "a passive this enemy always has"
+	# The number in the tooltip is the DEF's, not the keyword's prose (0.117):
+	# the Chip Golem went to "every 30" in the sheet and the tooltip kept
+	# saying 20 for two patches. Break reads `every`, Bust `threshold`.
+	var figure := int(def.passive.get("every", def.passive.get("threshold", 0)))
+	if figure > 0:
+		var keyword_figure := 21 if kind == "bust" else 20
+		text = text.replace(str(keyword_figure), str(figure))
+	var hint := "%s: %s" % [keyword.name if keyword != null else kind.capitalize(), text]
 	var chip := PassiveChip.new()
-	chip.custom_minimum_size = Vector2(38, 33)
+	chip.custom_minimum_size = Vector2(50, 64) if kind != "loan" else Vector2(48, 48)
 	chip.tint = tint
 	chip.value = actor.passive_counter
+	# Badge art per passive (0.117). The Loan Shark shows the badge alone:
+	# "numbers in a square that serve no purpose for the player".
+	var art: String = {"bust": "res://assets/icons/passive_bust.png",
+		"break": "res://assets/icons/passive_break.png",
+		"loan": LOAN_ICON}.get(kind, "")
+	if art != "" and ResourceLoader.exists(art):
+		chip.icon = load(art)
+	chip.show_value = kind != "loan"
 	chip.tooltip_text = hint
 	chip.mouse_filter = Control.MOUSE_FILTER_PASS
 	_status_row.add_child(chip)

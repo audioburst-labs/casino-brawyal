@@ -74,7 +74,7 @@
     {
       "id": "absorb",
       "name": "Absorb",
-      "text": "Remove all chips placed on abilities."
+      "text": "Consume all chips left on abilities."
     },
     {
       "id": "bust",
@@ -84,7 +84,7 @@
     {
       "id": "break",
       "name": "Break",
-      "text": "For every 20 health it loses, you gain a random Chip."
+      "text": "For every 30 health it loses, you gain a random Chip."
     },
     {
       "id": "loan",

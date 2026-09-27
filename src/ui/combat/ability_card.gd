@@ -48,6 +48,72 @@ func accepts_chip(slot: int, suit: StringName) -> bool:
 	return not _state.exhausted() and _state.can_accept(slot, suit)
 
 
+## Doc "Chip Placement on Abilities" (0.117): a chip dropped on the CARD, not
+## on a socket, goes to the slot that asks for its suit first, else the
+## leftmost open generic slot. The socket buttons keep their own exact-slot
+## drop, so aiming still works; this is the forgiving path around them.
+func _can_drop_data(_position: Vector2, data: Variant) -> bool:
+	if not (data is Dictionary and data.has("suit")) or _state == null:
+		return false
+	return not _state.exhausted() and _state.placement_slot(data.suit) >= 0
+
+
+func _drop_data(_position: Vector2, data: Variant) -> void:
+	var slot := _state.placement_slot(data.suit)
+	if slot >= 0:
+		chip_dropped.emit(ability_index, slot, data.suit)
+
+
+## The cost as suit ART rather than letters (designer, 0.117: "show the Heart
+## symbol itself, not the letter H"). Shared by the reward screen, the shop
+## and the loadout so every list agrees with the card.
+static func cost_row(def: Defs.AbilityDef, side := 26.0) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for suit: StringName in def.cost:
+		var face := TextureRect.new()
+		face.custom_minimum_size = Vector2(side, side)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# The same ghost art the combat card's empty socket wears, so "any"
+		# is the four-suit cluster here as well.
+		face.texture = SuitAssets.suit_texture(suit)
+		if face.texture == null:
+			# No art for this suit: a small labelled disc rather than nothing.
+			var label := Label.new()
+			label.text = "?" if suit == &"any" else String(suit).left(1).to_upper()
+			label.add_theme_font_size_override("font_size", int(side * 0.6))
+			label.custom_minimum_size = Vector2(side, side)
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			row.add_child(label)
+			continue
+		face.tooltip_text = "Any suit" if suit == &"any" else String(suit).capitalize()
+		row.add_child(face)
+	return row
+
+
+## The use-limit pills, for lists outside combat (designer, 0.117: "all
+## appearances of abilities should show whether they are once per turn or
+## once per fight"). Empty when the ability has no limit.
+static func limits_row(def: Defs.AbilityDef) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if def.per_turn > 0:
+		row.add_child(_limit_pill("%d Per Turn" % def.per_turn, PER_TURN_FILL,
+			"Usable %d time(s) each turn." % def.per_turn))
+	if def.per_combat > 0:
+		row.add_child(_limit_pill("%d Per Fight" % def.per_combat, PER_FIGHT_FILL,
+			"Usable %d time(s) this fight, and never refreshed between turns."
+			% def.per_combat))
+	return row
+
+
 ## The doc's two indicator colours: lavender for a per-turn cap, peach for a
 ## per-fight one, both with dark text so they read against the card art.
 const PER_TURN_FILL := Color(0.63, 0.51, 0.81)

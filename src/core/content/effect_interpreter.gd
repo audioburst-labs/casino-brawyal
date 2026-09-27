@@ -100,7 +100,9 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 							continue
 						suit = spent[mini(i, spent.size() - 1)]
 					sim.tray.add(suit, 1)
-					sim.emit_event(&"chips_generated", {"suit": suit, "count": 1})
+					# "earn" tells the presenter this chip came from an ability, so
+					# it flies from Ace rather than appearing in the drawer (0.117).
+					sim.emit_event(&"chips_generated", {"suit": suit, "count": 1, "source": "earn"})
 				# Earn: "when you Earn..." passives fire once per op, not per
 				# chip, so Chip Tricks pays the same for one chip or three.
 				sim.on_chips_earned(count)
@@ -109,7 +111,15 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 			"respin_reel":
 				sim.spin_again()
 			"gain_coins", "grant_relic", "lose_coins":
-				sim.pending_rewards.append(effect)
+				if sim.settling_loan and str(effect.get("op", "")) != "grant_relic":
+					# A loan's coins land now (0.117): queued for the end of
+					# the fight, a lost fight paid nothing and a won one paid
+					# late. RunEffects clamps lose_coins at zero, which is the
+					# sheet's "taking as many as it can".
+					sim.run_ops.append(effect)
+					sim.emit_event(&"run_effect", effect.duplicate())
+				else:
+					sim.pending_rewards.append(effect)
 			var unknown:
 				push_error("EffectInterpreter: unknown op '%s'" % unknown)
 
@@ -223,9 +233,7 @@ static func _op_cash_in(effect: Dictionary, sim: CombatSim,
 		source: CombatActor, target: CombatActor) -> void:
 	var cashed := target != null and target.is_alive() and target.has_status(&"mark")
 	if cashed:
-		target.statuses[&"mark"] -= 1
-		if target.statuses[&"mark"] <= 0:
-			target.statuses.erase(&"mark")
+		target.statuses.erase(&"mark")   # a toggle: cashing it clears it
 		sim.emit_event(&"mark_cashed", {"actor": target.id})
 	var payoff := _effect_list(effect, "effects" if cashed else "else_effects")
 	if not payoff.is_empty():
@@ -256,7 +264,14 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 	for recipient: CombatActor in recipients:
 		if not recipient.is_alive():
 			continue
-		recipient.apply_status(status, stacks)
+		if status == &"mark":
+			# Mark is a toggle, not a stack (designer, 0.117): an enemy is
+			# marked or it is not, and one Cash In spends the whole thing.
+			# Before this, three Marks bought three separate Cash Ins.
+			recipient.statuses[&"mark"] = 1
+			stacks = 1
+		else:
+			recipient.apply_status(status, stacks)
 		sim.emit_event(&"status_applied",
 			{"actor": recipient.id, "status": status, "stacks": stacks})
 		# Sharp Edge: "when you Mark, also deal X" (sheet v0.122).

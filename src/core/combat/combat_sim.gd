@@ -50,7 +50,14 @@ var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
 ## Chips a Gift move promised; handed over after the next spin so the player
 ## sees them arrive with the payout.
 var _pending_gift_chips := 0
+var _gift_giver: StringName = &""   # who promised them, for the arrival animation
 var _pending_choice: Dictionary = {}
+## Run-level ops that must land NOW rather than when the fight ends (0.117):
+## a loan's coins. "Cash Advance should always give coins" - a lost fight
+## paid nothing while they sat in pending_rewards. The presenter applies each
+## one as its `run_effect` event plays; the bot applies the list afterwards.
+var run_ops: Array[Dictionary] = []
+var settling_loan := false
 var _dmg_mult := 1.0
 var _hp_mult := 1.0
 var _events: Array[CombatEvent] = []
@@ -73,9 +80,12 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 	_hp_mult = float(config.get("hp_mult", 1.0))
 
 	var hero_def := db.get_hero(StringName(str(config.get("hero", "ace"))))
-	hero = CombatActor.new(&"hero", hero_def.id, hero_def.name, hero_def.max_hp, true)
+	# The run's ceiling, not the def's (0.117): a raised max HP used to reach
+	# the header but never the fighter, so the two readings disagreed.
+	var ceiling := int(config.get("hero_max_hp", hero_def.max_hp))
+	hero = CombatActor.new(&"hero", hero_def.id, hero_def.name, ceiling, true)
 	if config.has("hero_hp"):
-		hero.hp = int(config["hero_hp"])
+		hero.hp = mini(int(config["hero_hp"]), ceiling)
 
 	# Each equipped ability enters at the tier the run owns it at (v0.19).
 	var tiers: Dictionary = config.get("ability_tiers", {})
@@ -254,7 +264,10 @@ func _grant_random_chip(source: StringName) -> void:
 	var suit: StringName = ContentDB.SUITS[
 		rng.stream(&"combat").randi_range(0, ContentDB.SUITS.size() - 1)]
 	tray.add(suit, 1)
-	emit_event(&"chips_generated", {"suit": suit, "count": 1, "source": source})
+	var data := {"suit": suit, "count": 1, "source": source}
+	if source == &"gift":
+		data["actor"] = _gift_giver
+	emit_event(&"chips_generated", data)
 
 
 ## Loan passive: "at the start of every 3 rounds, offer 1 of 2 loans".
@@ -317,7 +330,9 @@ func choose(index: int) -> bool:
 	if loan == null:
 		_finish_round_start()
 		return true
+	settling_loan = true
 	EffectInterpreter.execute(loan.reward, self, hero, targeting.effective_target(enemies))
+	settling_loan = false
 	hero.loans.append({"id": loan.id, "turns_left": loan.turns})
 	emit_event(&"loan_taken", {"loan": loan.id, "title": loan.title,
 		"turns": loan.turns, "penalty_text": loan.penalty_text})
@@ -519,7 +534,9 @@ func _tick_loans() -> void:
 			continue
 		emit_event(&"loan_due", {"loan": def.id, "title": def.title,
 			"penalty_text": def.penalty_text})
+		settling_loan = true
 		EffectInterpreter.execute(def.penalty, self, hero, null)
+		settling_loan = false
 		_check_hero_death()
 		if phase == Phase.ENDED:
 			return
@@ -720,6 +737,7 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 
 	if int(intent.get("gift_chips", 0)) > 0:
 		_pending_gift_chips += int(intent.get("gift_chips"))
+		_gift_giver = enemy.id
 		emit_event(&"gift_promised",
 			{"actor": enemy.id, "count": int(intent.get("gift_chips"))})
 

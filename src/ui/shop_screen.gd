@@ -278,8 +278,12 @@ func _ability_offer(offer: Dictionary) -> Control:
 		name_label.add_theme_color_override("font_color", TierStyle.color(shown_tier))
 	column.add_child(name_label)
 
+	column.add_child(AbilityCard.cost_row(def, 22.0))
+	var limits := AbilityCard.limits_row(def)
+	if limits.get_child_count() > 0:
+		column.add_child(limits)
 	var text := Label.new()
-	text.text = "%s\n%s" % [_cost_text(def), def.description]
+	text.text = def.description
 	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD
 	text.custom_minimum_size = Vector2(OFFER_SIZE.x - 26.0, 0)
@@ -352,11 +356,6 @@ func _price_button(key: String, price: int, on_buy: Callable) -> Button:
 		_store_stock()
 		_refresh())
 	return button
-
-
-func _cost_text(def: Defs.AbilityDef) -> String:
-	return "Cost: " + " ".join(def.cost.map(
-		func(suit: StringName) -> String: return String(suit).left(1).to_upper()))
 
 
 # ---- the player's own loadout ------------------------------------------
@@ -448,13 +447,16 @@ func _show_preview(anchor: Control, id: StringName, tier: int) -> void:
 		title.add_theme_color_override("font_color", TierStyle.color(tier))
 	column.add_child(title)
 
-	for line in [_cost_text(def), def.description]:
-		var text := Label.new()
-		text.text = line
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		text.custom_minimum_size = Vector2(280, 0)
-		text.add_theme_font_size_override("font_size", 16)
-		column.add_child(text)
+	column.add_child(AbilityCard.cost_row(def))
+	var limits := AbilityCard.limits_row(def)
+	if limits.get_child_count() > 0:
+		column.add_child(limits)
+	var text := Label.new()
+	text.text = def.description
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.custom_minimum_size = Vector2(280, 0)
+	text.add_theme_font_size_override("font_size", 16)
+	column.add_child(text)
 
 	add_child(_preview)
 	await get_tree().process_frame
