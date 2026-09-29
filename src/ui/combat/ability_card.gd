@@ -36,6 +36,10 @@ class SocketButton:
 	var card: AbilityCard
 	var slot := 0
 
+	## A socket is heard through `chip_assigned`, not as a button click.
+	func _init() -> void:
+		set_meta(&"silent", true)
+
 	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
 		return data is Dictionary and data.has("suit") \
 			and card.accepts_chip(slot, data.suit)

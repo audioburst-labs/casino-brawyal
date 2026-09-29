@@ -140,5 +140,6 @@ func _build_ability_card(ability_id: StringName) -> Button:
 
 
 func _pick_ability(ability_id: StringName) -> void:
+	Audio.play_sfx(&"reward_pick")
 	Game.run.acquire_ability(ability_id)
 	Game.encounter_finished()

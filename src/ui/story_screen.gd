@@ -39,6 +39,7 @@ func setup(args: Dictionary) -> void:
 
 
 func _pick(choice: Dictionary) -> void:
+	Audio.play_sfx(&"ui_confirm")
 	Game.commit_encounter()   # the choice is made; nothing left to replay
 	var lines := RunEffects.apply(choice.get("effects", []),
 		Db.content, Game.run, Game.rng.stream(&"rewards"))

@@ -72,7 +72,9 @@ func _option_card(option: Dictionary) -> Button:
 	var type := StringName(option.type)
 	var button := Button.new()
 	button.custom_minimum_size = CARD_SIZE
-	button.pressed.connect(func() -> void: Game.choose_encounter(option))
+	button.pressed.connect(func() -> void:
+		Audio.play_sfx(&"ui_confirm")
+		Game.choose_encounter(option))
 
 	var column := VBoxContainer.new()
 	column.set_anchors_preset(Control.PRESET_FULL_RECT)

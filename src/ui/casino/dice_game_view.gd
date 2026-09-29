@@ -117,6 +117,7 @@ func _on_roll() -> void:
 		return
 	# The first die is the point of no return for this encounter.
 	Game.commit_encounter()
+	Audio.play_sfx(&"dice_roll")
 	_roll_button.disabled = true
 	_cash_button.disabled = true
 	var value := _game.roll(_rng)
@@ -168,6 +169,7 @@ func _refresh() -> void:
 
 
 func _on_cash_out() -> void:
+	Audio.play_sfx(&"coins_gain")
 	if not _game.can_cash_out():
 		return
 	var payout := _game.cash_out(Game.run)

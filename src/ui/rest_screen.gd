@@ -22,6 +22,7 @@ func _ready() -> void:
 
 func _on_rest() -> void:
 	Game.commit_encounter()
+	Audio.play_sfx(&"heal")
 	var healed: int = mini(int(ceil(Game.run.max_hp * 0.3)), Game.run.max_hp - Game.run.hp)
 	Game.run.hp += healed
 	_finish("You rest by the fire.\n+%d HP" % healed)

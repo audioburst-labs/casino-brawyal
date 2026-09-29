@@ -52,6 +52,8 @@ func start(rng: RandomNumberGenerator) -> void:
 	add_theme_constant_override("separation", 18)
 
 	_reels = ReelStrip.new()
+	_reels.reel_stopped.connect(func(_index: int) -> void:
+		Audio.play_sfx(&"reel_stop", 0.03))
 	_reels.framed = false
 	_reels.shrink_to_fit = false
 	_reels.window_size = WINDOW
@@ -125,6 +127,7 @@ func _on_spin() -> void:
 	_spin_used = true
 	# The winnings are banked the moment the reels roll (0.0.111).
 	Game.commit_encounter()
+	Audio.play_sfx(&"lever_pull")
 	_spin_button.disabled = true
 	_done_button.disabled = true
 	var relics: Array = result.get("relics", [])

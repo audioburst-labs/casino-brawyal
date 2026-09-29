@@ -140,6 +140,7 @@ func _refresh() -> void:
 func _on_slot_clicked(reel_index: int, slot_index: int) -> void:
 	if _held == &"":
 		return
+	Audio.play_sfx(&"sticker_place")
 	Game.run.machine.apply_sticker(reel_index, slot_index, _held)
 	Game.run.sticker_inventory.erase(_held)
 	_held = &""

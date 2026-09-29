@@ -272,6 +272,7 @@ func _on_shuffle() -> void:
 			.set_trans(Tween.TRANS_SINE)
 		swing.tween_property(card, "position", pile, 0.14) \
 			.set_trans(Tween.TRANS_SINE)
+		Audio.play_sfx(&"card_shuffle")
 		await get_tree().create_timer(0.17).timeout
 
 	# ---- deal back out, left to right, and let the dust settle behind them.
@@ -304,6 +305,7 @@ func _on_card_pressed(index: int) -> void:
 	Game.commit_encounter()
 	for card in _cards:
 		card.disabled = true
+	Audio.play_sfx(&"card_flip")
 	_flip(index, true)
 	_hint.text = "..."
 	await get_tree().create_timer(0.85).timeout

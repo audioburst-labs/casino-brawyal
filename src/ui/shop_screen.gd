@@ -537,6 +537,7 @@ func _refresh_machine() -> void:
 
 
 func _buy_reel() -> void:
+	Audio.play_sfx(&"shop_buy")
 	Game.run.machine.add_reel()
 	# ONLY the reel is re-priced. Regenerating the whole stock here re-rolled
 	# the abilities, the relics and the sticker prices too, so buying a reel
@@ -546,21 +547,25 @@ func _buy_reel() -> void:
 
 
 func _buy_sticker(suit: StringName) -> void:
+	Audio.play_sfx(&"shop_buy")
 	Game.run.sticker_inventory.append(suit)
 	_selected_sticker = suit
 
 
 func _buy_relic(relic_id: StringName) -> void:
+	Audio.play_sfx(&"shop_buy")
 	Game.run.relic_ids.append(relic_id)
 
 
 func _buy_ability(ability_id: StringName) -> void:
+	Audio.play_sfx(&"shop_buy")
 	Game.run.acquire_ability(ability_id)
 
 
 func _apply_sticker(reel_index: int, slot_index: int) -> void:
 	if _selected_sticker == &"":
 		return
+	Audio.play_sfx(&"sticker_place")
 	Game.run.machine.apply_sticker(reel_index, slot_index, _selected_sticker)
 	Game.run.sticker_inventory.erase(_selected_sticker)
 	_selected_sticker = &""

@@ -8,10 +8,14 @@ config_version=5
 
 config/name="Casino Brawyal"
 config/description="A slot-machine roguelike battler."
-config/version="0.0.119"
+config/version="0.0.120"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5")
 config/icon="res://icon.svg"
+
+[audio]
+
+buses/default_bus_layout="res://default_bus_layout.tres"
 
 [autoload]
 
@@ -19,6 +23,7 @@ Db="*res://src/autoload/db.gd"
 Game="*res://src/autoload/game.gd"
 Fx="*res://src/autoload/fx.gd"
 Telemetry="*res://src/autoload/telemetry.gd"
+Audio="*res://src/autoload/audio.gd"
 
 [display]
 

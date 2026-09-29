@@ -87,7 +87,7 @@ func _scan(dir_path: String, offenders: Array[String]) -> void:
 ## A word boundary matters: `CasinoGame.spin()` and `DiceGame.TARGET` both
 ## contain the substring "Game." and neither is an autoload reference.
 func _check_file(path: String, offenders: Array[String]) -> void:
-	var pattern := RegEx.create_from_string("\\b(Telemetry|Game|Db|Fx)\\.")
+	var pattern := RegEx.create_from_string("\\b(Telemetry|Game|Db|Fx|Audio)\\.")
 	var source := FileAccess.get_file_as_string(path)
 	for line in source.split("\n"):
 		var code := line.strip_edges()

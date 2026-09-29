@@ -20,6 +20,10 @@ var telemetry_enabled := DEFAULT_TELEMETRY
 var telemetry_notice_seen := false
 var volume_pct := 80.0
 var muted := false
+## Patch 0.120: the Music and Sfx buses get their own levels. Music sits a
+## notch under the effects by default so a hit still lands over the band.
+var music_pct := 80.0
+var sfx_pct := 100.0
 var fullscreen := false
 var max_fps := 60
 ## Anything a newer build wrote that this one does not know about, kept so a
@@ -45,6 +49,8 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	var audio: Dictionary = data.get("audio", {}) if data.get("audio") is Dictionary else {}
 	settings.volume_pct = clampf(float(audio.get("volume_pct", 80.0)), 0.0, 100.0)
 	settings.muted = bool(audio.get("muted", false))
+	settings.music_pct = clampf(float(audio.get("music_pct", 80.0)), 0.0, 100.0)
+	settings.sfx_pct = clampf(float(audio.get("sfx_pct", 100.0)), 0.0, 100.0)
 	var display: Dictionary = data.get("display", {}) if data.get("display") is Dictionary else {}
 	settings.fullscreen = bool(display.get("fullscreen", false))
 	settings.max_fps = int(display.get("max_fps", 60))
@@ -61,7 +67,8 @@ func save(path: String = DEFAULT_PATH) -> bool:
 			"enabled": telemetry_enabled,
 			"notice_seen": telemetry_notice_seen,
 		},
-		"audio": {"volume_pct": volume_pct, "muted": muted},
+		"audio": {"volume_pct": volume_pct, "muted": muted,
+			"music_pct": music_pct, "sfx_pct": sfx_pct},
 		"display": {"fullscreen": fullscreen, "max_fps": max_fps},
 	}
 	for key: String in _unknown:

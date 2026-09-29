@@ -40,6 +40,10 @@ func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 	current_screen_path = scene_path
 	if not scene_path.ends_with("combat_screen.tscn"):
 		live_hp = -1
+	# Every screen has a theme (patch 0.120; `test_screen_music.gd` proves no
+	# screen ships silent). `args.music` overrides it: the boss fight.
+	Audio.play_music(ScreenMusic.track_for(scene_path, args))
+	Audio.play_ambience(ScreenMusic.ambience_for(scene_path))
 	var screen: Node = load(scene_path).instantiate()
 	_screen_root.add_child(screen)
 	if not args.is_empty() and screen.has_method("setup"):
@@ -254,6 +258,8 @@ func _start_combat(option: Dictionary) -> void:
 	# run, so the factory needs to know this one before the next Elite node.
 	run.record_lineup(StringName(str(config.lineup)))
 	config["run_mode"] = true
+	if option.type == &"boss":
+		config["music"] = "boss"           # read by goto_screen, ignored by the sim
 	_combat_gold = Vector2i(int(config.gold_min), int(config.gold_max))
 	var start := func() -> void:
 		goto_screen("res://scenes/screens/combat_screen.tscn", config)
@@ -302,6 +308,7 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 		on_done.call()
 		return
 	cinematic_playing = true
+	Audio.stop_music(0.5)                  # the clip carries its own score
 	var layer := CanvasLayer.new()
 	layer.layer = 50
 	var backdrop := ColorRect.new()
@@ -312,6 +319,7 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 	player.stream = load(path)
 	player.expand = true
 	player.autoplay = true
+	player.bus = &"Music"                  # so the Music slider governs it too
 	player.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(player)
 	var finish := func() -> void:

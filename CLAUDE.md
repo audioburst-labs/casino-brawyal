@@ -161,7 +161,7 @@ not add a second entry to the history) and stages the prize on
 on the loss** — the relic is the prize for beating the guards, so the story
 screen must never hand it over itself.
 
-**Exactly three autoloads** (`project.godot` order matters: Db before Game): `Db` (loads ContentDB), `Game` (RunState + screen routing + cinematics + `current_screen_path`, used by HeaderHud to hide itself outside a run), `Fx` (shake/hit-stop/floating numbers, plus the custom cursor — `Fx.init_cursor()`/`Fx.set_cursor_grabbing()`). `Game.goto_screen()` swaps children under Main's ScreenRoot — it must `remove_child` before `queue_free` (same-name siblings get auto-renamed otherwise). The **shop** (`src/ui/shop_screen.gd`) is laid out to the mock in the doc, which the text export drops — pull the doc as `?export=zip` to get its images (`image4.png` is the shop, `image2.png` the Ultimate reference). It hides `ScreenBase`'s title/content stack and draws its own board, and reuses `LayoutTab.AbilityChit` / `LayoutTab.DropZone` rather than adding a third copy of the drag-and-drop classes. Screens extend `ScreenBase`; combat UI components (`src/ui/combat/`) are built procedurally in code rather than as .tscn files — scene files here are one-node skeletons. `AbilityCard` and `UnitView` keep **constant frames** and shrink their own text to fit (`_fit_description_font`, `_name_font_size`) — measure with `get_theme_font(...)` only after the Control is in the tree, or the theme variation's real font is not what you measured. Relic art goes through `SuitAssets.relic_texture(id)`, which falls back to the house chip — the two relic UIs used to interpolate the path by hand and silently render *nothing* on a miss, which is how Gambler's Confidence went invisible after its rename. A `Button.icon` is drawn at the texture's native size: suit/relic art is 1024px square, so put it in an inset child `TextureRect` (the socket pattern) rather than assigning `icon`.
+**Exactly five autoloads** (`project.godot` order matters: Db before Game): `Db` (loads ContentDB), `Game` (RunState + screen routing + cinematics + `current_screen_path`, used by HeaderHud to hide itself outside a run), `Fx` (shake/hit-stop/floating numbers, plus the custom cursor — `Fx.init_cursor()`/`Fx.set_cursor_grabbing()`), `Telemetry` and `Audio` (both inert headless, both reference no other autoload; see their sections). `Game.goto_screen()` swaps children under Main's ScreenRoot — it must `remove_child` before `queue_free` (same-name siblings get auto-renamed otherwise). The **shop** (`src/ui/shop_screen.gd`) is laid out to the mock in the doc, which the text export drops — pull the doc as `?export=zip` to get its images (`image4.png` is the shop, `image2.png` the Ultimate reference). It hides `ScreenBase`'s title/content stack and draws its own board, and reuses `LayoutTab.AbilityChit` / `LayoutTab.DropZone` rather than adding a third copy of the drag-and-drop classes. Screens extend `ScreenBase`; combat UI components (`src/ui/combat/`) are built procedurally in code rather than as .tscn files — scene files here are one-node skeletons. `AbilityCard` and `UnitView` keep **constant frames** and shrink their own text to fit (`_fit_description_font`, `_name_font_size`) — measure with `get_theme_font(...)` only after the Control is in the tree, or the theme variation's real font is not what you measured. Relic art goes through `SuitAssets.relic_texture(id)`, which falls back to the house chip — the two relic UIs used to interpolate the path by hand and silently render *nothing* on a miss, which is how Gambler's Confidence went invisible after its rename. A `Button.icon` is drawn at the texture's native size: suit/relic art is 1024px square, so put it in an inset child `TextureRect` (the socket pattern) rather than assigning `icon`.
 
 **Header numbers never move** (patch 0.22): every numeric label in the header reserves a fixed `custom_minimum_size.x` measured from its widest reading in the real theme font (`_reserve_number_widths`, deferred because a Label only resolves its theme font inside the tree) and is right-aligned in it. Alfa Slab One has proportional digits and both header rows are positioned each frame from their own measured width, so without this `00:01` → `00:11` dragged every sibling sideways once a second. **The HP reading is the exception to the right-alignment** (patch 0.113): it is LEFT-aligned in its column and shares a 5 px `health_box` with the heart, because right-aligning a two-digit reading inside a `999/999` column parked it a thumb's width from the icon. `_reserve()` takes the alignment as an argument for exactly this.
 
@@ -341,6 +341,52 @@ modifiers, so its printed number is right as it is.
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
 **Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_BACKDROP_LOUD=1` (exaggerate every living-backdrop motion for review, 0.119), `CB_DEBUG_DRAG=N` (drag the first tray chip onto ability N through the real GUI, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+
+**Audio** (patch 0.120). Music per screen, a casino-floor ambience on the hub
+screens, and a one-shot per presenter beat. Providers are Google Lyria 3.5
+(Gemini API) for music and Stable Audio 2.5 on Replicate for effects and
+ambience, chosen after a network survey: `api.elevenlabs.io`, `api.stability.ai`
+and `api.suno.ai` are TLS-blocked from the office like HeyGen, and Azure AI
+Foundry has no music or SFX model. Keys `GEMINI_API_KEY` (paid tier) and
+`REPLICATE_API_TOKEN` (prepaid) live in `.env`; `tools/audio/README.md` has the
+signup steps. Rules worth keeping:
+- **`SoundBank` (`src/core/audio/`) is the one list of ids.** The manifest
+  must name exactly these ids, every `Audio.play_*(&"...")` in `src/ui` must
+  name one, and `test_audio_manifest.gd` holds the three together. An entry
+  without a file is `"pending": true`; a recorded sound dropped in by hand is
+  `"source": "library"`. Regenerate with `node tools/audio/generate_audio.mjs`
+  and then `--import` from PowerShell.
+- **The `Audio` autoload is inert headless** (`is_live()` false, no players,
+  every public method returns on its first line) and never `push_error`s: an
+  unknown id or a missing file is a silent no-op, so a sound can never be the
+  awaited handler that throws and freezes `_busy`. `CB_AUDIO=0` silences a
+  windowed run.
+- **Duck the player, never the bus.** The Settings sliders read bus levels
+  live; `duck()` moves the active music deck's `volume_db` and comes back.
+  Music tweens `set_ignore_time_scale(true)` because `Fx.hitstop` drops
+  `Engine.time_scale` to 0.05.
+- **Music routes through `ScreenMusic.track_for(scene, args)`** in
+  `Game.goto_screen`; `args.music` overrides it, which is how the boss fight
+  gets its theme (`_start_combat` sets `config["music"] = "boss"`; the sim
+  ignores the key). `test_screen_music.gd` walks `res://scenes/screens` so a
+  new screen cannot ship silent. Reward, loadout and sticker screens share the
+  map theme so it does not restart between fights; the casino shares the shop's.
+- **One hook for every button**: `node_added` connects `ui_hover`/`ui_press`
+  to any `BaseButton` unless it carries the `silent` meta. Chip buttons and
+  card sockets set it in `_init()` because they are heard through
+  `chip_pickup`/`chip_assigned`; anything with its own sound should do the same.
+- `SfxThrottle` denies a repeat of the same id inside 40 ms, because the sim
+  resolves a three-hit attack in one call and three `hit_enemy` on one frame
+  sum to a phased 3x thud. `variants: N` in the manifest produces `id_1..N.ogg`
+  and `play_sfx` picks one; repetition is what makes generated foley sound
+  cheap. Stingers and jingles are in `PITCH_LOCKED` and never jittered.
+- `AppSettings` carries `music_pct`/`sfx_pct` beside `volume_pct`;
+  `Telemetry.settings` is still the single writer (the Settings tab saves on
+  slider release through it) and `Audio` only reads at boot.
+- Loops get a seam pass in the pipeline (last 300 ms crossfaded into the head)
+  and the autoload sets `loop = true` on the stream at load, so no `.import`
+  file is ever hand-edited. Ask providers for WAV, never MP3: encoder padding
+  breaks the seam.
 
 **Telemetry** (patch 0.115). The game spools play data to
 `user://telemetry/spool.ndjson` and POSTs batches to the ingest service in

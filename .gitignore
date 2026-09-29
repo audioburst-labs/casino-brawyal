@@ -24,3 +24,6 @@ Thumbs.db
 tools/art/raw/
 .playwright-mcp/
 telemetry_key.json
+
+# audio prompt auditions (30 s Lyria clips, not shipped)
+tools/audio/auditions/

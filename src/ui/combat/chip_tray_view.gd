@@ -37,6 +37,11 @@ class ChipButton:
 	var suit: StringName = &""
 	var art: Control = null
 
+	## The chip has its own pickup and return sounds; the Audio autoload's
+	## button hook must not add a click under them (0.120).
+	func _init() -> void:
+		set_meta(&"silent", true)
+
 	## With the per-chip frame gone the chip itself has to answer the mouse, so
 	## it lifts and brightens under the cursor (patch 0.113).
 	func _ready() -> void:
@@ -70,13 +75,18 @@ class ChipButton:
 			set_drag_preview(wrapper)
 		# Doc's Mouse spec: selecting a chip triggers a brief grabbing gesture.
 		Fx.set_cursor_grabbing(true)
+		Audio.play_sfx(&"chip_pickup")
 		return {"suit": suit}
 
 	## NOTIFICATION_DRAG_END fires on the control that started the drag,
-	## whether or not the drop succeeded — the cue to revert the cursor.
+	## whether or not the drop succeeded — the cue to revert the cursor. A
+	## drop that landed is heard as `chip_assigned`; one that did not is heard
+	## falling back into the drawer (0.120).
 	func _notification(what: int) -> void:
 		if what == NOTIFICATION_DRAG_END:
 			Fx.set_cursor_grabbing(false)
+			if is_inside_tree() and not get_viewport().gui_is_drag_successful():
+				Audio.play_sfx(&"chip_return")
 
 
 func _ready() -> void:

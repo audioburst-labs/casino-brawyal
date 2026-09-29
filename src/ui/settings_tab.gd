@@ -32,7 +32,7 @@ func _ready() -> void:
 			_close())
 	add_child(backdrop)
 
-	var panel_size := Vector2(520, 512)   # +52 for the data row (patch 0.115)
+	var panel_size := Vector2(520, 616)   # +52 data row (0.115), +104 Music/SFX rows (0.120)
 	var panel := PanelContainer.new()
 	panel.position = vp * 0.5 - panel_size * 0.5
 	panel.size = panel_size
@@ -124,6 +124,15 @@ func _ready() -> void:
 		control.mouse_entered.connect(_show_volume)
 		control.mouse_exited.connect(_hide_volume)
 	_refresh_volume_readout()
+	# The master level persists now (0.120): saved on release, not per pixel.
+	_volume_slider.drag_ended.connect(func(_changed: bool) -> void:
+		_save_audio_setting("volume_pct", _volume_slider.value))
+
+	# Music and SFX get their own always-visible sliders (patch 0.120). One
+	# helper, two rows; the bus is what the game hears, the settings file is
+	# what it remembers.
+	column.add_child(_bus_row("Music", "Music", "music_pct", 80.0))
+	column.add_child(_bus_row("Effects", "Sfx", "sfx_pct", 100.0))
 
 	# Telemetry opt-out (patch 0.115). One control, and the explanation on hover
 	# rather than a paragraph in the panel.
@@ -216,6 +225,49 @@ func _toggle_mute() -> void:
 	_muted = not _muted
 	AudioServer.set_bus_mute(_master_bus(), _muted)
 	_refresh_volume_readout()
+	_save_audio_setting("muted", _muted)
+
+
+## A labelled slider for one bus. Moving it sets the bus live through the
+## Audio autoload; releasing it writes the level to the settings file, and
+## the SFX slider plays a click on release so the level can be judged.
+func _bus_row(label_text: String, bus: String, field: String, fallback: float) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(_label(label_text))
+	var slider := HSlider.new()
+	slider.min_value = 0
+	slider.max_value = 100
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	slider.custom_minimum_size = Vector2(200, 24)
+	var settings := Telemetry.settings
+	slider.value = float(settings.get(field)) if settings != null else fallback
+	row.add_child(slider)
+	var readout := Label.new()
+	readout.custom_minimum_size = Vector2(52, 0)
+	readout.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	readout.text = "%d%%" % roundi(slider.value)
+	row.add_child(readout)
+	slider.value_changed.connect(func(value: float) -> void:
+		Audio.set_bus_pct(bus, value)
+		readout.text = "%d%%" % roundi(value))
+	slider.drag_ended.connect(func(_changed: bool) -> void:
+		_save_audio_setting(field, slider.value)
+		if bus == "Sfx":
+			Audio.play_sfx(&"ui_press"))
+	return row
+
+
+## `Telemetry.settings` is the one writer of the settings file; the audio
+## fields ride along with the consent flag it already owns.
+func _save_audio_setting(field: String, value: Variant) -> void:
+	var settings := Telemetry.settings
+	if settings == null:
+		return
+	settings.set(field, value)
+	settings.save(Telemetry.SETTINGS_PATH)
 
 
 ## Leaving a run: the session stays open (the player may start another), but

@@ -339,6 +339,27 @@ func test_settings_round_trip() -> void:
 	assert_eq(reloaded.volume_pct, 42.0)
 
 
+func test_music_and_sfx_levels_round_trip() -> void:
+	var settings := AppSettings.new()
+	assert_eq(settings.music_pct, 80.0, "music defaults a notch under the effects")
+	assert_eq(settings.sfx_pct, 100.0)
+	settings.music_pct = 35.0
+	settings.sfx_pct = 70.0
+	assert_true(settings.save(SETTINGS_PATH))
+	var reloaded := AppSettings.load_settings(SETTINGS_PATH)
+	assert_eq(reloaded.music_pct, 35.0)
+	assert_eq(reloaded.sfx_pct, 70.0)
+
+
+func test_music_and_sfx_levels_are_clamped_on_load() -> void:
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	file.store_string('{"v":1,"audio":{"music_pct":250,"sfx_pct":-9}}')
+	file = null
+	var settings := AppSettings.load_settings(SETTINGS_PATH)
+	assert_eq(settings.music_pct, 100.0)
+	assert_eq(settings.sfx_pct, 0.0)
+
+
 func test_a_corrupt_settings_file_loads_defaults_instead_of_throwing() -> void:
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	file.store_string("not json at all")

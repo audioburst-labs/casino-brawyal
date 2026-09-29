@@ -559,6 +559,8 @@ func _build_layout() -> void:
 	machine_box.custom_minimum_size = Vector2(MACHINE_WIDTH, 0)
 	bottom.add_child(machine_box)
 	_reel_strip = ReelStrip.new()
+	_reel_strip.reel_stopped.connect(func(_index: int) -> void:
+		Audio.play_sfx(&"reel_stop", 0.03))
 	_reel_strip.framed = false
 	_tray_view = ChipTrayView.new()
 	_tray_view.framed = false
@@ -757,6 +759,7 @@ func _on_end_turn() -> void:
 	if run_mode and _summary != null:
 		Telemetry.record(&"pass", {}, _summary.combat_id,
 			_summary.encounter_number, _summary.rounds)
+	Audio.play_sfx(&"pass_turn")
 	_busy = true
 	sim.end_assignment()
 	await _play_events(_drain())
@@ -937,9 +940,12 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					var view := _view_of(entry.actor)
 					if view != null:
 						view.show_intent(entry)
+				if not event.data.intents.is_empty():
+					Audio.play_sfx(&"intent_show")
 				await get_tree().create_timer(0.2).timeout
 			&"spin_resolved":
 				# The lever is what starts a spin, so it swings with one (0.113).
+				Audio.play_sfx(&"lever_pull")
 				_cabinet.pull_lever()
 				await _reel_strip.spin_to(event.data.symbols)
 				await _payout_flourish(event.data.symbols)
@@ -969,6 +975,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 						await _chip_arrives(suit, _hero_view.sprite_center())
 				_tray_view.reveal(suit, int(event.data.get("count", 1)))
 			&"chips_converted":
+				Audio.play_sfx(&"chip_shuffle")
 				_tray_view.refresh()
 			&"chip_assigned":
 				# Paint the chip into its socket immediately so the final chip
@@ -982,9 +989,12 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				if assigned_card != null:
 					assigned_card.show_chip(event.data.slot, event.data.suit)
 				_tray_view.spend(event.data.suit)
+				Audio.play_sfx(&"chip_socket")
 			&"chip_unassigned":
+				Audio.play_sfx(&"chip_return")
 				_tray_view.refresh()
 			&"ability_fired":
+				Audio.play_sfx(&"card_activate")
 				await get_tree().create_timer(0.3).timeout  # let the last chip be seen
 				var fired_card := _card_of(event.data.ability)
 				if fired_card != null:
@@ -996,25 +1006,30 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					await get_tree().create_timer(0.12).timeout
 				await _play_ability_anims(event.data.ability, _view_of(event.data.target))
 			&"passive_gained":
+				Audio.play_sfx(&"passive_ping")
 				var passive_card := _card_of(event.data.ability)
 				if passive_card != null:
 					passive_card.flash_fire()
 				await get_tree().create_timer(0.2).timeout
 			&"enemy_summoned":
 				_add_enemy_view(event.data.actor)
+				Audio.play_sfx(&"summon")
 				Fx.shake(8.0)
 				await get_tree().create_timer(0.35).timeout
 			&"actor_removed":
 				_remove_enemy_view(event.data.actor)
 			&"encore":
+				Audio.play_sfx(&"encore")
 				var encore_view := _view_of(event.data.actor)
 				if encore_view != null:
 					Fx.spawn_number(encore_view.sprite_center(), "ENCORE!", Color(1.0, 0.85, 0.4))
 				await get_tree().create_timer(0.25).timeout
 			&"damage_negated":
+				Audio.play_sfx(&"miss")
 				Fx.spawn_number(_hero_view.sprite_center(), "MISS!", Color(0.7, 0.9, 1.0))
 				await get_tree().create_timer(0.2).timeout
 			&"mark_cashed":
+				Audio.play_sfx(&"cash_in")
 				var cashed_view := _view_of(event.data.actor)
 				if cashed_view != null:
 					Fx.spawn_number(cashed_view.sprite_center(), "CASH IN!", Color(0.5, 1.0, 0.8))
@@ -1061,6 +1076,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					elif amount >= 12:
 						Fx.hitstop(0.05)
 						Fx.punch_zoom(0.025)
+				_hit_sound(event.data, amount)
 				Fx.shake(clampf(amount * 1.2, 4.0, 18.0))
 				if amount >= 12 and _backdrop != null:
 					_backdrop.react(amount)
@@ -1076,6 +1092,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					# a beat before the reels spin, so the cue has to be big enough
 					# and slow enough to survive the player looking at the machine.
 					actor_view.play_block_gain(int(event.data.amount))
+					Audio.play_sfx(&"block_gain")
 					Fx.spawn_number(actor_view.sprite_center(),
 						"+%d" % event.data.amount, Color(0.6, 0.85, 1.0))
 					_burst(actor_view.sprite_center(),
@@ -1085,6 +1102,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var status_view := _view_of(event.data.actor)
 				if status_view != null:
 					status_view.refresh_statuses()
+					Audio.play_sfx(_status_sound(StringName(event.data.status)))
 					Fx.spawn_number(status_view.sprite_center(),
 						"%s %d" % [event.data.status, event.data.stacks],
 						Color(0.85, 0.7, 1.0))
@@ -1109,6 +1127,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var healed_view := _view_of(event.data.actor)
 				if healed_view != null:
 					healed_view.refresh()
+					Audio.play_sfx(&"heal")
 					if event.data.actor == sim.hero.id:
 						_publish_hero_hp()
 					# A heal has to read AS a heal on the unit receiving it
@@ -1124,6 +1143,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"actor_died":
 				var dead_view := _view_of(event.data.actor)
 				var hero_died: bool = event.data.actor == sim.hero.id
+				Audio.play_sfx(&"hero_down" if hero_died else &"enemy_cashout")
 				if dead_view != null:
 					if hero_died:
 						# Ace going down is not a payout — no chips, no
@@ -1159,6 +1179,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					await get_tree().create_timer(0.75).timeout
 				if mover != null and not event.data.get("skipped", false):
 					mover.play_telegraph()  # menace first...
+					Audio.play_sfx(&"enemy_telegraph")
 					await get_tree().create_timer(0.32).timeout
 					# Only a move that actually hits the hero plays the attack
 					# pose. Mr. Moneybags heals his crew with the same
@@ -1176,16 +1197,21 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"combat_won":
 				_close_summary("won")
 				_show_banner("VICTORY!")
+				Audio.duck()
+				Audio.play_sfx(&"sting_victory")
 				if run_mode:
 					await get_tree().create_timer(1.3).timeout
 					Game.combat_finished(true, sim.hero.hp, sim.pending_rewards)
 			&"combat_lost":
 				_close_summary("lost")
 				_show_banner("DEFEAT")
+				Audio.duck()
+				Audio.play_sfx(&"sting_defeat")
 				if run_mode:
 					await get_tree().create_timer(1.6).timeout
 					Game.combat_finished(false, 0, [])
 			&"choice_offered":
+				Audio.play_sfx(&"choice_open")
 				await _offer_choice(event.data)
 			&"loan_taken":
 				# Statuses only (0.117). A full refresh() here snapped the HP
@@ -1194,12 +1220,14 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# sprang it back: "take damage, then heal back for your
 				# block". The 0.113 rule, three call sites late.
 				_hero_view.refresh_statuses()
+				Audio.play_sfx(&"loan_sign")
 				Fx.spawn_number(_hero_view.sprite_center(),
 					str(event.data.get("title", "LOAN")), Color(0.85, 0.75, 1.0))
 				await get_tree().create_timer(0.3).timeout
 			&"loan_ticked":
 				_hero_view.refresh_statuses()
 			&"loan_due":
+				Audio.play_sfx(&"loan_due")
 				Fx.spawn_number(_hero_view.sprite_center(), "DUE!", Color(1.0, 0.55, 0.5))
 				_vfx.vignette(0.4, 0.7)
 				_hero_view.refresh_statuses()
@@ -1213,11 +1241,13 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					var delta := int(event.data.get("amount", 0))
 					if str(event.data.get("op", "")) == "lose_coins":
 						delta = -delta
+					Audio.play_sfx(&"coins_lose" if delta < 0 else &"coins_gain")
 					Fx.spawn_number(_hero_view.sprite_center(),
 						"%+d coins" % delta, Color(1.0, 0.85, 0.4))
 			&"chips_absorbed":
 				for card in _ability_cards:
 					card.refresh()
+				Audio.play_sfx(&"absorb")
 				_vfx.shockwave(_cabinet.window_rect_global().get_center(),
 					Color(0.7, 0.5, 1.0), 200.0)
 				Fx.shake(14.0)
@@ -1225,6 +1255,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"enemy_busted":
 				var busted := _view_of(event.data.actor)
 				if busted != null:
+					Audio.play_sfx(&"bust")
 					Fx.spawn_number(busted.sprite_center(), "BUST!", Color(1.0, 0.85, 0.4))
 					_vfx.shockwave(busted.sprite_center(), Color(1.0, 0.85, 0.4), 150.0)
 					busted.refresh_statuses()
@@ -1272,14 +1303,17 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				# Ace physically throws: the card leaves his hand on the
 				# release frame of the pose animation.
 				await _hero_view.play_throw()
+				Audio.play_sfx(&"card_throw")
 				await _fly("res://assets/icons/ability_card_sling.png",
 					_hero_view.sprite_center(), _target_point(target_view), marks)
+				Audio.play_sfx(&"card_hit")
 			"dagger":
 				# The slash VFX lands ON the strike frame: play_slash() only
 				# returns once the lunge has finished (0.09 s after the frame
 				# shows), so the arc waits for the pose's own signal instead.
 				_hero_view.play_slash()
 				await _hero_view.strike_landed
+				Audio.play_sfx(&"dagger_slash")
 				await _dagger_slash(_target_point(target_view))
 			"cash_in":
 				await _burst_duo(_target_point(target_view),
@@ -1291,17 +1325,45 @@ func _play_ability_anims(ability_id: StringName, target_view: UnitView) -> void:
 				# applies to every source of Block, not just abilities).
 				await get_tree().create_timer(0.15).timeout
 			"mark_wave":
+				Audio.play_sfx(&"mark_wave")
 				for view: UnitView in _enemy_views.values():
 					_burst_duo(view.sprite_center(), "res://assets/icons/status_mark.png",
 						FLAME_COLORS[0], FLAME_COLORS[2])
 				await get_tree().create_timer(0.35).timeout
 			"go_again":
+				Audio.play_sfx(&"go_again")
 				await _go_again_flourish()
 			"ultimate":
 				# _ultimate_flourish already lands the flash, the hitstop and
 				# the shockwaves — doing them again here fired everything
 				# twice (patch 0.19).
+				# ONE designed sound for the whole barrage, not eight slashes.
+				Audio.duck(-6.0, 1.2, 0.6)
+				Audio.play_sfx(&"ultimate_barrage")
 				await _ultimate_flourish()
+
+
+## Which one-shot a hit is (patch 0.120): a fully blocked hit is a shield,
+## not a wound; a big one gets a second, heavier layer under it.
+func _hit_sound(data: Dictionary, amount: int) -> void:
+	var hp_lost := int(data.get("hp_lost", amount))
+	var blocked := int(data.get("blocked", 0))
+	if hp_lost <= 0 and blocked > 0:
+		Audio.play_sfx(&"block_absorb")
+		return
+	Audio.play_sfx(&"hit_hero" if data.target == sim.hero.id else &"hit_enemy")
+	if amount >= 25:
+		Audio.play_sfx(&"hit_heavy")
+
+
+func _status_sound(status: StringName) -> StringName:
+	if status == &"mark":
+		return &"mark_apply"
+	if status == &"stun":
+		return &"stun"
+	if status in DEBUFF_STATUSES:
+		return &"debuff_apply"
+	return &"buff_apply"
 
 
 ## True when the ability's animation list drives the hero's own pose frames.
@@ -1485,6 +1547,7 @@ func _chip_arrives(suit: StringName, from: Vector2) -> void:
 		return
 	await _fly("res://assets/icons/chip_%s.png" % suit, from,
 		_cabinet.drawer_centre_global(), false)
+	Audio.play_sfx(&"chip_land")
 	_cabinet.celebrate(0.4)
 
 
@@ -1501,6 +1564,7 @@ func _golem_drops_chip(suit: StringName) -> void:
 	if texture == null:
 		return
 	var from := golem.sprite_center()
+	Audio.play_sfx(&"golem_crack")
 	var chip := TextureRect.new()
 	chip.texture = texture
 	chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1762,6 +1826,8 @@ func _payout_flourish(symbols: Array) -> void:
 	_cabinet.celebrate(1.0)
 	var triple: bool = symbols.size() >= 3 and symbols[0] == symbols[1] and symbols[1] == symbols[2]
 	if triple:
+		Audio.duck()
+		Audio.play_sfx(&"jackpot")
 		_vfx.ray_burst(window.get_center(), Color(1.0, 0.9, 0.4, 0.6), 220.0, 0.9)
 		_vfx.confetti(Vector2(window.get_center().x, window.position.y))
 		Fx.punch_zoom(0.04)
@@ -1789,6 +1855,7 @@ func _payout_flourish(symbols: Array) -> void:
 		hop.tween_property(chip, "rotation", TAU, 0.24)
 		hop.chain().tween_callback(func() -> void:
 			_sparks(tray_center, Color(1.0, 0.9, 0.6), 6)
+			Audio.play_sfx(&"chip_land")
 			_tray_view.refresh()
 			chip.queue_free())
 		await get_tree().create_timer(0.09).timeout  # one payoff per beat
