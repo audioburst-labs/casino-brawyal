@@ -105,7 +105,8 @@ function finish(rawPath, asset, out) {
   }
   const norm = music ? "loudnorm=I=-14:TP=-1.5:LRA=11" : "loudnorm=I=-16:TP=-3:LRA=7";
   mkdirSync(dirname(out), { recursive: true });
-  run("ffmpeg", ["-y", "-v", "error", "-i", source, "-af", norm,
+  // loudnorm resamples to 192 kHz internally; pin the shipped rate after it.
+  run("ffmpeg", ["-y", "-v", "error", "-i", source, "-af", norm, "-ar", "44100",
     "-c:a", "libvorbis", "-q:a", music ? "6" : "5", out]);
   rmSync(work, { recursive: true, force: true });
 }
@@ -118,10 +119,22 @@ async function fetchJson(url, init, label) {
     res = await fetch(url, init);
     if ((res.status !== 429 && res.status < 500) || attempt >= 6) break;
     const text = await res.text();
+    // A quota of zero is a billing problem, not a busy server: say so at once
+    // rather than retrying for five minutes (seen 0.120, Gemini free tier).
+    if (/free tier|limit: 0/i.test(text)) {
+      throw new Error(`${label}: the key is on a tier with no quota for this model. `
+        + `Attach billing to the Google Cloud project behind the key. (${text.slice(0, 300)})`);
+    }
     const wait = Number(text.match(/retry after (\d+)/i)?.[1]
       ?? res.headers.get("retry-after") ?? 15) + 2;
     console.log(`  ${label}: ${res.status}, waiting ${wait}s (attempt ${attempt})`);
     await new Promise((r) => setTimeout(r, wait * 1000));
+  }
+  if (res.status === 402) {
+    // Out of prepaid credit: every later call would fail the same way, so stop
+    // the whole run here instead of printing forty identical failures (0.120).
+    console.error(`${label}: out of credit. Top up at https://replicate.com/account/billing and rerun; finished files are kept.`);
+    process.exit(2);
   }
   if (!res.ok) throw new Error(`${label} ${res.status}: ${(await res.text()).slice(0, 600)}`);
   return res.json();
@@ -143,7 +156,9 @@ async function replicateInputs(prompt, seconds, seed) {
       if (!(required in replicateSchema)) throw new Error(`Stable Audio schema has no "${required}" field`);
     }
   }
-  const wanted = { prompt, duration: seconds, steps: 8, seed, output_format: "wav" };
+  // The schema types duration as an integer (seen 0.120: a 0.5 s request was a 422),
+  // so short effects are asked for at 1 s and the silence trim takes the rest.
+  const wanted = { prompt, duration: Math.max(1, Math.round(seconds)), steps: 8, seed, output_format: "wav" };
   const input = {};
   for (const [k, v] of Object.entries(wanted)) {
     if (k in replicateSchema) input[k] = v;
