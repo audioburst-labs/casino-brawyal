@@ -4,11 +4,9 @@ extends Control
 
 func _ready() -> void:
 	if ResourceLoader.exists("res://assets/backgrounds/bg_main_menu.png"):
-		var art := TextureRect.new()
-		art.texture = load("res://assets/backgrounds/bg_main_menu.png")
-		art.set_anchors_preset(Control.PRESET_FULL_RECT)
-		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		# The key art as a living night (0.119): rain, the wet street, the
+		# spade and canopy breathing, searchlights on the clouds, lightning.
+		var art := LivingBackdrop.night_exterior()
 		add_child(art)
 		move_child(art, 1)  # above the ColorRect, below the menu column
 	$CenterContainer/VBox/Title.theme_type_variation = &"TitleLabel"

@@ -36,6 +36,10 @@ var _intent_row: HBoxContainer
 var _sprite_holder: CenterContainer
 var _sprite: TextureRect
 var _idle_texture: Texture2D
+var _breath: Control = null
+var _breath_phase := 0.0
+const BREATH_PX := 2.2
+const BREATH_PERIOD := 3.1
 var _poses: Dictionary = {}        # pose name -> Texture2D
 var _ghost_layer: Node = null      # CombatVfx, for motion smears
 var _fallback: ColorRect
@@ -264,7 +268,18 @@ func setup(combat_actor: CombatActor) -> void:
 		var flash_material := ShaderMaterial.new()
 		flash_material.shader = load("res://assets/shaders/flash.gdshader")
 		_sprite.material = flash_material
-	sprite_holder.add_child(_sprite)
+	# Idle breathing (0.119): the sprite hangs off a wrapper that bobs a couple
+	# of pixels on its own clock, so nobody stands like a cutout between
+	# animations. The wrapper, not the sprite, so the pose tweens (position,
+	# scale, rotation on `_sprite`) never fight it. The CenterContainer sizes
+	# the wrapper to the sprite and re-seats it only on a layout change, when
+	# the bob simply restarts from rest.
+	_breath = Control.new()
+	_breath.custom_minimum_size = _sprite.custom_minimum_size
+	_breath.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_breath_phase = randf() * TAU
+	sprite_holder.add_child(_breath)
+	_breath.add_child(_sprite)
 
 	_target_ring = TargetRing.new()
 	_target_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1082,6 +1097,13 @@ func play_block_gain(amount: int) -> void:
 		var pulse := create_tween()
 		pulse.tween_property(_hp_holder, "modulate", Color(0.72, 0.9, 1.15), 0.10)
 		pulse.tween_property(_hp_holder, "modulate", Color.WHITE, 0.34)
+
+
+func _process(delta: float) -> void:
+	if _breath == null or actor == null or not actor.is_alive():
+		return
+	_breath_phase = fposmod(_breath_phase + delta * TAU / BREATH_PERIOD, TAU)
+	_breath.position.y = sin(_breath_phase) * BREATH_PX
 
 
 ## Stun (patch 0.113, designer's note: "stun should have a stun animation").

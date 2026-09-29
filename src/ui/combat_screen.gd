@@ -60,6 +60,7 @@ var _summary: CombatSummary = null
 var _def_ids: Dictionary = {}
 
 var _background: TextureRect
+var _backdrop: LivingBackdrop
 var _round_label: Label
 var _banner: Label
 var _hero_view: UnitView
@@ -502,16 +503,15 @@ func _mouse(at: Vector2, event: InputEventMouse, mask: int) -> void:
 func _build_layout() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
-	_background = TextureRect.new()
-	_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	if ResourceLoader.exists("res://assets/backgrounds/bg_casino_floor.png"):
-		_background.texture = load("res://assets/backgrounds/bg_casino_floor.png")
+	# The living painting (0.119): the floor drifts, the curtains sway, the
+	# lights and the background reels move, dust hangs in the chandelier's
+	# light, and a real curtain layer sits in front with more parallax.
+	_backdrop = LivingBackdrop.casino_floor()
+	_background = _backdrop.painting
 	# Held back so the fighters and the cards read against it (patch 0.20).
 	# Combat had no dim at all, unlike every ScreenBase screen.
-	_background.modulate = Color(0.9, 0.9, 0.9)
-	add_child(_background)
+	_backdrop.modulate = Color(0.9, 0.9, 0.9)
+	add_child(_backdrop)
 
 	_vfx = CombatVfx.new()
 	add_child(_vfx)
@@ -1062,6 +1062,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 						Fx.hitstop(0.05)
 						Fx.punch_zoom(0.025)
 				Fx.shake(clampf(amount * 1.2, 4.0, 18.0))
+				if amount >= 12 and _backdrop != null:
+					_backdrop.react(amount)
 				await get_tree().create_timer(0.36).timeout
 			&"block_gained":
 				var actor_view := _view_of(event.data.actor)

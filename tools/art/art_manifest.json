@@ -1275,6 +1275,15 @@
       "transparent": true,
       "quality": "medium",
       "prompt": "A small square status-badge icon on a fully transparent background: a cracked stone golem fist shedding three loose casino chips, icy blue and gold. Thick dark outline, clean flat shapes with a gold rim, readable at 32 pixels, centered, fills the frame. Nothing else."
+    },
+    {
+      "id": "curtains_overlay",
+      "out": "assets/backgrounds/curtains_overlay.png",
+      "size": "1536x1024",
+      "transparent": true,
+      "quality": "high",
+      "prompt": "A foreground stage-curtain frame for a 2D casino battle scene, on a fully transparent background: two heavy deep-maroon velvet theatre curtains hanging from the very top edge and gathered with thick braided gold rope tie-backs with long gold tassels, one curtain filling ONLY the leftmost 14% of the image and one filling ONLY the rightmost 14%, painted folds with warm gold rim light. The entire middle 72% of the image is completely empty transparent background, nothing drawn there at all. No floor, no wall, no props, no text.",
+      "post": "python tools/art/spread_curtains.py"
     }
   ]
 }
