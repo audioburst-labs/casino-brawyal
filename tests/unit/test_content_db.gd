@@ -63,3 +63,13 @@ func test_rejects_reference_to_unknown_status() -> void:
 	db.load_all("res://tests/fixtures/bad_data")
 	var joined := " | ".join(db.errors)
 	assert_string_contains(joined, "unknown status")
+
+
+## The codex lists every keyword and status straight from the content (0.121).
+func test_keyword_and_status_ids_are_listed_for_the_codex() -> void:
+	var db := ContentDB.new()
+	assert_true(db.load_all("res://data"), str(db.errors))
+	assert_gt(db.all_keyword_ids().size(), 10)
+	assert_true(db.all_keyword_ids().has(&"mark"))
+	assert_eq(db.all_status_ids().size(), 10)
+	assert_true(db.all_status_ids().has(&"vulnerable"))

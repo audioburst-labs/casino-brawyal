@@ -32,7 +32,7 @@ func _ready() -> void:
 			_close())
 	add_child(backdrop)
 
-	var panel_size := Vector2(520, 668)   # +52 data row (0.115), +104 Music/SFX (0.120), +52 speed (0.121)
+	var panel_size := Vector2(520, 720)   # +52 data (0.115), +104 Music/SFX (0.120), +52 speed, +52 Codex (0.121)
 	var panel := PanelContainer.new()
 	panel.position = vp * 0.5 - panel_size * 0.5
 	panel.size = panel_size
@@ -173,6 +173,12 @@ func _ready() -> void:
 	data_row.add_child(data_toggle)
 
 	column.add_child(HSeparator.new())
+
+	var codex_button := Button.new()
+	codex_button.text = "Codex"
+	codex_button.pressed.connect(func() -> void:
+		get_parent().add_child(CodexTab.new()))
+	column.add_child(codex_button)
 
 	var continue_button := Button.new()
 	continue_button.text = "Continue"

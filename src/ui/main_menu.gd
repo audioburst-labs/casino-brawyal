@@ -10,6 +10,15 @@ func _ready() -> void:
 		add_child(art)
 		move_child(art, 1)  # above the ColorRect, below the menu column
 	$CenterContainer/VBox/Title.theme_type_variation = &"TitleLabel"
+	# Codex (0.121): the rules in plain words, readable before the first run.
+	var codex_button := Button.new()
+	codex_button.text = "Codex"
+	codex_button.add_theme_font_size_override("font_size", 40)
+	codex_button.pressed.connect(func() -> void:
+		var hud := get_tree().current_scene.get_node_or_null("HudLayer")
+		(hud if hud != null else get_tree().current_scene).add_child(CodexTab.new()))
+	$CenterContainer/VBox.add_child(codex_button)
+	$CenterContainer/VBox.move_child(codex_button, $CenterContainer/VBox.get_child_count() - 2)
 	if RunSave.has_save():
 		var continue_button := Button.new()
 		continue_button.text = "Continue"

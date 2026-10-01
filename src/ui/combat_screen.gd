@@ -91,6 +91,10 @@ var _busy := false:
 		Fx.set_animating(v)
 var _undo_button: Button
 var _speed_button: Button
+## The first-fight guide (0.121): built for a player's first fight on this
+## machine, started after the first spin, advanced by the actions it asks for.
+var _guide: FirstFightGuide = null
+var _guide_started := false
 var _busy_since := 0
 var _playing_event: StringName = &""
 ## Longer than any legitimate event sequence (a Flush against four enemies
@@ -790,9 +794,47 @@ func _on_unit_clicked(actor_id: StringName) -> void:
 	_update_target_markers()
 
 
+## Shown once per machine, on the run's first fight, unless a debug drive is
+## running (screenshot drives stay clean) or CB_DEBUG_GUIDE=1 asks for it.
+func _wants_guide() -> bool:
+	if OS.get_environment("CB_DEBUG_GUIDE") != "":
+		return true
+	if not run_mode or Game.run == null or Game.run.encounter_number() != 1:
+		return false
+	if OS.get_environment("CB_DEBUG_AUTORUN") != "":
+		return false
+	return Telemetry.settings == null or not Telemetry.settings.tutorial_seen
+
+
+func _start_guide() -> void:
+	_guide_started = true
+	_guide = FirstFightGuide.new()
+	_guide.finished.connect(func() -> void:
+		_guide = null
+		SettingsTab.persist("tutorial_seen", true))
+	add_child(_guide)
+	var first_enemy := func() -> Control:
+		for view: UnitView in _enemy_views.values():
+			return view
+		return null
+	_guide.begin([
+		{"text": "Every round starts with a spin. The chips it pays land in the drawer.",
+			"on": &"", "side": "right", "target": func() -> Control: return _cabinet},
+		{"text": "Drag a chip onto a card's socket. The card fires the moment its last socket fills. Hover a card to read its keywords.",
+			"on": &"chip_assigned", "side": "above", "target": func() -> Control:
+				return _ability_cards[0] if not _ability_cards.is_empty() else null},
+		{"text": "Click an enemy to aim at it. The numbers above an enemy are what it will do next turn.",
+			"on": &"", "side": "left", "target": first_enemy},
+		{"text": "Pass ends your turn. Chips left in the drawer are discarded; chips in sockets stay. Undo takes back this turn's actions.",
+			"on": &"pass", "side": "above", "target": func() -> Control: return _end_turn},
+	] as Array[Dictionary])
+
+
 func _on_end_turn() -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
+	if _guide != null:
+		_guide.notice(&"pass")
 	# Pass. `end_assignment` emits `turn_ended` for both sides, so the hero's
 	# own decision is clearer recorded at the button.
 	if run_mode and _summary != null:
@@ -1008,6 +1050,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var payout: Dictionary = event.data.get("payout", {})
 				for suit: StringName in payout:
 					_tray_view.reveal(suit, int(payout[suit]))
+				if not _guide_started and _wants_guide():
+					_start_guide()
 			&"chips_generated":
 				# Every chip that arrives outside a spin is SEEN arriving (0.117):
 				# Break falls from the Golem (0.114), a Gift flies from the enemy
@@ -1043,6 +1087,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					assigned_card.show_chip(event.data.slot, event.data.suit)
 				_tray_view.spend(event.data.suit)
 				Audio.play_sfx(&"chip_socket")
+				if _guide != null:
+					_guide.notice(&"chip_assigned")
 			&"chip_unassigned":
 				Audio.play_sfx(&"chip_return")
 				_tray_view.refresh()

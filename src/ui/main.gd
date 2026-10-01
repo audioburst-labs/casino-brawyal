@@ -27,6 +27,9 @@ func _ready() -> void:
 		if OS.get_environment("CB_DEBUG_OPEN_LAYOUT") != "":
 			await get_tree().create_timer(0.5).timeout
 			$HudLayer.add_child(LayoutTab.new())
+		if OS.get_environment("CB_DEBUG_OPEN_CODEX") != "":
+			await get_tree().create_timer(0.5).timeout
+			$HudLayer.add_child(CodexTab.new())
 	else:
 		Game.goto_screen("res://scenes/screens/main_menu.tscn")
 		if TelemetryNotice.should_show():

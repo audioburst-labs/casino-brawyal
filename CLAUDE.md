@@ -340,7 +340,7 @@ modifiers, so its printed number is right as it is.
 
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
-**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_BACKDROP_LOUD=1` (exaggerate every living-backdrop motion for review, 0.119), `CB_DEBUG_UNDO=1` (undo the turn after the autofires, 0.121), `CB_DEBUG_DRAG=N` (drag the first tray chip onto ability N through the real GUI, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_BACKDROP_LOUD=1` (exaggerate every living-backdrop motion for review, 0.119), `CB_DEBUG_UNDO=1` (undo the turn after the autofires, 0.121), `CB_DEBUG_GUIDE=1` (show the first-fight guide in a debug drive) and `CB_DEBUG_OPEN_CODEX=1` (open the codex, 0.121), `CB_DEBUG_DRAG=N` (drag the first tray chip onto ability N through the real GUI, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
 
 **Combat speed and undo turn** (patch 0.121, phase 0 of the roadmap in
 `docs/Casino_Brawyal_Status_Review_2026-09-30.pdf`).
@@ -372,6 +372,21 @@ modifiers, so its printed number is right as it is.
   (`UnitView.revive()`), re-shows their intents and runs `_refresh_all()`.
 - Debug: `CB_DEBUG_UNDO=1` undoes the turn five seconds after the last
   autofire.
+
+**Onboarding** (patch 0.121, phase 0): `FirstFightGuide`
+(`src/ui/combat/first_fight_guide.gd`) is four cards shown once per machine
+(`AppSettings.tutorial_seen`) on the run's first fight, after the opening
+spin. It never dims the screen or swallows input: the game plays underneath,
+each card points at its subject with a drawn ring, and an action that a
+current or LATER step waits for (`chip_assigned`, `pass`) jumps the guide
+past that step. Cards sit beside their target in the first direction with
+room (below, right, above, left), because "above the machine" covered Ace's
+panel. Debug drives skip it unless `CB_DEBUG_GUIDE=1`. `CodexTab`
+(`src/ui/codex_tab.gd`, from Settings and the main menu,
+`CB_DEBUG_OPEN_CODEX=1`) reads every keyword and status straight from
+`Db.content` (`all_keyword_ids()`, `all_status_ids()`), which is how the
+Vulnerable status text was found still saying 25% a year after the rule
+became 50%.
 
 **Audio** (patch 0.120). Music per screen, a casino-floor ambience on the hub
 screens, and a one-shot per presenter beat. Providers are Google Lyria 3.5

@@ -184,6 +184,15 @@ func all_loan_ids() -> Array:
 	return _loans.keys()
 
 
+## In file order, which is the designer's reading order (the codex, 0.121).
+func all_keyword_ids() -> Array:
+	return _keywords.keys()
+
+
+func all_status_ids() -> Array:
+	return _statuses.keys()
+
+
 ## The doc's six Paths (patch 0.114), in sheet order.
 func all_paths() -> Array[Dictionary]:
 	return _paths

@@ -13,7 +13,7 @@
       "name": "Vulnerable",
       "stack_mode": "duration",
       "kind": "debuff",
-      "description": "Takes 25% more damage."
+      "description": "Takes 50% more damage."
     },
     {
       "id": "frail",
