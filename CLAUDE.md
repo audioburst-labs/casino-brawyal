@@ -373,6 +373,15 @@ modifiers, so its printed number is right as it is.
 - Debug: `CB_DEBUG_UNDO=1` undoes the turn five seconds after the last
   autofire.
 
+**GIF capture** (patch 0.121): `tools/screenshot.gd` saves a frame sequence
+when `CB_CAPTURE_EVERY=K` (and `CB_CAPTURE_FROM=M`) are set, and
+`tools/capture_gif.ps1 -Out build/gifs/x.gif -Frames N -From M -Every K -Env
+"CB_DEBUG_AUTORUN=1;CB_DEBUG_DRAG=1"` wraps it with ffmpeg's palette pipeline
+(`-Env` is a semicolon string because `powershell -File` cannot pass a
+hashtable). The living backdrop makes every frame differ, so GIFs run 6 to
+9 MB at 960 px and 20 fps; drop `-Width` or raise `-Every` for the 8 MB
+store limit. `build/gifs/` is gitignored with the rest of `build/`.
+
 **Onboarding** (patch 0.121, phase 0): `FirstFightGuide`
 (`src/ui/combat/first_fight_guide.gd`) is four cards shown once per machine
 (`AppSettings.tutorial_seen`) on the run's first fight, after the opening
