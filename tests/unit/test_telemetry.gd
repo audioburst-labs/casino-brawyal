@@ -351,6 +351,18 @@ func test_music_and_sfx_levels_round_trip() -> void:
 	assert_eq(reloaded.sfx_pct, 70.0)
 
 
+func test_combat_speed_round_trips_and_snaps_to_an_allowed_value() -> void:
+	var settings := AppSettings.new()
+	assert_eq(settings.combat_speed, 1.0, "normal speed by default")
+	settings.combat_speed = 2.0
+	assert_true(settings.save(SETTINGS_PATH))
+	assert_eq(AppSettings.load_settings(SETTINGS_PATH).combat_speed, 2.0)
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	file.store_string('{"v":1,"gameplay":{"combat_speed":7}}')
+	file = null
+	assert_eq(AppSettings.load_settings(SETTINGS_PATH).combat_speed, 3.0, "snapped to the top")
+
+
 func test_music_and_sfx_levels_are_clamped_on_load() -> void:
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	file.store_string('{"v":1,"audio":{"music_pct":250,"sfx_pct":-9}}')

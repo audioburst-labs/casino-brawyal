@@ -26,6 +26,8 @@ var music_pct := 80.0
 var sfx_pct := 100.0
 var fullscreen := false
 var max_fps := 60
+## Combat animation speed, one of `SpeedRules.ALLOWED` (phase 0 roadmap).
+var combat_speed := 1.0
 ## Anything a newer build wrote that this one does not know about, kept so a
 ## downgrade does not silently drop the player's other preferences.
 var _unknown: Dictionary = {}
@@ -54,8 +56,10 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	var display: Dictionary = data.get("display", {}) if data.get("display") is Dictionary else {}
 	settings.fullscreen = bool(display.get("fullscreen", false))
 	settings.max_fps = int(display.get("max_fps", 60))
+	var gameplay: Dictionary = data.get("gameplay", {}) if data.get("gameplay") is Dictionary else {}
+	settings.combat_speed = SpeedRules.clamp_speed(float(gameplay.get("combat_speed", 1.0)))
 	for key: String in data:
-		if not ["v", "telemetry", "audio", "display"].has(key):
+		if not ["v", "telemetry", "audio", "display", "gameplay"].has(key):
 			settings._unknown[key] = data[key]
 	return settings
 
@@ -70,6 +74,7 @@ func save(path: String = DEFAULT_PATH) -> bool:
 		"audio": {"volume_pct": volume_pct, "muted": muted,
 			"music_pct": music_pct, "sfx_pct": sfx_pct},
 		"display": {"fullscreen": fullscreen, "max_fps": max_fps},
+		"gameplay": {"combat_speed": combat_speed},
 	}
 	for key: String in _unknown:
 		data[key] = _unknown[key]

@@ -32,7 +32,7 @@ func _ready() -> void:
 			_close())
 	add_child(backdrop)
 
-	var panel_size := Vector2(520, 616)   # +52 data row (0.115), +104 Music/SFX rows (0.120)
+	var panel_size := Vector2(520, 668)   # +52 data row (0.115), +104 Music/SFX (0.120), +52 speed (0.121)
 	var panel := PanelContainer.new()
 	panel.position = vp * 0.5 - panel_size * 0.5
 	panel.size = panel_size
@@ -80,6 +80,25 @@ func _ready() -> void:
 				if sibling is Button:
 					sibling.button_pressed = sibling == fps_button)
 		fps_row.add_child(fps_button)
+
+	# Combat speed (phase 0 roadmap): applies while animations play, never
+	# while the player is thinking. Same row shape as the frame rate.
+	var speed_row := HBoxContainer.new()
+	speed_row.add_theme_constant_override("separation", 12)
+	column.add_child(speed_row)
+	speed_row.add_child(_label("Combat Speed"))
+	for speed: float in SpeedRules.ALLOWED:
+		var speed_button := Button.new()
+		speed_button.text = SpeedRules.label(speed)
+		speed_button.toggle_mode = true
+		speed_button.button_pressed = is_equal_approx(Fx.base_speed, speed)
+		speed_button.pressed.connect(func() -> void:
+			Fx.set_combat_speed(speed)
+			persist("combat_speed", speed)
+			for sibling in speed_row.get_children():
+				if sibling is Button:
+					sibling.button_pressed = sibling == speed_button)
+		speed_row.add_child(speed_button)
 
 	_volume_row = HBoxContainer.new()
 	_volume_row.add_theme_constant_override("separation", 12)
@@ -263,6 +282,12 @@ func _bus_row(label_text: String, bus: String, field: String, fallback: float) -
 ## `Telemetry.settings` is the one writer of the settings file; the audio
 ## fields ride along with the consent flag it already owns.
 func _save_audio_setting(field: String, value: Variant) -> void:
+	persist(field, value)
+
+
+## Any screen may persist a preference through here (the combat screen's
+## speed button does), so the file keeps a single writer.
+static func persist(field: String, value: Variant) -> void:
 	var settings := Telemetry.settings
 	if settings == null:
 		return

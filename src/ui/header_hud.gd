@@ -227,7 +227,9 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	if not Game.cinematic_playing:
-		Game.run_elapsed_sec += delta
+		# Wall clock, not game time: `delta` is scaled by the combat speed
+		# toggle and by hitstop, and the run timer must count real seconds.
+		Game.run_elapsed_sec += delta / maxf(Engine.time_scale, 0.001)
 	var total := int(Game.run_elapsed_sec)
 	_timer_label.text = "%02d:%02d" % [total / 60, total % 60]
 	_coins_label.text = "🪙 %d" % Game.run.coins

@@ -11,6 +11,45 @@ var _cursor_idle: ImageTexture = null
 var _cursor_grab: ImageTexture = null
 const CURSOR_HOTSPOT := Vector2(8, 4)
 
+## Combat speed (phase 0 roadmap). `Engine.time_scale` has exactly ONE writer,
+## `_apply_time_scale()`, which asks `SpeedRules` for the value from four
+## facts: the player's chosen speed, whether combat animations are playing
+## (the presenter's `_busy`), whether a hitstop is in force, and any slow-mo
+## an animation asked for. Before 0.121 `hitstop()` and the ultimate's slow-mo
+## each wrote the literal 1.0 back, which a speed toggle would have fought.
+const SETTINGS_PATH := AppSettings.DEFAULT_PATH
+var base_speed := 1.0
+var _animating := false
+var _in_hitstop := false
+var _hitstop_token := 0
+var _slowmo := 1.0
+
+
+func _ready() -> void:
+	base_speed = AppSettings.load_settings(SETTINGS_PATH).combat_speed
+
+
+func set_combat_speed(speed: float) -> void:
+	base_speed = SpeedRules.clamp_speed(speed)
+	_apply_time_scale()
+
+
+## The presenter reports when it is playing events; speed applies only then.
+func set_animating(on: bool) -> void:
+	_animating = on
+	_apply_time_scale()
+
+
+## A multiplier an animation wants for its own beat (the ultimate's 0.65).
+## Always restore to 1.0 when the beat ends.
+func set_slowmo(factor: float) -> void:
+	_slowmo = factor
+	_apply_time_scale()
+
+
+func _apply_time_scale() -> void:
+	Engine.time_scale = SpeedRules.effective(base_speed, _animating, _in_hitstop, _slowmo)
+
 
 func _process(delta: float) -> void:
 	if _shake_target == null:
@@ -113,9 +152,17 @@ func punch_zoom(amount := 0.04) -> void:
 
 ## Freeze-frame. Scale with damage: ~0.04s for chip damage, ~0.12s finishers.
 func hitstop(duration := 0.06) -> void:
-	Engine.time_scale = 0.05
+	_in_hitstop = true
+	_hitstop_token += 1
+	var token := _hitstop_token
+	_apply_time_scale()
+	# The token lets a second hitstop extend the first instead of being cut
+	# short by the first one's timer.
 	get_tree().create_timer(duration * 0.05, true, false, true).timeout.connect(
-		func() -> void: Engine.time_scale = 1.0)
+		func() -> void:
+			if token == _hitstop_token:
+				_in_hitstop = false
+				_apply_time_scale())
 
 
 ## Floating damage/heal number: pops in with an overshoot punch, tilts like a

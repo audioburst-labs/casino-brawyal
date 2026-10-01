@@ -1167,6 +1167,17 @@ func play_telegraph() -> void:
 
 
 ## Death: a white blowout, then the sprite crumples at its feet and fades.
+## Undo turn (0.121): a unit killed this turn is alive again in the sim, so
+## its death animation is reversed in one step.
+func revive() -> void:
+	_sprite.scale = Vector2.ONE
+	_sprite.rotation = 0.0
+	modulate.a = 1.0
+	if _sprite.material is ShaderMaterial:
+		_sprite.material.set_shader_parameter("flash", 0.0)
+	refresh()
+
+
 func play_death() -> void:
 	if _sprite.material is ShaderMaterial:
 		_sprite.material.set_shader_parameter("flash", 1.0)

@@ -27,6 +27,14 @@ var passive_counter := -1
 ## owner's turn start like Block, because "this turn" means exactly that.
 var damage_bonus_pct := 0.0
 
+## Undo turn (phase 0 roadmap): every field is either copied by `snapshot()`
+## or declared immutable here. `test_undo_turn.gd` fails the build for a new
+## field that is in neither list, because a forgotten field is an undo that
+## silently changes the fight.
+const SNAPSHOT_FIELDS: Array[String] = ["hp", "max_hp", "block", "statuses",
+	"last_absorbed", "loans", "passive_counter", "damage_bonus_pct"]
+const STATIC_FIELDS: Array[String] = ["id", "def_id", "display_name", "is_hero"]
+
 
 func _init(actor_id: StringName, definition_id: StringName, name_text: String,
 		hit_points: int, hero: bool = false) -> void:
@@ -40,6 +48,27 @@ func _init(actor_id: StringName, definition_id: StringName, name_text: String,
 
 func is_alive() -> bool:
 	return hp > 0
+
+
+func snapshot() -> Dictionary:
+	return {
+		"hp": hp, "max_hp": max_hp, "block": block,
+		"statuses": statuses.duplicate(), "last_absorbed": last_absorbed,
+		"loans": loans.duplicate(true), "passive_counter": passive_counter,
+		"damage_bonus_pct": damage_bonus_pct,
+	}
+
+
+## Restores IN PLACE, so presenters holding this actor keep a valid reference.
+func restore(snap: Dictionary) -> void:
+	hp = int(snap.hp)
+	max_hp = int(snap.max_hp)
+	block = int(snap.block)
+	statuses = (snap.statuses as Dictionary).duplicate()
+	last_absorbed = int(snap.last_absorbed)
+	loans.assign((snap.loans as Array).duplicate(true))
+	passive_counter = int(snap.passive_counter)
+	damage_bonus_pct = float(snap.damage_bonus_pct)
 
 
 ## Applies already-modified damage: block absorbs, remainder hits HP.

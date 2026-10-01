@@ -17,7 +17,7 @@ extends RefCounted
 const KEEP: Array[StringName] = [
 	# player decisions
 	&"chip_assigned", &"chip_unassigned", &"ability_fired", &"loan_taken",
-	&"choice_offered",
+	&"choice_offered", &"turn_undone",
 	# outcomes worth a row, at most a handful per round
 	&"round_started", &"spin_resolved", &"chips_discarded", &"actor_died",
 	&"enemy_busted", &"enemy_summoned", &"loan_due", &"enemy_move",
