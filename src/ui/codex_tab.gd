@@ -11,8 +11,7 @@ const TURN_TEXT := (
 	+ "fills, at the enemy you aimed at. Click an enemy to aim. The numbers above "
 	+ "an enemy are what it will do next turn.\n\n"
 	+ "Pass ends your turn. Chips left in the drawer are discarded; chips already in "
-	+ "sockets stay for next round. Undo takes back everything you did this turn; "
-	+ "the spin stays.\n\n"
+	+ "sockets stay for next round.\n\n"
 	+ "Buffs tick down at the start of their owner's turn, debuffs at the end of it. "
 	+ "Block is spent when its owner's next turn begins."
 )

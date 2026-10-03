@@ -71,25 +71,6 @@ var _active_ability: AbilityState = null
 var _exclusive_lock: AbilityState = null   # set when an exclusive ability fires
 var _summon_counter := 0
 
-## Undo turn (phase 0 roadmap). The sim photographs itself the moment the
-## assignment phase opens and can go back to that photograph until the player
-## passes. Every script variable must be in exactly one of these two lists;
-## `test_undo_turn.gd` fails the build otherwise, because a field that is
-## neither copied nor immutable is an undo that quietly changes the fight.
-const SNAPSHOT_FIELDS: Array[String] = ["phase", "round_number", "hero", "enemies",
-	"abilities", "tray", "machine", "rng", "pending_rewards", "passives",
-	"abilities_fired_this_round", "last_symbols", "last_payout", "_brains", "_intents",
-	"_intent_ids", "_pending_gift_chips", "_gift_giver", "_pending_choice", "run_ops",
-	"settling_loan", "_events", "_active_ability", "_exclusive_lock", "_summon_counter",
-	"_triggering"]
-## Immutable for the whole fight, or the undo machinery itself, or the
-## player's aim (`targeting`), which undo deliberately leaves alone.
-const STATIC_FIELDS: Array[String] = ["targeting", "_db", "_dmg_mult", "_hp_mult",
-	"_relics", "_weak_pct", "_vuln_pct", "_has_dark_emblem", "_has_red_emblems",
-	"_has_lucky_foot", "_turn_snapshot", "_actions_since_snapshot"]
-var _turn_snapshot: Dictionary = {}
-var _actions_since_snapshot := 0
-
 
 func _init(db: ContentDB, config: Dictionary) -> void:
 	_db = db
@@ -265,108 +246,6 @@ func _finish_round_start() -> void:
 	_spin_machine()
 	_deliver_gift_chips()
 	phase = Phase.ASSIGNMENT
-	_turn_snapshot = snapshot()
-	_actions_since_snapshot = 0
-
-
-# ------------------------------------------------------------------ undo turn
-
-## True while the player can still take this turn's actions back: in the
-## assignment phase, with something done since the round opened.
-func can_undo() -> bool:
-	return phase == Phase.ASSIGNMENT and not _turn_snapshot.is_empty() \
-		and _actions_since_snapshot > 0
-
-
-## Back to the moment after this round's spin. Chips return to the tray,
-## fired abilities un-fire, damage and statuses they caused are gone, and the
-## dice are where they were: a replayed turn spins exactly what it would have.
-func undo_turn() -> bool:
-	if not can_undo():
-		return false
-	if not restore(_turn_snapshot):
-		return false
-	_actions_since_snapshot = 0
-	emit_event(&"turn_undone", {"round": round_number})
-	return true
-
-
-func snapshot() -> Dictionary:
-	var enemy_snaps := []
-	var enemy_ids: Array[StringName] = []
-	for enemy in enemies:
-		enemy_snaps.append(enemy.snapshot())
-		enemy_ids.append(enemy.id)
-	var ability_snaps := []
-	for ability in abilities:
-		ability_snaps.append(ability.snapshot())
-	var brain_snaps := {}
-	for id: StringName in _brains:
-		brain_snaps[id] = _brains[id].snapshot()
-	var reel_snaps := []
-	for reel in machine.reels:
-		reel_snaps.append(reel.snapshot())
-	return {
-		"phase": phase, "round_number": round_number,
-		"hero": hero.snapshot(), "enemies": enemy_snaps, "enemy_ids": enemy_ids,
-		"abilities": ability_snaps, "tray": tray.snapshot(), "reels": reel_snaps,
-		"rng": rng.snapshot(),
-		"pending_rewards": pending_rewards.duplicate(true), "run_ops": run_ops.duplicate(true),
-		"passives": passives.duplicate(),
-		"abilities_fired_this_round": abilities_fired_this_round,
-		"last_symbols": last_symbols.duplicate(), "last_payout": last_payout.duplicate(true),
-		"brains": brain_snaps, "intents": _intents.duplicate(), "intent_ids": _intent_ids.duplicate(),
-		"pending_gift_chips": _pending_gift_chips, "gift_giver": _gift_giver,
-		"pending_choice": _pending_choice.duplicate(true),
-		"exclusive_lock": abilities.find(_exclusive_lock), "summon_counter": _summon_counter,
-	}
-
-
-## Restores in place: the actor, ability and tray objects keep their identity
-## so every presenter reference stays valid. Refuses a snapshot taken with a
-## different roster (a summon or removal in between), which cannot happen
-## inside one assignment phase but is checked rather than assumed.
-func restore(snap: Dictionary) -> bool:
-	var ids: Array = snap.enemy_ids
-	if ids.size() != enemies.size():
-		return false
-	for i in enemies.size():
-		if enemies[i].id != ids[i]:
-			return false
-	phase = snap.phase
-	round_number = int(snap.round_number)
-	hero.restore(snap.hero)
-	for i in enemies.size():
-		enemies[i].restore(snap.enemies[i])
-	for i in abilities.size():
-		abilities[i].restore(snap.abilities[i])
-	tray.restore(snap.tray)
-	for i in mini(machine.reels.size(), (snap.reels as Array).size()):
-		machine.reels[i].restore(snap.reels[i])
-	rng.restore(snap.rng)
-	pending_rewards.assign((snap.pending_rewards as Array).duplicate(true))
-	run_ops.assign((snap.run_ops as Array).duplicate(true))
-	passives = (snap.passives as Array).duplicate()
-	abilities_fired_this_round = int(snap.abilities_fired_this_round)
-	last_symbols.assign(snap.last_symbols)
-	last_payout = (snap.last_payout as Dictionary).duplicate(true)
-	for id: StringName in _brains:
-		if (snap.brains as Dictionary).has(id):
-			_brains[id].restore(snap.brains[id])
-	_intents = (snap.intents as Dictionary).duplicate()
-	_intent_ids = (snap.intent_ids as Dictionary).duplicate()
-	_pending_gift_chips = int(snap.pending_gift_chips)
-	_gift_giver = snap.gift_giver
-	_pending_choice = (snap.pending_choice as Dictionary).duplicate(true)
-	var lock_index := int(snap.exclusive_lock)
-	_exclusive_lock = abilities[lock_index] if lock_index >= 0 else null
-	_summon_counter = int(snap.summon_counter)
-	settling_loan = false
-	_active_ability = null
-	_triggering = false
-	_events = []
-	return true
-
 
 ## Gift X (sheet v0.120): "give the player X random chips at the start of their
 ## next turn". Handed over after the spin so they are seen landing with the
@@ -544,7 +423,6 @@ func assign_chip(suit: StringName, ability_index: int, slot_index: int) -> bool:
 	if not tray.take(suit, 1):
 		return false
 	ability.fill(slot_index, suit)
-	_actions_since_snapshot += 1
 	emit_event(&"chip_assigned",
 		{"ability": ability.def.id, "slot": slot_index, "suit": suit})
 	if ability.is_full():
@@ -560,7 +438,6 @@ func unassign_chip(ability_index: int, slot_index: int) -> bool:
 	if suit == &"":
 		return false
 	tray.add(suit, 1)
-	_actions_since_snapshot += 1
 	emit_event(&"chip_unassigned",
 		{"ability": ability.def.id, "slot": slot_index, "suit": suit})
 	return true
@@ -569,7 +446,6 @@ func unassign_chip(ability_index: int, slot_index: int) -> bool:
 func end_assignment() -> bool:
 	if phase != Phase.ASSIGNMENT:
 		return false
-	_turn_snapshot = {}                    # the turn is spent; nothing to go back to
 	if tray.total() > 0:
 		emit_event(&"chips_discarded", {"count": tray.total()})
 		tray.discard_all()

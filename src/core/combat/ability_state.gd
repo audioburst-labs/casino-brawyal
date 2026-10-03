@@ -10,17 +10,6 @@ var uses_this_round := 0            # for per_turn-limited abilities
 var uses_this_combat := 0           # for per_combat-limited abilities
 
 
-func snapshot() -> Dictionary:
-	return {"filled": filled.duplicate(), "uses_this_round": uses_this_round,
-		"uses_this_combat": uses_this_combat}
-
-
-func restore(snap: Dictionary) -> void:
-	filled.assign(snap.filled)
-	uses_this_round = int(snap.uses_this_round)
-	uses_this_combat = int(snap.uses_this_combat)
-
-
 ## Spent for this round, either way: per_turn resets at the round start,
 ## per_combat never does (sheet v0.19 — House Edge and Face Reader).
 func exhausted() -> bool:

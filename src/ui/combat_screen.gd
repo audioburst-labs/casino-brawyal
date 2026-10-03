@@ -89,8 +89,6 @@ var _busy := false:
 		# The speed toggle applies while events play and never while the
 		# player thinks (0.121); the busy flag is exactly that boundary.
 		Fx.set_animating(v)
-var _undo_button: Button
-var _speed_button: Button
 ## The first-fight guide (0.121): built for a player's first fight on this
 ## machine, started after the first spin, advanced by the actions it asks for.
 var _guide: FirstFightGuide = null
@@ -413,8 +411,6 @@ func setup(config: Dictionary) -> void:
 ## (so a player's godot.log names the culprit) and control is handed back
 ## with a full re-sync, so the fight can continue.
 func _process(_delta: float) -> void:
-	if _undo_button != null:
-		_undo_button.disabled = _busy or sim == null or not sim.can_undo()
 	if not _busy or _busy_since == 0:
 		return
 	if Time.get_ticks_msec() - _busy_since < BUSY_WATCHDOG_MS:
@@ -456,11 +452,6 @@ func _debug_drive() -> void:
 				suit = &"spade"
 			sim.tray.add(suit, 1)
 			_on_chip_dropped(autofire - 1, slot, suit)
-	# CB_DEBUG_UNDO=1 (0.121): five seconds after the last autofire, take the
-	# whole turn back, so the undo re-sync can be reviewed on a still.
-	if OS.get_environment("CB_DEBUG_UNDO") != "":
-		await get_tree().create_timer(5.0).timeout
-		_on_undo()
 	# CB_DEBUG_DRAG=N: drag the first tray chip onto ability N's first socket
 	# THROUGH THE REAL GUI (0.118): synthetic mouse events go into
 	# Input.parse_input_event, so Godot's own drag-and-drop machinery runs -
@@ -601,33 +592,6 @@ func _build_layout() -> void:
 	_end_turn.anchor_top = 0.638
 	_end_turn.anchor_bottom = 0.681
 	add_child(_end_turn)
-
-	# Undo turn (0.121): back to the moment after this round's spin, until
-	# the player passes. Disabled while nothing has happened or events play.
-	_undo_button = Button.new()
-	_undo_button.text = "Undo"
-	_undo_button.tooltip_text = "Take back everything you did this turn. The spin stays."
-	_undo_button.pressed.connect(_on_undo)
-	_undo_button.anchor_left = 0.772
-	_undo_button.anchor_right = 0.868
-	_undo_button.anchor_top = 0.638
-	_undo_button.anchor_bottom = 0.681
-	_undo_button.disabled = true
-	add_child(_undo_button)
-
-	# Combat speed (0.121): cycles 1x, 1.5x, 2x, 3x; applies to animations only.
-	_speed_button = Button.new()
-	_speed_button.text = SpeedRules.label(Fx.base_speed)
-	_speed_button.tooltip_text = "Animation speed. Your own time is never sped up."
-	_speed_button.pressed.connect(func() -> void:
-		Fx.set_combat_speed(SpeedRules.next(Fx.base_speed))
-		_speed_button.text = SpeedRules.label(Fx.base_speed)
-		SettingsTab.persist("combat_speed", Fx.base_speed))
-	_speed_button.anchor_left = 0.706
-	_speed_button.anchor_right = 0.762
-	_speed_button.anchor_top = 0.638
-	_speed_button.anchor_bottom = 0.681
-	add_child(_speed_button)
 
 	# Hero stands between the machine and the enemies.
 	_banner = Label.new()
@@ -825,7 +789,7 @@ func _start_guide() -> void:
 				return _ability_cards[0] if not _ability_cards.is_empty() else null},
 		{"text": "Click an enemy to aim at it. The numbers above an enemy are what it will do next turn.",
 			"on": &"", "side": "left", "target": first_enemy},
-		{"text": "Pass ends your turn. Chips left in the drawer are discarded; chips in sockets stay. Undo takes back this turn's actions.",
+		{"text": "Pass ends your turn. Chips left in the drawer are discarded; chips in sockets stay.",
 			"on": &"pass", "side": "above", "target": func() -> Control: return _end_turn},
 	] as Array[Dictionary])
 
@@ -847,17 +811,6 @@ func _on_end_turn() -> void:
 	_busy = false
 	if sim.phase == CombatSim.Phase.ROUND_START:
 		_next_round()
-
-
-## Undo turn (0.121): the sim restores its snapshot and emits `turn_undone`;
-## the handler puts every view back to the sim's truth.
-func _on_undo() -> void:
-	if _busy or not sim.can_undo():
-		return
-	_busy = true
-	sim.undo_turn()
-	await _play_events(_drain())
-	_busy = false
 
 
 ## Puts a foe's decision to the player and blocks until they answer, then
@@ -1389,25 +1342,6 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_hero_view.refresh()
 				for view: UnitView in _enemy_views.values():
 					view.refresh()
-			&"turn_undone":
-				# Everything back to the sim's truth: an enemy killed this turn
-				# stands up again, chips return to the drawer, sockets empty,
-				# bars and pips re-sync, the glow re-evaluates.
-				for id: StringName in _corpse_views.keys():
-					var corpse: UnitView = _corpse_views[id]
-					if corpse.actor != null and corpse.actor.is_alive():
-						_corpse_views.erase(id)
-						_enemy_views[id] = corpse
-						corpse.mouse_filter = Control.MOUSE_FILTER_STOP
-						corpse.revive()
-						var intent := sim.intent_display(id)
-						if not intent.is_empty():
-							corpse.show_intent(intent)
-				Audio.play_sfx(&"chip_return")
-				_refresh_all()
-				for card in _ability_cards:
-					card.set_glowing(AbilityCard.wants_glow(card.ability_def(), sim))
-				await get_tree().create_timer(0.25).timeout
 
 
 ## ---- attack animations (doc's Animations table) ----

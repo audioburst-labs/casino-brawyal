@@ -6,14 +6,6 @@ extends RefCounted
 var _chips: Dictionary = {}
 
 
-func snapshot() -> Dictionary:
-	return _chips.duplicate()
-
-
-func restore(snap: Dictionary) -> void:
-	_chips = snap.duplicate()
-
-
 func count(suit: StringName) -> int:
 	return _chips.get(suit, 0)
 

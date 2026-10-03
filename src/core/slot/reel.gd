@@ -30,17 +30,6 @@ func spin(rng: RandomNumberGenerator) -> StringName:
 	return symbol
 
 
-## The pool is part of an undo snapshot: a draw taken back must come out of
-## the same pool, or the undo changes every later spin.
-func snapshot() -> Dictionary:
-	return {"symbols": symbols.duplicate(), "pool": _pool.duplicate()}
-
-
-func restore(snap: Dictionary) -> void:
-	symbols.assign(snap.symbols)
-	_pool.assign(snap.pool)
-
-
 func refill_pool() -> void:
 	_pool.clear()
 	for symbol in symbols:

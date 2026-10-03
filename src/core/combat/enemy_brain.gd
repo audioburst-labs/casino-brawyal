@@ -29,21 +29,6 @@ func _init(config: Dictionary, moves: Dictionary) -> void:
 			_phase_brains.append(EnemyBrain.new(phase.get("brain", {}), moves))
 
 
-func snapshot() -> Dictionary:
-	var phases := []
-	for brain in _phase_brains:
-		phases.append(brain.snapshot())
-	return {"step": _step, "last_move": _last_move, "queue": _queue.duplicate(), "phases": phases}
-
-
-func restore(snap: Dictionary) -> void:
-	_step = int(snap.step)
-	_last_move = str(snap.last_move)
-	_queue.assign(snap.queue)
-	for i in mini(_phase_brains.size(), (snap.phases as Array).size()):
-		_phase_brains[i].restore(snap.phases[i])
-
-
 func next_move(rng: RandomNumberGenerator, hp_ratio: float = 1.0) -> String:
 	match _config.get("type", ""):
 		"sequence":

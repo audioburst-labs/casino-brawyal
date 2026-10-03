@@ -368,7 +368,7 @@ func test_combat_speed_round_trips_and_snaps_to_an_allowed_value() -> void:
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	file.store_string('{"v":1,"gameplay":{"combat_speed":7}}')
 	file = null
-	assert_eq(AppSettings.load_settings(SETTINGS_PATH).combat_speed, 3.0, "snapped to the top")
+	assert_eq(AppSettings.load_settings(SETTINGS_PATH).combat_speed, 2.0, "snapped to the top")
 
 
 func test_music_and_sfx_levels_are_clamped_on_load() -> void:

@@ -8,9 +8,9 @@ extends RefCounted
 ## force, and any slow-mo factor an animation asked for. Speed applies only
 ## while animations play, so tooltips, hovers and the player's own thinking
 ## time never run fast; a hitstop beats everything, because a freeze-frame at
-## 3x is not a freeze.
+## 2x is not a freeze.
 
-const ALLOWED: Array[float] = [1.0, 1.5, 2.0, 3.0]
+const ALLOWED: Array[float] = [1.0, 1.5, 2.0]
 const HITSTOP_SCALE := 0.05
 
 

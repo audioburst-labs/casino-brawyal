@@ -340,14 +340,14 @@ modifiers, so its printed number is right as it is.
 
 **Combat presenter contracts** (patch 0.19): the hero gets an `actor_died` event like anyone else, emitted between `damage_dealt` and `combat_lost`, so his death animation lands on the killing blow — the handler branches on `event.data.actor == sim.hero.id` because the enemy path is a "cash out" (confetti, `_enemy_views.erase`). `enemy_move` picks its animation from the intent via `_intent_strikes()`: only a move with `instances > 0` plays `play_attack()`, or a heal/summon animates as an attack on the hero. The victory/defeat banner is a full-rect Label with centred alignment — `PRESET_CENTER` on an empty Label bakes zero-size offsets and renders from screen centre rightward. End Turn ("Pass") has now lived in four places; since 0.21 it has its own strip between the enemy band and the ability row and must stay out of both.
 
-**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_BACKDROP_LOUD=1` (exaggerate every living-backdrop motion for review, 0.119), `CB_DEBUG_UNDO=1` (undo the turn after the autofires, 0.121), `CB_DEBUG_GUIDE=1` (show the first-fight guide in a debug drive) and `CB_DEBUG_OPEN_CODEX=1` (open the codex, 0.121), `CB_DEBUG_DRAG=N` (drag the first tray chip onto ability N through the real GUI, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
+**Debug hooks for screenshot review** (`tools/screenshot.gd` needs a window, no `--headless`): `CB_DEBUG_AUTORUN=1` (main.tscn straight into a run), `CB_DEBUG_ENEMIES="dealer,dealer,..."` (force any lineup, works from the run flow too), `CB_DEBUG_ABILITIES="face_reader,color_up,..."` (force a hand, 0.113), `CB_DEBUG_AUTOFIRE=N` (fire the Nth equipped ability), `CB_DEBUG_ENDTURN=N` (auto-end N turns so enemy phases animate), `CB_DEBUG_STICKERS="spade,heart"`, `CB_DEBUG_RELICS="gamblers_confidence,..."`, `CB_DEBUG_HERO_HP=N`, `CB_DEBUG_BANNER=victory|defeat`, `CB_DEBUG_TIERS=1|2` (every equipped ability at that upgrade tier), `CB_DEBUG_OPEN_LAYOUT` / `CB_DEBUG_OPEN_SETTINGS`, `CB_DEBUG_REELS=N` (standalone combat with an N-reel machine), `CB_DEBUG_AUTOSPIN=1` (the casino game plays itself), `CB_DEBUG_CASINO=slots|dice|hunt` (open one casino game directly), `CB_DEBUG_CHOICE=N` (auto-take option N of an Options In Combat choice), `CB_DEBUG_HERO_STATUS="weak,frail"` (put statuses on Ace, 0.118), `CB_DEBUG_BACKDROP_LOUD=1` (exaggerate every living-backdrop motion for review, 0.119), `CB_DEBUG_GUIDE=1` (show the first-fight guide in a debug drive) and `CB_DEBUG_OPEN_CODEX=1` (open the codex, 0.121), `CB_DEBUG_DRAG=N` (drag the first tray chip onto ability N through the real GUI, 0.118), `CB_DEBUG_ENEMY_STATUS="mark,weak"` (put statuses on every enemy at the start, for reviewing status-conditional UI like the card glow without playing into the state first, 0.116), `CB_DEBUG_STORY="cheap_tricks"` (open a story event standalone), `CB_DEBUG_MAP="combat,story,rest"` (open the Choice screen standalone with that history behind the player, so the path ribbon can be reviewed at any depth). `CB_DEBUG_AUTOFIRE` fills every socket, so multi-chip abilities (Flush) fire too. The sticker screen runs standalone with `CB_DEBUG_STICKERS`.
 
-**Combat speed and undo turn** (patch 0.121, phase 0 of the roadmap in
+**Combat speed** (patch 0.121, phase 0 of the roadmap in
 `docs/Casino_Brawyal_Status_Review_2026-09-30.pdf`).
 - **`Engine.time_scale` has one writer: `Fx._apply_time_scale()`**, fed by
   `SpeedRules.effective(base, animating, hitstop, slowmo)` (`src/core/speed_rules.gd`,
   pure, tested). The player's speed (`AppSettings.combat_speed`, one of
-  `SpeedRules.ALLOWED`) applies only while the presenter's `_busy` is true,
+  `SpeedRules.ALLOWED`: 1x, 1.5x, 2x, chosen only in the Settings tab, there is no button in combat) applies only while the presenter's `_busy` is true,
   so hovers, tooltips and thinking time never run fast; a hitstop beats
   everything; the ultimate's slow-mo is `Fx.set_slowmo(0.65)` and back to 1.0,
   never a literal write. Before 0.121 `hitstop()` and the flourish each wrote
@@ -356,22 +356,9 @@ modifiers, so its printed number is right as it is.
   `HeaderHud` divides `delta` by the time scale: it counts real seconds.
   Shader `TIME` in the living backdrop does follow the scale (the room drifts
   faster during 2x animations); accepted.
-- **Undo turn is a snapshot, not a replay.** `CombatSim.snapshot()/restore()`
-  copy every mutable field in place (actors keep identity so views stay
-  valid), including reel pools, every RNG stream's `state`, brain state and
-  the exclusive lock by index. The snapshot is taken at the end of
-  `_finish_round_start` and cleared by `end_assignment`; `can_undo()` needs an
-  action since (`_actions_since_snapshot`, counted in assign/unassign).
-  **Every script variable on `CombatSim` and `CombatActor` must be in
-  `SNAPSHOT_FIELDS` or `STATIC_FIELDS`**; `test_undo_turn.gd` fails the build
-  otherwise and also plays 30 seeds through a played-undone-replayed round
-  against a clean one, because a forgotten field is an undo that silently
-  changes later spins. `targeting` is deliberately static: the aim is the
-  player's, not an action. The event is `turn_undone` (KEEP in telemetry);
-  the presenter's arm revives corpses whose actor is alive again
-  (`UnitView.revive()`), re-shows their intents and runs `_refresh_all()`.
-- Debug: `CB_DEBUG_UNDO=1` undoes the turn five seconds after the last
-  autofire.
+- **There is no undo.** Undo turn shipped in 0.121 and was removed on the
+  designer's ruling ("it makes no sense"): the sim has no snapshot/restore,
+  no `turn_undone` event and no Undo button. Do not re-add it.
 
 **GIF capture** (patch 0.121): `tools/screenshot.gd` saves a frame sequence
 when `CB_CAPTURE_EVERY=K` (and `CB_CAPTURE_FROM=M`) are set, and
