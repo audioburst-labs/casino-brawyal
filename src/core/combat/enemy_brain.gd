@@ -29,6 +29,26 @@ func _init(config: Dictionary, moves: Dictionary) -> void:
 			_phase_brains.append(EnemyBrain.new(phase.get("brain", {}), moves))
 
 
+## Opens with `move_id` instead of the shuffled order (the tutorial fixes the
+## Bouncer's first move). Only a `pair_then` brain has an opening pair to
+## reorder; for any other kind this does nothing.
+func start_with(move_id: String) -> void:
+	if _config.get("type", "") != "pair_then":
+		return
+	var pair: Array = []
+	for move in _config.get("pair", []):
+		pair.append(str(move))
+	if not pair.has(move_id):
+		return
+	pair.erase(move_id)
+	pair.push_front(move_id)
+	_queue.clear()
+	for move in pair:
+		_queue.append(str(move))
+	for move in _config.get("then", []):
+		_queue.append(str(move))
+
+
 func next_move(rng: RandomNumberGenerator, hp_ratio: float = 1.0) -> String:
 	match _config.get("type", ""):
 		"sequence":

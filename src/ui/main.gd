@@ -6,6 +6,7 @@ func _ready() -> void:
 	Game.register_screen_root($ScreenRoot)
 	Fx.set_shake_target($ScreenRoot)
 	Fx.init_cursor()
+	AssetWarmup.start()
 	HeaderHud.attach(self)
 	# CB_DEBUG_AUTORUN=1: skip the main menu straight into a fresh run
 	# (header/settings/layout-tab review).

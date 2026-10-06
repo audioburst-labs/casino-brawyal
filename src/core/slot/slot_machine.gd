@@ -14,8 +14,14 @@ func _init() -> void:
 		reels.append(Reel.new())
 
 
-func spin(rng: RandomNumberGenerator) -> SpinResult:
+## `forced` lands the reels on exactly those symbols (a scripted fight, the
+## tutorial) without touching the dice; empty means a real spin.
+func spin(rng: RandomNumberGenerator, forced: Array = []) -> SpinResult:
 	var symbols: Array[StringName] = []
+	if forced.size() == reels.size():
+		for symbol in forced:
+			symbols.append(StringName(str(symbol)))
+		return SpinResult.new(symbols)
 	for reel in reels:
 		symbols.append(reel.spin(rng))
 	return SpinResult.new(symbols)

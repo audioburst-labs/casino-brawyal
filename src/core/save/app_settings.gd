@@ -28,8 +28,16 @@ var fullscreen := false
 var max_fps := 60
 ## Combat animation speed, one of `SpeedRules.ALLOWED` (phase 0 roadmap).
 var combat_speed := 1.0
-## The first-fight guide has been shown (or skipped) once on this machine.
-var tutorial_seen := false
+## The tutorial fight has been won and the player has moved on to Encounter 2
+## (doc "Tutorial"): until then every new run opens with it.
+var tutorial_completed := false
+## The title screen's "Play Tutorial" toggle: when on, every run opens with the
+## tutorial whether or not it was completed before (for testing and for
+## players who want it again).
+var play_tutorial := false
+## Stories already shown on this machine, so a new run leans on the ones the
+## player has not met (`StoryPicker`).
+var seen_stories: Array[String] = []
 ## Anything a newer build wrote that this one does not know about, kept so a
 ## downgrade does not silently drop the player's other preferences.
 var _unknown: Dictionary = {}
@@ -60,7 +68,10 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	settings.max_fps = int(display.get("max_fps", 60))
 	var gameplay: Dictionary = data.get("gameplay", {}) if data.get("gameplay") is Dictionary else {}
 	settings.combat_speed = SpeedRules.clamp_speed(float(gameplay.get("combat_speed", 1.0)))
-	settings.tutorial_seen = bool(gameplay.get("tutorial_seen", false))
+	settings.tutorial_completed = bool(gameplay.get("tutorial_completed", false))
+	settings.play_tutorial = bool(gameplay.get("play_tutorial", false))
+	for id: Variant in (gameplay.get("seen_stories", []) if gameplay.get("seen_stories") is Array else []):
+		settings.seen_stories.append(str(id))
 	for key: String in data:
 		if not ["v", "telemetry", "audio", "display", "gameplay"].has(key):
 			settings._unknown[key] = data[key]
@@ -77,7 +88,9 @@ func save(path: String = DEFAULT_PATH) -> bool:
 		"audio": {"volume_pct": volume_pct, "muted": muted,
 			"music_pct": music_pct, "sfx_pct": sfx_pct},
 		"display": {"fullscreen": fullscreen, "max_fps": max_fps},
-		"gameplay": {"combat_speed": combat_speed, "tutorial_seen": tutorial_seen},
+		"gameplay": {"combat_speed": combat_speed, "tutorial_completed": tutorial_completed,
+			"play_tutorial": play_tutorial,
+			"seen_stories": seen_stories},
 	}
 	for key: String in _unknown:
 		data[key] = _unknown[key]

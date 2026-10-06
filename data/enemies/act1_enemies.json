@@ -101,6 +101,45 @@
       }
     },
     {
+      "id": "drunk_patreon",
+      "name": "Drunk Patreon",
+      "hp_min": 12,
+      "hp_max": 15,
+      "brain": {
+        "type": "sequence",
+        "loop": true,
+        "steps": [
+          "wild_swing",
+          "liquid_courage"
+        ]
+      },
+      "moves": {
+        "wild_swing": {
+          "name": "Wild Swing",
+          "intent": {
+            "instances": 1,
+            "per_hit": 4,
+            "debuffs": []
+          }
+        },
+        "liquid_courage": {
+          "name": "Liquid Courage",
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_heal": 4,
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
       "id": "dealer",
       "name": "Dealer",
       "hp_min": 51,
@@ -144,7 +183,7 @@
         "deal_fast": {
           "intent": {
             "instances": 2,
-            "per_hit": 2,
+            "per_hit": 3,
             "debuffs": [],
             "self_status": [
               {
@@ -256,7 +295,7 @@
             "debuffs": [],
             "summon": {
               "enemy": "server",
-              "count": 1
+              "count": 2
             }
           }
         },
@@ -305,7 +344,7 @@
         "bash": {
           "intent": {
             "instances": 1,
-            "per_hit": 22,
+            "per_hit": 20,
             "debuffs": [],
             "gift_chips": 1
           }
@@ -322,7 +361,7 @@
         "crush": {
           "intent": {
             "instances": 3,
-            "per_hit": 7,
+            "per_hit": 6,
             "debuffs": [],
             "self_status": [
               {

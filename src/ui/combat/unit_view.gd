@@ -344,9 +344,17 @@ func setup(combat_actor: CombatActor) -> void:
 	# Fixed size reserved whether or not any statuses are showing — an icon
 	# appearing/disappearing must not change size or reflow the sprite
 	# (that reflow was pushing the whole unit upward: designer note).
-	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 35)
-	_status_row.clip_contents = true
-	add_child(_status_row)
+	# The slot is the fixed part; the row hangs inside it and may be taller (the
+	# Dealer's 21 plaque is 64 px) without moving the unit: a tall row used to
+	# push that unit up out of line with its neighbours and with Ace (0.121,
+	# "enemies at the same height as the player").
+	_status_row.custom_minimum_size = Vector2(UNIT_WIDTH, 0)
+	_status_row.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	var status_slot := Control.new()
+	status_slot.custom_minimum_size = Vector2(UNIT_WIDTH, 35)
+	status_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status_slot.add_child(_status_row)
+	add_child(status_slot)
 
 	gui_input.connect(_on_gui_input)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -413,6 +421,8 @@ func refresh_statuses() -> void:
 	for loan: Dictionary in actor.loans:
 		_add_loan_chip(loan)
 	_add_passive_chip()
+	_add_bonus_chip()
+	_update_bonus_fx()
 	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
 	_refresh_mark()
 
@@ -467,6 +477,87 @@ func _add_passive_chip() -> void:
 	if _shown_passive >= 0 and _shown_passive != actor.passive_counter:
 		chip.flash()
 	_shown_passive = actor.passive_counter
+
+
+## All In (designer, 0.121: "it has no special VFX to show that it's active").
+## While the actor carries a damage bonus for the turn it wears an ember aura,
+## a warm pulse and a "+30%" chip, all of which end with the bonus at the start
+## of its next turn.
+const BONUS_TINT := Color(1.0, 0.62, 0.22)
+var _bonus_fx: CPUParticles2D = null
+var _bonus_tween: Tween = null
+
+
+func _add_bonus_chip() -> void:
+	if actor == null or actor.damage_bonus_pct <= 0.0:
+		return
+	var percent := int(roundf(actor.damage_bonus_pct * 100.0))
+	var hint := "All In: deal %d%% more damage until your next turn." % percent
+	var icon := SuitAssets.status_texture(&"strength")
+	if icon != null:
+		var rect := TextureRect.new()
+		rect.texture = icon
+		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		rect.custom_minimum_size = Vector2(33, 33)
+		rect.modulate = BONUS_TINT
+		rect.tooltip_text = hint
+		rect.mouse_filter = Control.MOUSE_FILTER_PASS
+		_status_row.add_child(rect)
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", BONUS_TINT)
+	label.text = "+%d%% " % percent
+	label.tooltip_text = hint
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	_status_row.add_child(label)
+
+
+func is_empowered() -> bool:
+	return _bonus_fx != null
+
+
+func _update_bonus_fx() -> void:
+	var active := actor != null and actor.is_alive() and actor.damage_bonus_pct > 0.0
+	if not active:
+		if _bonus_tween != null:
+			_bonus_tween.kill()
+			_bonus_tween = null
+		if _bonus_fx != null:
+			_bonus_fx.queue_free()
+			_bonus_fx = null
+		if _sprite != null:
+			_sprite.self_modulate = Color.WHITE
+		return
+	if _bonus_fx != null or _sprite == null:
+		return
+	var embers := CPUParticles2D.new()
+	embers.amount = 22
+	embers.lifetime = 1.2
+	embers.local_coords = false
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(sprite_height * SPRITE_WIDTH_RATIO * 0.32, 6.0)
+	embers.position = Vector2(sprite_height * SPRITE_WIDTH_RATIO * 0.5, sprite_height * 0.9)
+	embers.direction = Vector2(0, -1)
+	embers.spread = 22.0
+	embers.gravity = Vector2(0, -34)
+	embers.initial_velocity_min = 45.0
+	embers.initial_velocity_max = 110.0
+	embers.scale_amount_min = 2.5
+	embers.scale_amount_max = 5.0
+	var ramp := Gradient.new()
+	ramp.colors = PackedColorArray([Color(1.0, 0.9, 0.5, 1.0), Color(1.0, 0.4, 0.12, 0.7),
+		Color(0.8, 0.1, 0.05, 0.0)])
+	ramp.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+	embers.color_ramp = ramp
+	embers.emitting = true
+	_sprite.add_child(embers)
+	_bonus_fx = embers
+	_bonus_tween = create_tween().set_loops()
+	_bonus_tween.tween_property(_sprite, "self_modulate", Color(1.35, 0.88, 0.7), 0.55) \
+		.set_trans(Tween.TRANS_SINE)
+	_bonus_tween.tween_property(_sprite, "self_modulate", Color(1.05, 1.0, 1.0), 0.55) \
+		.set_trans(Tween.TRANS_SINE)
 
 
 ## Doc "Loan": the debt shows as a scroll with the number of turns left on it,
@@ -670,6 +761,10 @@ func _refresh_mark() -> void:
 ## debuff/buff gets its status icon inline, ahead of its stack count.
 func show_intent(entry: Dictionary) -> void:
 	clear_intent()
+	# A stunned unit will not act, so it announces nothing (0.121: "when the
+	# Dealer is stunned, remove the attack icon above its head").
+	if actor != null and actor.has_status(&"stun"):
+		return
 	var intent: Dictionary = entry.get("intent", {})
 	for debuff: Dictionary in intent.get("debuffs", []):
 		_add_intent_chunk(StringName(str(debuff.get("status", ""))),
@@ -1179,6 +1274,43 @@ func play_death() -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(_sprite, "rotation", 0.12, 0.45)
 	tween.tween_property(self, "modulate:a", 0.0, 0.5)
+
+
+## Ace's own death (0.121: "add a player death animation"): he is not an
+## enemy cashing out, so no blowout and no fade. He reels from the killing
+## blow, drops to his knees, falls backwards away from the line and stays
+## down, greyed. Returns when he is on the floor, so the caller can hold the
+## banner until then. The caller waits for the killing blow's own animation
+## before calling it.
+func play_hero_death() -> void:
+	_update_bonus_fx()
+	var back := -1.0 if actor.is_hero else 1.0
+	if _sprite.material is ShaderMaterial:
+		_sprite.material.set_shader_parameter("flash", 0.8)
+		var flash := create_tween()
+		flash.tween_method(func(v: float) -> void:
+			_sprite.material.set_shader_parameter("flash", v), 0.8, 0.0, 0.3)
+	var origin := _sprite.position
+	var tween := create_tween()
+	# Reel from the blow.
+	tween.tween_property(_sprite, "position:x", origin.x + 16.0 * back, 0.14) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Down on the knees.
+	tween.tween_property(_sprite, "scale", Vector2(1.06, 0.8), 0.28) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Over backwards, pivoting on the feet, and the colour drains as he goes.
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "rotation", 1.45 * back, 0.55) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(_sprite, "position:x", origin.x + 34.0 * back, 0.55)
+	tween.tween_property(_sprite, "scale", Vector2(1.0, 0.92), 0.55)
+	tween.tween_property(_sprite, "modulate", Color(0.62, 0.56, 0.66, 1.0), 0.6)
+	# A small bounce as he lands.
+	tween.chain().tween_property(_sprite, "rotation", 1.37 * back, 0.1) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(_sprite, "rotation", 1.45 * back, 0.14) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await tween.finished
 
 
 func _on_gui_input(event: InputEvent) -> void:

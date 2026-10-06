@@ -89,10 +89,9 @@ var _busy := false:
 		# The speed toggle applies while events play and never while the
 		# player thinks (0.121); the busy flag is exactly that boundary.
 		Fx.set_animating(v)
-## The first-fight guide (0.121): built for a player's first fight on this
-## machine, started after the first spin, advanced by the actions it asks for.
-var _guide: FirstFightGuide = null
-var _guide_started := false
+## The scripted first fight (doc "Tutorial"): set only when the config carries
+## `tutorial`, which `Game` adds to Encounter 1 until it has been completed.
+var _tutorial: TutorialFlow = null
 var _busy_since := 0
 var _playing_event: StringName = &""
 ## Longer than any legitimate event sequence (a Flush against four enemies
@@ -391,6 +390,10 @@ func setup(config: Dictionary) -> void:
 	if get_viewport().gui_is_dragging():
 		push_warning("combat opened mid-drag; cancelling the stale drag")
 		get_viewport().gui_cancel_drag()
+	if bool(config.get("tutorial", false)):
+		_tutorial = TutorialFlow.new()
+		add_child(_tutorial)
+		_tutorial.begin(self)
 	_next_round.call_deferred()
 	_debug_drive.call_deferred()
 
@@ -462,10 +465,31 @@ func _debug_drive() -> void:
 	if drag_to > 0 and drag_to <= _ability_cards.size():
 		await get_tree().create_timer(4.0).timeout
 		await _debug_real_drag(_ability_cards[drag_to - 1])
+	# CB_DEBUG_TUTORIAL_DRIVE=1: do what the teacher asks, a few seconds after
+	# each prompt appears, so the whole walk-through can be captured.
+	if _tutorial != null and OS.get_environment("CB_DEBUG_TUTORIAL_DRIVE") != "":
+		await _debug_tutorial_drive()
 	var end_turns := OS.get_environment("CB_DEBUG_ENDTURN").to_int()
 	for i in end_turns:
 		await get_tree().create_timer(6.5).timeout
 		_on_end_turn()
+
+
+func _debug_tutorial_drive() -> void:
+	var plan := [
+		[TutorialFlow.Step.SLING, 0, 0, &"club"],
+		[TutorialFlow.Step.QUICK, 1, 0, &"diamond"],
+		[TutorialFlow.Step.FINAL, 2, 0, &"club"],
+	]
+	for entry: Array in plan:
+		while _tutorial.step != entry[0] or _busy:
+			await get_tree().create_timer(0.2).timeout
+		await get_tree().create_timer(3.0).timeout
+		_on_chip_dropped(entry[1], entry[2], entry[3])
+	while _tutorial.step != TutorialFlow.Step.PASS or _busy:
+		await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(3.0).timeout
+	_on_end_turn()
 
 
 func _debug_real_drag(card: AbilityCard) -> void:
@@ -719,7 +743,12 @@ func _next_round() -> void:
 	sim.begin_round()
 	# A pending "Options In Combat" choice is drained as a `choice_offered`
 	# event and awaited inside _play_events (patch 0.22).
-	await _play_events(_drain())
+	# The tutorial plays round 1 itself, with the teacher in the gaps; every
+	# other round, and every other fight, plays straight through.
+	if _tutorial != null and sim.round_number == 1:
+		await _tutorial.play_opening(_drain())
+	else:
+		await _play_events(_drain())
 	_busy = false
 	_refresh_all()
 
@@ -737,11 +766,18 @@ func _on_socket_clicked(ability_index: int, slot_index: int) -> void:
 func _on_chip_dropped(ability_index: int, slot_index: int, suit: StringName) -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
+	if _tutorial != null and not _tutorial.allows_drop(
+			sim.abilities[ability_index].def.id, suit):
+		return   # the teacher asked for a different chip
 	if sim.assign_chip(suit, ability_index, slot_index):
 		_busy = true
+		if _tutorial != null:
+			_tutorial.on_chip_assigned()
 		await _play_events(_drain())
 		_busy = false
 		_refresh_all()
+		if _tutorial != null:
+			_tutorial.on_resolved()
 
 
 func _on_unit_clicked(actor_id: StringName) -> void:
@@ -758,47 +794,54 @@ func _on_unit_clicked(actor_id: StringName) -> void:
 	_update_target_markers()
 
 
-## Shown once per machine, on the run's first fight, unless a debug drive is
-## running (screenshot drives stay clean) or CB_DEBUG_GUIDE=1 asks for it.
-func _wants_guide() -> bool:
-	if OS.get_environment("CB_DEBUG_GUIDE") != "":
-		return true
-	if not run_mode or Game.run == null or Game.run.encounter_number() != 1:
-		return false
-	if OS.get_environment("CB_DEBUG_AUTORUN") != "":
-		return false
-	return Telemetry.settings == null or not Telemetry.settings.tutorial_seen
+## ---- what the tutorial needs to reach (doc "Tutorial") ----
+
+func tutorial_target(which: StringName) -> Control:
+	match which:
+		&"machine":
+			return _cabinet
+		&"tray":
+			return _tray_view
+		&"hero":
+			return _hero_view
+		&"pass":
+			return _end_turn
+		&"enemy":
+			for view: UnitView in _enemy_views.values():
+				return view
+	return null
 
 
-func _start_guide() -> void:
-	_guide_started = true
-	_guide = FirstFightGuide.new()
-	_guide.finished.connect(func() -> void:
-		_guide = null
-		SettingsTab.persist("tutorial_seen", true))
-	add_child(_guide)
-	var first_enemy := func() -> Control:
-		for view: UnitView in _enemy_views.values():
-			return view
-		return null
-	_guide.begin([
-		{"text": "Every round starts with a spin. The chips it pays land in the drawer.",
-			"on": &"", "side": "right", "target": func() -> Control: return _cabinet},
-		{"text": "Drag a chip onto a card's socket. The card fires the moment its last socket fills. Hover a card to read its keywords.",
-			"on": &"chip_assigned", "side": "above", "target": func() -> Control:
-				return _ability_cards[0] if not _ability_cards.is_empty() else null},
-		{"text": "Click an enemy to aim at it. The numbers above an enemy are what it will do next turn.",
-			"on": &"", "side": "left", "target": first_enemy},
-		{"text": "Pass ends your turn. Chips left in the drawer are discarded; chips in sockets stay.",
-			"on": &"pass", "side": "above", "target": func() -> Control: return _end_turn},
-	] as Array[Dictionary])
+func tutorial_card(id: StringName) -> AbilityCard:
+	for card in _ability_cards:
+		if card.ability_def().id == id:
+			return card
+	return null
+
+
+func tutorial_chip(suit: StringName) -> Control:
+	return _tray_view.chip_button(suit)
+
+
+## Plays a slice of the round's events through the normal presenter.
+func tutorial_play(events: Array[CombatEvent]) -> void:
+	await _play_events(events)
+
+
+## The machine turning without landing, with the lever pulled.
+func tutorial_idle_spin() -> void:
+	Audio.play_sfx(&"lever_pull")
+	_cabinet.pull_lever()
+	_reel_strip.start_idle_spin()
 
 
 func _on_end_turn() -> void:
 	if _busy or sim.phase != CombatSim.Phase.ASSIGNMENT:
 		return
-	if _guide != null:
-		_guide.notice(&"pass")
+	if _tutorial != null:
+		if not _tutorial.allows_pass():
+			return
+		_tutorial.on_pass()
 	# Pass. `end_assignment` emits `turn_ended` for both sides, so the hero's
 	# own decision is clearer recorded at the button.
 	if run_mode and _summary != null:
@@ -1003,8 +1046,8 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var payout: Dictionary = event.data.get("payout", {})
 				for suit: StringName in payout:
 					_tray_view.reveal(suit, int(payout[suit]))
-				if not _guide_started and _wants_guide():
-					_start_guide()
+				if _tutorial != null:
+					_tutorial.on_spin_shown(sim.round_number)
 			&"chips_generated":
 				# Every chip that arrives outside a spin is SEEN arriving (0.117):
 				# Break falls from the Golem (0.114), a Gift flies from the enemy
@@ -1040,8 +1083,6 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					assigned_card.show_chip(event.data.slot, event.data.suit)
 				_tray_view.spend(event.data.suit)
 				Audio.play_sfx(&"chip_socket")
-				if _guide != null:
-					_guide.notice(&"chip_assigned")
 			&"chip_unassigned":
 				Audio.play_sfx(&"chip_return")
 				_tray_view.refresh()
@@ -1195,24 +1236,30 @@ func _play_events(events: Array[CombatEvent]) -> void:
 			&"actor_died":
 				var dead_view := _view_of(event.data.actor)
 				var hero_died: bool = event.data.actor == sim.hero.id
-				Audio.play_sfx(&"hero_down" if hero_died else &"enemy_cashout")
+				if not hero_died:
+					Audio.play_sfx(&"enemy_cashout")
 				if dead_view != null:
 					if hero_died:
-						# Ace going down is not a payout — no chips, no
-						# confetti. The screen darkens and he drops, on the
-						# same beat as the hit that killed him (patch 0.19).
+						# Ace going down is not a payout: no chips, no confetti. He
+						# waits for the killing blow to finish playing (0.121, the
+						# designer: "only after the animation of the killing attack
+						# ends"), then reels, kneels and falls.
+						await get_tree().create_timer(0.3).timeout
+						Audio.play_sfx(&"hero_down")
 						_vfx.vignette(0.6, 1.4)
-						_impact(dead_view.sprite_center())
 					else:
 						# Enemies cash out: a burst of house chips and a shockwave.
 						_vfx.shockwave(dead_view.sprite_center(), Color(1.0, 0.7, 0.4), 170.0)
 						_vfx.confetti(dead_view.sprite_center(), 18)
 						_sparks(dead_view.sprite_center(), Color(1.0, 0.85, 0.4), 20)
-					dead_view.play_death()
+					if hero_died:
+						await dead_view.play_hero_death()
+					else:
+						dead_view.play_death()
 					dead_view.clear_intent()
 				Fx.hitstop(0.1)
 				Fx.punch_zoom(0.04)
-				await get_tree().create_timer(0.45).timeout
+				await get_tree().create_timer(0.45 if not hero_died else 0.5).timeout
 				# The dead unit keeps its slot in the row (patch 0.17: no more
 				# auto-recentering the survivors) — it's already invisible
 				# from play_death()'s fade, so it just stops being a target.
@@ -1311,6 +1358,18 @@ func _play_events(events: Array[CombatEvent]) -> void:
 					Fx.spawn_number(busted.sprite_center(), "BUST!", Color(1.0, 0.85, 0.4))
 					_vfx.shockwave(busted.sprite_center(), Color(1.0, 0.85, 0.4), 150.0)
 					busted.refresh_statuses()
+					busted.clear_intent()  # it is stunned: it will not use that attack
+				await get_tree().create_timer(0.3).timeout
+			&"damage_bonus":
+				# All In (0.121): the hero lights up for the rest of the turn.
+				var empowered := _view_of(event.data.actor)
+				if empowered != null:
+					empowered.refresh_statuses()
+					Audio.play_sfx(&"buff_apply")
+					_vfx.shockwave(empowered.sprite_center(), Color(1.0, 0.55, 0.2), 170.0)
+					Fx.spawn_number(empowered.sprite_center(),
+						"ALL IN +%d%%" % int(roundf(float(event.data.pct) * 100.0)),
+						Color(1.0, 0.7, 0.3))
 				await get_tree().create_timer(0.3).timeout
 			&"rage_spent":
 				var raging := _view_of(event.data.actor)

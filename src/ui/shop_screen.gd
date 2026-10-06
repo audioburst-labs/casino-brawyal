@@ -430,33 +430,9 @@ func _empty_slot() -> Control:
 func _show_preview(anchor: Control, id: StringName, tier: int) -> void:
 	_hide_preview()
 	var def := Db.content.get_ability(id, tier)
-	_preview = PanelContainer.new()
+	_preview = AbilityCard.detail_panel(def, tier)
 	_preview.top_level = true
 	_preview.z_index = 220
-	_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_preview.add_theme_stylebox_override("panel", TierStyle.panel(tier))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
-	_preview.add_child(column)
-
-	var title := Label.new()
-	title.text = def.name if tier == 0 else "%s (%s)" % [def.name, TierStyle.label(tier)]
-	title.theme_type_variation = &"SubtitleLabel"
-	title.add_theme_font_size_override("font_size", 22)
-	if tier > 0:
-		title.add_theme_color_override("font_color", TierStyle.color(tier))
-	column.add_child(title)
-
-	column.add_child(AbilityCard.cost_row(def))
-	var limits := AbilityCard.limits_row(def)
-	if limits.get_child_count() > 0:
-		column.add_child(limits)
-	var text := Label.new()
-	text.text = def.description
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(280, 0)
-	text.add_theme_font_size_override("font_size", 16)
-	column.add_child(text)
 
 	add_child(_preview)
 	await get_tree().process_frame

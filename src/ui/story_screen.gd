@@ -33,7 +33,7 @@ func setup(args: Dictionary) -> void:
 	content.add_child(_choice_row)
 	for choice: Dictionary in _event.choices:
 		var card := make_card(choice.get("label", "?"),
-			[str(choice.get("summary", ""))] as Array[String], _pick.bind(choice))
+			[RunEffects.summary_text(choice, Game.run)] as Array[String], _pick.bind(choice))
 		card.custom_minimum_size = Vector2(300, 130)
 		_choice_row.add_child(card)
 

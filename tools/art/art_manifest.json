@@ -314,8 +314,8 @@
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a stocky intimidating casino pit boss. Barrel-chested in a pinstripe maroon suit with a gold pocket-watch chain, slicked hair, chewed toothpick, one hand raised snapping fingers to command underlings, gold rings on every finger. Facing slightly left. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
-      "id": "enemy_tipsy_patron",
-      "out": "assets/characters/enemy_tipsy_patron.png",
+      "id": "enemy_drunk_patreon",
+      "out": "assets/characters/enemy_drunk_patreon.png",
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a wobbly tipsy casino patron spoiling for a fight. Rumpled cream suit with a loosened maroon tie and one untucked shirt tail, flushed cheeks, one eye squinted, swinging a cocktail glass sloshing green liquid, fists half-raised in a comically unsteady boxing stance leaning at an angle. Facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."

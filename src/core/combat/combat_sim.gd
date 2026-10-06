@@ -70,6 +70,13 @@ var _has_lucky_foot := false
 var _active_ability: AbilityState = null
 var _exclusive_lock: AbilityState = null   # set when an exclusive ability fires
 var _summon_counter := 0
+## Scripted fights (the tutorial): the symbols the machine lands on for the Nth
+## spin of the fight, and the move a given enemy kind opens with. Anything
+## past the script falls back to the dice, so a scripted fight ends as a normal
+## one. `config["scripted_spins"]` is an array of per-spin symbol arrays.
+var _scripted_spins: Array = []
+var _spin_index := 0
+var _first_moves: Dictionary = {}
 
 
 func _init(db: ContentDB, config: Dictionary) -> void:
@@ -78,6 +85,8 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 	machine = config.get("machine", SlotMachine.new())
 	_dmg_mult = float(config.get("dmg_mult", 1.0))
 	_hp_mult = float(config.get("hp_mult", 1.0))
+	_scripted_spins = (config.get("scripted_spins", []) as Array).duplicate(true)
+	_first_moves = (config.get("first_moves", {}) as Dictionary).duplicate()
 
 	var hero_def := db.get_hero(StringName(str(config.get("hero", "ace"))))
 	# The run's ceiling, not the def's (0.117): a raised max HP used to reach
@@ -147,7 +156,7 @@ func active_ability_multiplier() -> float:
 ## What a damage op's base would deal right now (hero modifiers + emblems,
 ## before the target's defenses). Used for live numbers on ability cards.
 func preview_damage(base: int, ability: AbilityState) -> int:
-	var damage := StatusRules.attack_damage(base, hero, _weak_pct)
+	var damage := StatusRules.attack_damage(base + hero.status_stacks(&"rage"), hero, _weak_pct)
 	return int(floor(damage * ability_multiplier(ability) + 0.5))
 
 
@@ -564,7 +573,11 @@ func spin_again() -> void:
 
 
 func _spin_machine() -> void:
-	var result := machine.spin(rng.stream(&"combat"))
+	var forced: Array = []
+	if _spin_index < _scripted_spins.size():
+		forced = _scripted_spins[_spin_index]
+	_spin_index += 1
+	var result := machine.spin(rng.stream(&"combat"), forced)
 	last_symbols = result.symbols
 	last_payout = result.payout
 	tray.add_payout(result.payout)
@@ -589,6 +602,8 @@ func _spawn_enemy(def_id: StringName, announce := true,
 	else:
 		enemies.insert(slot, enemy)
 	_brains[enemy.id] = EnemyBrain.new(def.brain, def.moves)
+	if _first_moves.has(String(def.id)):
+		_brains[enemy.id].start_with(str(_first_moves[String(def.id)]))
 	_evict_outermost_corpse()
 	if announce:
 		emit_event(&"enemy_summoned",

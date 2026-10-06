@@ -132,6 +132,14 @@ func choose_encounter(option: Dictionary) -> void:
 		"chose": String(option.type), "offered": offered,
 		"encounter": run.encounter_number(), "path": String(run.path_id),
 	})
+	# Doc "Tutorial": it keeps appearing "until the player beats the Bouncer,
+	# moving forward to the reward screen for winning the encounter, and choosing
+	# Encounter #2 afterwards". This is that choice.
+	if run.tutorial_won:
+		run.tutorial_won = false
+		if Telemetry.settings != null:
+			Telemetry.settings.tutorial_completed = true
+			Telemetry.settings.save(Telemetry.SETTINGS_PATH)
 	run.record_visit(option.type)
 	# Remembered until the encounter is finished or banked, so a save taken
 	# mid-encounter resumes it rather than skipping it (0.0.111).
@@ -222,6 +230,8 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 		RunSave.clear()
 		goto_screen("res://scenes/screens/game_over_screen.tscn")
 		return
+	if bool(run.pending_encounter.get("tutorial", false)):
+		run.tutorial_won = true
 	run.pending_encounter = {}
 	run.hp = maxi(1, hero_hp)
 	# A story choice can stake something on the next fight (the sheet's
@@ -243,15 +253,36 @@ func combat_finished(won: bool, hero_hp: int, pending_rewards: Array) -> void:
 		})
 
 
+## Does this run's first fight become the tutorial? Always when the title
+## screen's "Play Tutorial" toggle is on, otherwise until it has been completed
+## once on this machine. `CB_DEBUG_TUTORIAL=1` forces it for a review drive;
+## the other debug drives stay clean without it.
+func tutorial_wanted() -> bool:
+	if OS.get_environment("CB_DEBUG_TUTORIAL") != "":
+		return true
+	if OS.get_environment("CB_DEBUG_AUTORUN") != "":
+		return false
+	var settings := Telemetry.settings
+	return settings != null and (settings.play_tutorial or not settings.tutorial_completed)
+
+
 func _start_combat(option: Dictionary) -> void:
 	# A resumed fight comes back with the lineup and seed it left with.
 	var pinned := option.duplicate()
+	var tutorial: bool = bool(run.pending_encounter.get("tutorial", false)) \
+		or (option.type == &"combat" and tutorial_wanted()
+			and TutorialScript.applies(run.history.size(), run.ability_ids))
+	if tutorial:
+		pinned["lineup"] = TutorialScript.LINEUP
 	if run.pending_encounter.has("lineup"):
 		pinned["lineup"] = StringName(str(run.pending_encounter.lineup))
 	var config := EncounterFactory.combat_config(Db.content, run,
 		rng.stream(&"map"), pinned)
 	config["seed"] = int(run.pending_encounter.get("seed",
 		rng.stream(&"combat_seeds").randi()))
+	if tutorial:
+		config = TutorialScript.apply(config)
+		run.pending_encounter["tutorial"] = true
 	run.pending_encounter["lineup"] = String(config.lineup)
 	run.pending_encounter["seed"] = int(config.seed)
 	# Remembered the moment it is drawn (0.117): an Elite is fought once per
@@ -358,13 +389,12 @@ func play_cinematic(path: String, on_done: Callable) -> void:
 
 
 func _pick_story_event() -> StringName:
-	var unseen: Array[StringName] = []
-	for id: StringName in Db.content.all_story_event_ids():
-		if not run.seen_events.has(id):
-			unseen.append(id)
-	if unseen.is_empty():
-		for id: StringName in Db.content.all_story_event_ids():
-			unseen.append(id)
-	var picked := unseen[rng.stream(&"map").randi_range(0, unseen.size() - 1)]
+	var all_ids := Db.content.all_story_event_ids()
+	var settings := Telemetry.settings
+	var ever: Array = settings.seen_stories if settings != null else []
+	var picked := StoryPicker.pick(all_ids, run.seen_events, ever, rng.stream(&"map"))
 	run.seen_events.append(picked)
+	if settings != null:
+		settings.seen_stories = StoryPicker.remember(all_ids, ever, picked)
+		settings.save(Telemetry.SETTINGS_PATH)
 	return picked

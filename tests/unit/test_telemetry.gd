@@ -351,12 +351,16 @@ func test_music_and_sfx_levels_round_trip() -> void:
 	assert_eq(reloaded.sfx_pct, 70.0)
 
 
-func test_the_first_fight_guide_remembers_it_was_seen() -> void:
+func test_the_tutorial_flags_round_trip() -> void:
 	var settings := AppSettings.new()
-	assert_false(settings.tutorial_seen, "a fresh install gets the guide")
-	settings.tutorial_seen = true
+	assert_false(settings.tutorial_completed, "a fresh install gets the tutorial")
+	assert_false(settings.play_tutorial, "the title toggle starts off")
+	settings.tutorial_completed = true
+	settings.play_tutorial = true
 	assert_true(settings.save(SETTINGS_PATH))
-	assert_true(AppSettings.load_settings(SETTINGS_PATH).tutorial_seen)
+	var reloaded := AppSettings.load_settings(SETTINGS_PATH)
+	assert_true(reloaded.tutorial_completed)
+	assert_true(reloaded.play_tutorial)
 
 
 func test_combat_speed_round_trips_and_snaps_to_an_allowed_value() -> void:

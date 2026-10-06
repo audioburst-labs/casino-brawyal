@@ -100,6 +100,38 @@ static func cost_row(def: Defs.AbilityDef, side := 26.0) -> HBoxContainer:
 	return row
 
 
+## The full look of an ability for a hover: name (with its tier), the sockets it
+## needs, its use limits and its text. The Shop's loadout preview and the Layout
+## Tab's tooltip share it (designer, 0.121: hovering an ability in the Layout
+## Tab and the Shop's Layout Area should also show the icons needed to use it).
+static func detail_panel(def: Defs.AbilityDef, tier: int) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", TierStyle.panel(tier))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = def.name if tier == 0 else "%s (%s)" % [def.name, TierStyle.label(tier)]
+	title.theme_type_variation = &"SubtitleLabel"
+	title.add_theme_font_size_override("font_size", 22)
+	if tier > 0:
+		title.add_theme_color_override("font_color", TierStyle.color(tier))
+	column.add_child(title)
+	column.add_child(cost_row(def))
+	var limits := limits_row(def)
+	if limits.get_child_count() > 0:
+		column.add_child(limits)
+	var text := Label.new()
+	text.text = def.description
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.custom_minimum_size = Vector2(280, 0)
+	text.add_theme_font_size_override("font_size", 16)
+	column.add_child(text)
+	return panel
+
+
 ## The use-limit pills, for lists outside combat (designer, 0.117: "all
 ## appearances of abilities should show whether they are once per turn or
 ## once per fight"). Empty when the ability has no limit.

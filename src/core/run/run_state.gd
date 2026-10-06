@@ -40,6 +40,9 @@ var sticker_inventory: Array[StringName] = []  # bought, unplaced sticker suits
 ## outlive the story screen and be paid by `combat_finished`, not by the
 ## choice itself. Cleared whether that fight is won or lost.
 var bonus_rewards: Array[Dictionary] = []
+## The tutorial fight was won this run; completion is recorded when the player
+## picks Encounter 2 after it (doc "Tutorial").
+var tutorial_won := false
 ## Every lineup this run has fought, in order (patch 0.117). The designer's
 ## rule is that an Elite is fought at most once per run: two Elite nodes must
 ## be two different Elites, so the factory excludes these from the pool.
@@ -207,6 +210,7 @@ func to_dict() -> Dictionary:
 		"shop_offers": shop_offers,
 		"pending_encounter": pending_encounter,
 		"bonus_rewards": bonus_rewards,
+		"tutorial_won": tutorial_won,
 		"fought_lineups": fought_lineups.map(func(s: StringName) -> String: return String(s)),
 	}
 
@@ -242,6 +246,7 @@ static func from_dict(data: Dictionary) -> RunState:
 		run.relic_ids.append(StringName(str(id)))
 	for suit in data.get("sticker_inventory", []):
 		run.sticker_inventory.append(StringName(str(suit)))
+	run.tutorial_won = bool(data.get("tutorial_won", false))
 	for reward: Dictionary in data.get("bonus_rewards", []):
 		run.bonus_rewards.append(reward)
 	for id in data.get("fought_lineups", []):

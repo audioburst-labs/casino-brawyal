@@ -15,9 +15,11 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 			continue
 		match str(effect.get("op", "")):
 			"damage":
+				var had_rage := source.has_status(&"rage")
 				for recipient in _damage_targets(effect, sim, target):
 					_deal_damage(int(effect.get("amount", 0)) , int(effect.get("times", 1)),
 						sim, source, recipient)
+				_spend_rage(sim, source, had_rage)
 			"damage_missing_pct":
 				if target != null and target.is_alive():
 					var missing := target.max_hp - target.hp
@@ -43,8 +45,10 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				# River itself counts - `abilities_fired_this_round` is incremented
 				# before effects run - so it can never deal nothing.
 				var each := int(effect.get("amount", 0)) * sim.abilities_fired_this_round
+				var had_rage_river := source.has_status(&"rage")
 				for recipient in _damage_targets(effect, sim, target):
 					_deal_damage(each, 1, sim, source, recipient)
+				_spend_rage(sim, source, had_rage_river)
 			"damage_bonus_pct":
 				# All In: everything the hero throws for the rest of this turn.
 				source.damage_bonus_pct += float(effect.get("pct", 0.0))
@@ -193,7 +197,8 @@ static func _deal_damage(amount: int, times: int, sim: CombatSim,
 	for i in times:
 		if target == null or not target.is_alive():
 			return
-		var damage := StatusRules.attack_damage(amount, source, sim.weak_pct())
+		var damage := StatusRules.attack_damage(
+			amount + source.status_stacks(&"rage"), source, sim.weak_pct())
 		damage = int(floor(damage * sim.active_ability_multiplier() + 0.5))
 		damage = StatusRules.damage_taken(damage, target, sim.vulnerable_pct())
 		var hp_lost := target.take_damage(damage)
@@ -204,6 +209,17 @@ static func _deal_damage(amount: int, times: int, sim: CombatSim,
 		})
 		sim.on_enemy_damaged(target, hp_lost)
 		sim.check_death(target)
+
+
+## Rage X: "your next attack deals X bonus damage", on every hit of it, then it
+## is spent (designer's call, same as an enemy's Rage). Slow Playing granted
+## the stacks for nine patches and nothing ever read them or spent them.
+static func _spend_rage(sim: CombatSim, source: CombatActor, had_rage: bool) -> void:
+	if not had_rage:
+		return
+	var spent := source.status_stacks(&"rage")
+	source.statuses.erase(&"rage")
+	sim.emit_event(&"rage_spent", {"actor": source.id, "amount": spent})
 
 
 ## Bypasses attacker modifiers (used for missing-health damage).
@@ -264,6 +280,7 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 	for recipient: CombatActor in recipients:
 		if not recipient.is_alive():
 			continue
+		var was_marked := recipient.has_status(&"mark")
 		if status == &"mark":
 			# Mark is a toggle, not a stack (designer, 0.117): an enemy is
 			# marked or it is not, and one Cash In spends the whole thing.
@@ -274,8 +291,11 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 			recipient.apply_status(status, stacks)
 		sim.emit_event(&"status_applied",
 			{"actor": recipient.id, "status": status, "stacks": stacks})
-		# Sharp Edge: "when you Mark, also deal X" (sheet v0.122).
-		if status == &"mark" and not recipient.is_hero:
+		# Sharp Edge: "when you Mark, also deal X" (sheet v0.122). Only a Mark
+		# that actually goes ON an unmarked enemy counts (designer, 0.121:
+		# "it shouldn't deal damage when a Mark is applied to a target that's
+		# already marked").
+		if status == &"mark" and not recipient.is_hero and not was_marked:
 			sim.on_enemy_marked(recipient)
 
 

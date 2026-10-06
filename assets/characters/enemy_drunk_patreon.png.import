@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfboco4b18m7q"
-path="res://.godot/imported/enemy_tipsy_patron.png-66b11a61a4719abb9ed949d0bb4856e5.ctex"
+uid="uid://dvix52d2gvoe7"
+path="res://.godot/imported/enemy_drunk_patreon.png-11cb8396ad6028dbaa83f725e840a9d6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/enemy_tipsy_patron.png"
-dest_files=["res://.godot/imported/enemy_tipsy_patron.png-66b11a61a4719abb9ed949d0bb4856e5.ctex"]
+source_file="res://assets/characters/enemy_drunk_patreon.png"
+dest_files=["res://.godot/imported/enemy_drunk_patreon.png-11cb8396ad6028dbaa83f725e840a9d6.ctex"]
 
 [params]
 

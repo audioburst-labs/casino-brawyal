@@ -20,7 +20,7 @@
         },
         {
           "label": "Take the Bucket",
-          "summary": "Gain 5 coins per encounter",
+          "summary": "Gain {coins} coins",
           "outcome": "He does not even look up as you lift it. The coins are warm, which is somehow worse than if they had been cold.",
           "effects": [
             {
@@ -49,7 +49,7 @@
       "choices": [
         {
           "label": "Just the Finger",
-          "summary": "Lose 1 HP per encounter, gain 3 coins per encounter",
+          "summary": "Lose {hp} HP, gain {coins} coins",
           "outcome": "In and out. The teeth close a half-second late and take a strip of knuckle with them. You have had worse from a bad hand.",
           "effects": [
             {
@@ -64,7 +64,7 @@
         },
         {
           "label": "The Entire Hand",
-          "summary": "Lose 3 HP per encounter, gain 7 coins per encounter",
+          "summary": "Lose {hp} HP, gain {coins} coins",
           "outcome": "You go in to the wrist. The machine pays, and it bites, and for a moment you genuinely cannot say which hurt more. You leave rich and dripping.",
           "effects": [
             {
@@ -119,7 +119,7 @@
       "choices": [
         {
           "label": "Go Left",
-          "summary": "Gain 5 coins per encounter",
+          "summary": "Gain {coins} coins",
           "outcome": "Coins, and plenty of them. They do not notice, or they do not care, and both spend the same.",
           "effects": [
             {

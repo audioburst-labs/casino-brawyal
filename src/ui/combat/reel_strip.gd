@@ -212,6 +212,7 @@ func _populate(clip: Control, final: StringName, override: Texture2D = null) -> 
 ## landing cell and springing back — staggered left to right, so the reels
 ## stop one at a time.
 func spin_to(symbols: Array, landing_textures: Array = []) -> void:
+	stop_idle_spin()
 	var spins: Array[Dictionary] = []
 	for i in mini(symbols.size(), _windows.size()):
 		var override: Texture2D = null
@@ -235,6 +236,29 @@ func spin_to(symbols: Array, landing_textures: Array = []) -> void:
 	if last_tween != null:
 		await last_tween.finished
 	await get_tree().create_timer(0.1).timeout
+
+
+## The reels turning without landing (the tutorial's opening shot: the machine
+## spins while the teacher talks, and only stops when told to). `spin_to`
+## replaces it, so the next real spin starts from here.
+var _idle_tweens: Array[Tween] = []
+
+
+func start_idle_spin() -> void:
+	stop_idle_spin()
+	for i in _windows.size():
+		var info := _populate(_windows[i], ContentDB.SUITS[i % ContentDB.SUITS.size()])
+		var strip: VBoxContainer = info.strip
+		var tween := create_tween().set_loops()
+		tween.tween_property(strip, "position:y", float(info.land_y), 0.55) \
+			.from(float(info.start_y)).set_trans(Tween.TRANS_LINEAR)
+		_idle_tweens.append(tween)
+
+
+func stop_idle_spin() -> void:
+	for tween in _idle_tweens:
+		tween.kill()
+	_idle_tweens.clear()
 
 
 ## One reel coming to rest: the landed face pops, and on the Casino machine its

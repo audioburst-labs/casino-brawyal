@@ -211,7 +211,7 @@ func test_the_dealer_no_longer_raffles_blackjack() -> void:
 	var dealer := _db.get_enemy(&"dealer")
 	assert_eq(dealer.hp_min, 51)
 	assert_eq(dealer.hp_max, 55)
-	# Sheet v0.122: the first two moves are 2x3, the third is still 2x2 with
+	# Sheet v0.122: the first two moves are 2x3, the third is 2x3 too (sheet v0.121 corrected it from 2x2), with
 	# Multistrike (patch 0.114).
 	for move_id: String in dealer.moves:
 		var intent: Dictionary = dealer.moves[move_id].intent

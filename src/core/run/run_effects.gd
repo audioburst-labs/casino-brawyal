@@ -11,7 +11,35 @@ const SUITS: Array[StringName] = [&"spade", &"heart", &"club", &"diamond"]
 ## same card is worth more the deeper you take it. Encounter 1 still pays,
 ## which is why this multiplies rather than using (n - 1).
 static func _scaled(effect: Dictionary, run: RunState) -> int:
-	return int(effect.get("per_encounter", 0)) * run.encounter_number()
+	return int(effect.get("per_encounter", 0)) * (run.encounter_number() if run != null else 1)
+
+
+## What a list of effects will actually pay or cost RIGHT NOW, so a card can print
+## the final figure instead of the formula (designer, 0.121: "options that give
+## coins should show the final amount the player will get"). Fixed-amount and
+## per-encounter prices only; a ranged payout has no single figure to show.
+static func preview(effects: Array, run: RunState) -> Dictionary:
+	var coins := 0
+	var hp := 0
+	for effect: Dictionary in effects:
+		match str(effect.get("op", "")):
+			"gain_coins":
+				if effect.has("per_encounter"):
+					coins += _scaled(effect, run)
+				elif effect.has("amount"):
+					coins += int(effect.get("amount"))
+			"lose_hp":
+				hp += _scaled(effect, run) if effect.has("per_encounter") \
+					else int(effect.get("amount", 0))
+	return {"coins": coins, "hp": hp}
+
+
+## A choice's summary line with its `{coins}` and `{hp}` filled in for the
+## encounter the player is on.
+static func summary_text(choice: Dictionary, run: RunState) -> String:
+	var figures := preview(choice.get("effects", []), run)
+	return str(choice.get("summary", "")) \
+		.replace("{coins}", str(figures.coins)).replace("{hp}", str(figures.hp))
 
 
 static func apply(effects: Array, db: ContentDB, run: RunState,

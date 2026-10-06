@@ -63,15 +63,15 @@ func test_one_cash_in_clears_the_mark_entirely() -> void:
 	assert_eq(sim.enemies[0].hp, before, "Bust unmarked does nothing")
 
 
-func test_a_second_mark_still_fires_the_mark_triggers() -> void:
-	# Sharp Edge's passive pays on every Mark landed, toggle or not: the
-	# trigger is "when you Mark", not "when the count goes up".
+func test_a_second_mark_does_not_fire_the_mark_triggers() -> void:
+	# Reversed in 0.121 (designer): Sharp Edge pays when a Mark goes ON, not
+	# when one is merely applied to an enemy that already wears it.
 	var sim := _sim(["bouncer"], ["sharp_edge", "card_sling"])
 	_fire(sim, 0)
 	sim.drain_events()
 	_fire(sim, 1)
 	var fired := _types(sim).count(&"passive_fired")
-	assert_eq(fired, 1, "Sharp Edge fired for the second Mark too")
+	assert_eq(fired, 0, "already marked, so Sharp Edge stays quiet")
 
 
 # ------------------------------------------------------------ Chip Tricks

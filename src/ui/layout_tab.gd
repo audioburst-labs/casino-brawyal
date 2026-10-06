@@ -15,6 +15,10 @@ class AbilityChit:
 	var ability_id: StringName = &""
 	var zone: StringName = &""
 	var screen: Node = null
+	## What the hover shows (set by whoever builds the chit): the full ability
+	## look, sockets included, instead of a plain text line.
+	var tooltip_def: Defs.AbilityDef = null
+	var tooltip_tier := 0
 
 	func _get_drag_data(_position: Vector2) -> Variant:
 		var preview := Label.new()
@@ -22,6 +26,11 @@ class AbilityChit:
 		preview.theme_type_variation = &"SubtitleLabel"
 		set_drag_preview(preview)
 		return {"ability": ability_id}
+
+	func _make_custom_tooltip(_for_text: String) -> Object:
+		if tooltip_def == null:
+			return null
+		return AbilityCard.detail_panel(tooltip_def, tooltip_tier)
 
 	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
 		return data is Dictionary and data.has("ability") and data.ability != ability_id
@@ -275,6 +284,8 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	chit.tooltip_text = "%s%s\n%s" % [def.name,
 		" (%s)" % TierStyle.label(tier) if tier > 0 else "",
 		def.description] if def else String(id)
+	chit.tooltip_def = def
+	chit.tooltip_tier = tier
 	if tier > 0:
 		chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))
 	var box := VBoxContainer.new()

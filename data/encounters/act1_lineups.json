@@ -21,10 +21,13 @@
       "gold_max": 33
     },
     {
-      "id": "cold_deck",
+      "id": "happy_hour",
       "stage": 1,
       "enemies": [
-        "dealer"
+        "drunk_patreon",
+        "drunk_patreon",
+        "drunk_patreon",
+        "drunk_patreon"
       ],
       "gold_min": 27,
       "gold_max": 33
@@ -50,10 +53,11 @@
       "gold_max": 43
     },
     {
-      "id": "triple_shift",
+      "id": "rowdy_tables",
       "stage": 2,
       "enemies": [
-        "server",
+        "drunk_patreon",
+        "drunk_patreon",
         "server",
         "server"
       ],
@@ -93,31 +97,32 @@
       "id": "managers_pet",
       "stage": 4,
       "enemies": [
-        "server",
+        "drunk_patreon",
         "manager"
       ],
       "gold_min": 57,
       "gold_max": 63
     },
     {
-      "id": "full_service",
+      "id": "bar_brawl",
       "stage": 4,
       "enemies": [
         "bouncer",
         "server",
-        "server",
-        "server"
+        "drunk_patreon",
+        "drunk_patreon"
       ],
       "gold_min": 57,
       "gold_max": 63
     },
     {
-      "id": "audit_night",
+      "id": "last_call",
       "stage": 4,
       "enemies": [
         "dealer",
-        "dealer",
-        "server"
+        "server",
+        "drunk_patreon",
+        "drunk_patreon"
       ],
       "gold_min": 57,
       "gold_max": 63
