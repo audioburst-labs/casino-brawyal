@@ -809,6 +809,15 @@ func tutorial_target(which: StringName) -> Control:
 		&"enemy":
 			for view: UnitView in _enemy_views.values():
 				return view
+		&"enemy_hp":
+			for view: UnitView in _enemy_views.values():
+				return view.hp_panel()
+	return null
+
+
+func tutorial_head_rect() -> Variant:
+	for view: UnitView in _enemy_views.values():
+		return view.head_rect()
 	return null
 
 
@@ -1044,8 +1053,15 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				# gift chips the Loan Shark had already put in the live tray,
 				# before their own arrival had played.
 				var payout: Dictionary = event.data.get("payout", {})
+				# The flourish already revealed one chip per landed symbol; what is
+				# left is the three-of-a-kind bonus.
+				var landed_counts := {}
+				for landed in event.data.symbols:
+					landed_counts[StringName(str(landed))] = int(landed_counts.get(StringName(str(landed)), 0)) + 1
 				for suit: StringName in payout:
-					_tray_view.reveal(suit, int(payout[suit]))
+					var remainder := int(payout[suit]) - int(landed_counts.get(suit, 0))
+					if remainder > 0:
+						_tray_view.reveal(suit, remainder)
 				if _tutorial != null:
 					_tutorial.on_spin_shown(sim.round_number)
 			&"chips_generated":
@@ -1947,6 +1963,7 @@ func _payout_flourish(symbols: Array) -> void:
 		var chip_path := "res://assets/icons/chip_%s.png" % symbols[i]
 		if not ResourceLoader.exists(chip_path):
 			continue
+		var landed_suit := StringName(str(symbols[i]))
 		var chip := TextureRect.new()
 		chip.texture = load(chip_path)
 		chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1967,7 +1984,11 @@ func _payout_flourish(symbols: Array) -> void:
 		hop.chain().tween_callback(func() -> void:
 			_sparks(tray_center, Color(1.0, 0.9, 0.6), 6)
 			Audio.play_sfx(&"chip_land")
-			_tray_view.refresh()
+			# One chip per landing. A refresh() here showed the WHOLE tray at the
+			# first landing, the bonus chip and any gift chip the sim had already
+			# put there, before their own animation (0.122: the Chip Golem's chip
+			# appearing out of step with its animation).
+			_tray_view.reveal(landed_suit, 1)
 			chip.queue_free())
 		await get_tree().create_timer(0.09).timeout  # one payoff per beat
 	await get_tree().create_timer(0.22).timeout

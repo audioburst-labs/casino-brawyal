@@ -660,82 +660,65 @@
           "suit": "club"
         }
       ],
-      "description": "Deal 20. Cash In: Deal 30 instead and Mark.",
+      "description": "Deal 10 to all enemies. Cash In: Repeat 1.",
       "effects": [
+        {
+          "op": "damage",
+          "amount": 10,
+          "target": "all_enemies"
+        },
         {
           "op": "cash_in",
           "effects": [
             {
               "op": "damage",
-              "amount": 30
-            },
-            {
-              "op": "apply_status",
-              "status": "mark",
-              "stacks": 1,
-              "target": "enemy"
-            }
-          ],
-          "else_effects": [
-            {
-              "op": "damage",
-              "amount": 20
+              "amount": 10,
+              "target": "all_enemies"
             }
           ]
         }
       ],
       "keywords": [
+        "cash_in",
         "mark",
-        "cash_in"
+        "repeat"
       ],
       "tiers": [
         {
-          "description": "Deal 26. Cash In: Deal 36 instead and Mark.",
+          "description": "Deal 12 to all enemies. Cash In: Repeat 1.",
           "effects": [
+            {
+              "op": "damage",
+              "amount": 12,
+              "target": "all_enemies"
+            },
             {
               "op": "cash_in",
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 36
-                },
-                {
-                  "op": "apply_status",
-                  "status": "mark",
-                  "stacks": 1,
-                  "target": "enemy"
-                }
-              ],
-              "else_effects": [
-                {
-                  "op": "damage",
-                  "amount": 26
+                  "amount": 12,
+                  "target": "all_enemies"
                 }
               ]
             }
           ]
         },
         {
-          "description": "Deal 32. Cash In: Deal 42 instead and Mark.",
+          "description": "Deal 14 to all enemies. Cash In: Repeat 1.",
           "effects": [
+            {
+              "op": "damage",
+              "amount": 14,
+              "target": "all_enemies"
+            },
             {
               "op": "cash_in",
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 42
-                },
-                {
-                  "op": "apply_status",
-                  "status": "mark",
-                  "stacks": 1,
-                  "target": "enemy"
-                }
-              ],
-              "else_effects": [
-                {
-                  "op": "damage",
-                  "amount": 32
+                  "amount": 14,
+                  "target": "all_enemies"
                 }
               ]
             }
@@ -964,7 +947,7 @@
           "suit": "club"
         }
       ],
-      "description": "For each ability expended this turn, deal 10.",
+      "description": "Deal 10. For each expended ability, Repeat 1.",
       "effects": [
         {
           "op": "damage_per_ability",
@@ -973,7 +956,7 @@
       ],
       "tiers": [
         {
-          "description": "For each ability expended this turn, deal 12.",
+          "description": "Deal 12. For each expended ability, Repeat 1.",
           "effects": [
             {
               "op": "damage_per_ability",
@@ -982,7 +965,7 @@
           ]
         },
         {
-          "description": "For each ability expended this turn, deal 14.",
+          "description": "Deal 14. For each expended ability, Repeat 1.",
           "effects": [
             {
               "op": "damage_per_ability",

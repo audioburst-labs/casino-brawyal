@@ -24,10 +24,10 @@
       "id": "happy_hour",
       "stage": 1,
       "enemies": [
-        "drunk_patreon",
-        "drunk_patreon",
-        "drunk_patreon",
-        "drunk_patreon"
+        "drunk_patron",
+        "drunk_patron",
+        "drunk_patron",
+        "drunk_patron"
       ],
       "gold_min": 27,
       "gold_max": 33
@@ -56,8 +56,8 @@
       "id": "rowdy_tables",
       "stage": 2,
       "enemies": [
-        "drunk_patreon",
-        "drunk_patreon",
+        "drunk_patron",
+        "drunk_patron",
         "server",
         "server"
       ],
@@ -97,7 +97,7 @@
       "id": "managers_pet",
       "stage": 4,
       "enemies": [
-        "drunk_patreon",
+        "drunk_patron",
         "manager"
       ],
       "gold_min": 57,
@@ -109,8 +109,8 @@
       "enemies": [
         "bouncer",
         "server",
-        "drunk_patreon",
-        "drunk_patreon"
+        "drunk_patron",
+        "drunk_patron"
       ],
       "gold_min": 57,
       "gold_max": 63
@@ -121,8 +121,8 @@
       "enemies": [
         "dealer",
         "server",
-        "drunk_patreon",
-        "drunk_patreon"
+        "drunk_patron",
+        "drunk_patron"
       ],
       "gold_min": 57,
       "gold_max": 63

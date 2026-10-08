@@ -1,5 +1,5 @@
 extends GutTest
-## The Drunk Patreon (sheet v0.121) and the numbers the same sheet changed
+## The Drunk Patron (sheet v0.121) and the numbers the same sheet changed
 ## beside it: the Chip Golem's Bash and Crush and the boss's second summon.
 
 var _db: ContentDB
@@ -19,35 +19,35 @@ func _sim(enemies: Array) -> CombatSim:
 	return sim
 
 
-func test_the_patreon_is_a_small_fragile_drinker() -> void:
-	var def := _db.get_enemy(&"drunk_patreon")
-	assert_eq(def.name, "Drunk Patreon")
+func test_the_patron_is_a_small_fragile_drinker() -> void:
+	var def := _db.get_enemy(&"drunk_patron")
+	assert_eq(def.name, "Drunk Patron")
 	assert_eq([def.hp_min, def.hp_max], [12, 15])
 	assert_true(def.passive.is_empty(), "no passive on the sheet")
 
 
 func test_it_swings_for_4_then_gains_strength_and_heals_4_forever() -> void:
-	var sim := _sim(["drunk_patreon"])
-	var patreon := sim.enemies[0]
-	patreon.hp = 5
+	var sim := _sim(["drunk_patron"])
+	var patron := sim.enemies[0]
+	patron.hp = 5
 	sim.begin_round()
-	assert_eq(int(sim.intent_display(patreon.id).display_per_hit), 4, "attack 1: Deal 4")
+	assert_eq(int(sim.intent_display(patron.id).display_per_hit), 4, "attack 1: Deal 4")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	assert_eq(sim.hero.hp, 9999 - 4)
 	sim.begin_round()
 	sim.tray.discard_all()
 	sim.end_assignment()
-	assert_eq(patreon.status_stacks(&"strength"), 4, "attack 2: Gain Strength 4")
-	assert_eq(patreon.hp, 9, "attack 2: Heal 4")
+	assert_eq(patron.status_stacks(&"strength"), 4, "attack 2: Gain Strength 4")
+	assert_eq(patron.hp, 9, "attack 2: Heal 4")
 	sim.begin_round()
 	sim.tray.discard_all()
 	sim.end_assignment()
 	assert_eq(sim.hero.hp, 9999 - 4 - 8, "1,2 then 1 again: Deal 4 plus 4 Strength")
 
 
-func test_the_patreon_art_is_found_under_its_id() -> void:
-	assert_not_null(SuitAssets.character_texture(&"drunk_patreon", false))
+func test_the_patron_art_is_found_under_its_id() -> void:
+	assert_not_null(SuitAssets.character_texture(&"drunk_patron", false))
 
 
 func test_the_sheets_other_changes_are_in() -> void:

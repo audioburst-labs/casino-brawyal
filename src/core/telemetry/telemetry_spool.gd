@@ -96,8 +96,15 @@ func size_bytes() -> int:
 	return int(probe.get_length())
 
 
+## How many lines are waiting. A raw count, NOT a parse: this used to run
+## `read_lines(0)`, which JSON-parses every line of a spool that can hold 4 MB,
+## once per accepted batch, on the main thread. A player with a backlog (a
+## session or two played offline, then the first launch with the service
+## reachable, whose cold start answers 10 to 20 seconds in) froze for as long
+## as it took to drain, which is the "first action after a few seconds hangs"
+## report of 0.122.
 func line_count() -> int:
-	return read_lines(0).size()
+	return _raw_lines().size()
 
 
 ## Every parseable line, oldest first. `limit` of 0 means all of them.
@@ -173,11 +180,9 @@ func _raw_lines() -> PackedStringArray:
 		return out
 	if _file != null:
 		_file.flush()
-	var reader := FileAccess.open(path, FileAccess.READ)
-	if reader == null:
-		return out
-	while not reader.eof_reached():
-		var line := reader.get_line()
+	# One native read and split instead of a GDScript get_line loop: a full spool
+	# is ~14,000 lines and the loop cost ~200 ms, on the main thread, per batch.
+	for line in FileAccess.get_file_as_string(path).split("\n", false):
 		if not line.strip_edges().is_empty():
 			out.append(line)
 	return out
@@ -197,8 +202,8 @@ func _rewrite(lines: PackedStringArray) -> bool:
 	if out == null:
 		degraded = true
 		return false
-	for line in lines:
-		out.store_line(line)
+	if not lines.is_empty():
+		out.store_string("\n".join(lines) + "\n")
 	out.flush()
 	out = null
 	if FileAccess.file_exists(path):

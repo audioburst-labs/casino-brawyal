@@ -1,6 +1,6 @@
 extends GutTest
 ## Patch 0.121, the designer's notes: Sharp Edge, Slow Playing's Rage, and the
-## content the sheet changed beside the Drunk Patreon.
+## content the sheet changed beside the Drunk Patron.
 
 var db: ContentDB
 

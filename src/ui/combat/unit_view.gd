@@ -781,6 +781,10 @@ func show_intent(entry: Dictionary) -> void:
 			"x%d" % int(intent.get("summon").get("count", 1)))
 	if intent.get("heal_allies", 0) > 0:
 		_add_intent_chunk(&"heal_allies", "%d" % int(intent.get("heal_allies")))
+	# Its own heal is part of the move too (0.122: the Drunk Patron's Liquid
+	# Courage healed and never said so above its head).
+	if int(intent.get("self_heal", 0)) > 0:
+		_add_intent_chunk(&"heal", "%d" % int(intent.get("self_heal")))
 	if intent.get("ally_attack_again", false):
 		_add_intent_chunk(&"encore", "")
 	if int(intent.get("self_block", 0)) > 0:
@@ -804,6 +808,7 @@ const INTENT_ICONS := {
 	&"absorb": "res://assets/icons/fx_explosion.png",
 	&"summon": "res://assets/icons/intent_summon.png",
 	&"heal_allies": "res://assets/icons/fx_heal.png",
+	&"heal": "res://assets/icons/fx_heal.png",
 	&"encore": "res://assets/icons/keyword_go_again.png",
 }
 const INTENT_HINTS := {
@@ -812,6 +817,7 @@ const INTENT_HINTS := {
 	&"absorb": "Absorb: every chip you have placed on an ability is taken.",
 	&"summon": "Summon: brings new enemies onto the field.",
 	&"heal_allies": "Heal Allies: restores health to every living enemy.",
+	&"heal": "Heal: this enemy restores its own health.",
 	&"encore": "Encore: another enemy attacks a second time.",
 }
 
@@ -1095,6 +1101,20 @@ func _finish_slash(origin: Vector2) -> void:
 func set_targeted(targeted: bool) -> void:
 	_target_ring.visible = targeted
 	_frame_outline.visible = targeted
+
+
+## The name/health panel, for a tutorial arrow to point at.
+func hp_panel() -> Control:
+	return _hp_holder
+
+
+## Shoulders and head, with the intent row above them (global rect): what the
+## tutorial leaves lit when it talks about what the enemy is about to do.
+func head_rect() -> Rect2:
+	var sprite_rect := _sprite.get_global_rect()
+	var rect := Rect2(sprite_rect.position.x, sprite_rect.position.y,
+		sprite_rect.size.x, sprite_rect.size.y * 0.36)
+	return rect.merge(_intent_row.get_global_rect())
 
 
 func sprite_center() -> Vector2:

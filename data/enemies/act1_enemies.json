@@ -101,8 +101,8 @@
       }
     },
     {
-      "id": "drunk_patreon",
-      "name": "Drunk Patreon",
+      "id": "drunk_patron",
+      "name": "Drunk Patron",
       "hp_min": 12,
       "hp_max": 15,
       "brain": {

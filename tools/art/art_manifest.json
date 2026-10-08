@@ -314,11 +314,35 @@
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a stocky intimidating casino pit boss. Barrel-chested in a pinstripe maroon suit with a gold pocket-watch chain, slicked hair, chewed toothpick, one hand raised snapping fingers to command underlings, gold rings on every finger. Facing slightly left. Exaggerated proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
-      "id": "enemy_drunk_patreon",
-      "out": "assets/characters/enemy_drunk_patreon.png",
+      "id": "enemy_drunk_patron",
+      "out": "assets/characters/enemy_drunk_patron.png",
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a wobbly tipsy casino patron spoiling for a fight. Rumpled cream suit with a loosened maroon tie and one untucked shirt tail, flushed cheeks, one eye squinted, swinging a cocktail glass sloshing green liquid, fists half-raised in a comically unsteady boxing stance leaning at an angle. Facing slightly left. Thick outlines. Character fills the frame vertically. No shadow, no background."
+    },
+    {
+      "id": "drunk_patron_punch_windup",
+      "out": "assets/characters/drunk_patron_punch_windup.png",
+      "base": "assets/characters/enemy_drunk_patron.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same wobbly tipsy casino patron, same rumpled cream suit with loosened maroon tie, same flushed cheeks and squinted eye, same cocktail glass of green liquid, identical art style and colors — in a SLOPPY HAYMAKER WIND-UP pose: his free fist wound far back behind his shoulder, torso twisted and leaning dangerously backwards, knees buckling, the cocktail glass sloshing wildly in the other hand, tongue out in concentration, facing slightly left toward his target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "drunk_patron_punch_strike",
+      "out": "assets/characters/drunk_patron_punch_strike.png",
+      "base": "assets/characters/enemy_drunk_patron.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same wobbly tipsy casino patron, same rumpled cream suit with loosened maroon tie, same flushed cheeks and squinted eye, same cocktail glass of green liquid, identical art style and colors — at the IMPACT INSTANT of a wild drunken haymaker: his fist flung out forward and slightly left in a big looping swing, the whole body overbalanced and lunging after it, one foot off the ground, cocktail glass spilling green liquid in an arc behind him, a motion blur trailing the arm. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "drunk_patron_punch_follow",
+      "out": "assets/characters/drunk_patron_punch_follow.png",
+      "base": "assets/characters/enemy_drunk_patron.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same wobbly tipsy casino patron, same rumpled cream suit with loosened maroon tie, same flushed cheeks and squinted eye, same cocktail glass of green liquid, identical art style and colors — in a STUMBLING FOLLOW-THROUGH pose: the swing has missed and carried him round, arm dangling low and forward, body hunched and staggering a half-step, a dazed grin on his face, the cocktail glass still held up, weight lurching onto his front foot. Full body, three-quarter view. Same scale and framing as the original."
     },
     {
       "id": "enemy_loan_shark",

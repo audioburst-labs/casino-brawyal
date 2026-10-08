@@ -7,6 +7,9 @@ extends Control
 ## machine here is a read-only view again, as the doc describes it.
 
 var _zones := {}   # zone id -> slot container
+## An ability slot, the size the mock gives them: icon and name, large enough to
+## read without opening the tooltip.
+const SLOT_SIZE := Vector2(210, 106)
 var _machine_column: VBoxContainer
 
 
@@ -70,7 +73,9 @@ func _ready() -> void:
 			_close())
 	add_child(backdrop)
 
-	var panel_size := Vector2(1080, minf(820, vp.y - 80))
+	# Doc mock: one tall "Player Loadout" panel, the slot machine on top and the
+	# six ability slots in two rows of three beneath it.
+	var panel_size := Vector2(820, minf(980, vp.y - 40))
 	var panel := PanelContainer.new()
 	panel.position = vp * 0.5 - panel_size * 0.5
 	panel.size = panel_size
@@ -88,13 +93,12 @@ func _ready() -> void:
 	scroll.add_child(column)
 
 	var title := Label.new()
-	title.text = "Layout"
+	title.text = "Player Loadout"
 	title.theme_type_variation = &"TitleLabel"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
 
 	_build_slot_machine_section(column)
-	_build_relics_section(column)
 	_build_abilities_section(column)
 
 	var close_row := HBoxContainer.new()
@@ -107,11 +111,6 @@ func _ready() -> void:
 
 
 func _build_slot_machine_section(column: VBoxContainer) -> void:
-	var header := Label.new()
-	header.text = "Slot Machine"
-	header.theme_type_variation = &"SubtitleLabel"
-	column.add_child(header)
-
 	_machine_column = VBoxContainer.new()
 	_machine_column.add_theme_constant_override("separation", 10)
 	column.add_child(_machine_column)
@@ -130,7 +129,7 @@ func _refresh_machine_section() -> void:
 	reels_row.add_theme_constant_override("separation", 10)
 	# Framed by the same cabinet art the player sees in combat (patch 0.22).
 	var cabinet := SlotCabinet.new()
-	cabinet.art_scale = 0.7
+	cabinet.art_scale = 0.9
 	var holder := CenterContainer.new()
 	_machine_column.add_child(holder)
 	holder.add_child(cabinet)
@@ -142,7 +141,7 @@ func _refresh_machine_section() -> void:
 		reels_row.add_child(reel_box)
 		for slot_index in reel.symbols.size():
 			var suit: StringName = reel.symbols[slot_index]
-			var slot := _suit_button(suit, Vector2(40, 40))
+			var slot := _suit_button(suit, Vector2(54, 54))
 			slot.flat = true
 			slot.disabled = true
 			slot.focus_mode = Control.FOCUS_NONE
@@ -176,43 +175,7 @@ static func _suit_button(suit: StringName, box: Vector2) -> Button:
 	return button
 
 
-func _build_relics_section(column: VBoxContainer) -> void:
-	var header := Label.new()
-	header.text = "Relics"
-	header.theme_type_variation = &"SubtitleLabel"
-	column.add_child(header)
-
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 10)
-	row.custom_minimum_size = Vector2(0, 60)
-	column.add_child(row)
-	if Game.run == null:
-		return
-	if Game.run.relic_ids.is_empty():
-		var empty := Label.new()
-		empty.text = "No relics yet."
-		row.add_child(empty)
-		return
-	for relic_id in Game.run.relic_ids:
-		var relic := Db.content.get_relic(relic_id)
-		if relic == null:
-			continue
-		var icon := TextureRect.new()
-		icon.texture = SuitAssets.relic_texture(relic_id)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(52, 52)
-		icon.tooltip_text = "%s: %s" % [relic.name, relic.description]
-		row.add_child(icon)
-
-
 func _build_abilities_section(column: VBoxContainer) -> void:
-	var header := Label.new()
-	header.text = "Abilities"
-	header.theme_type_variation = &"SubtitleLabel"
-	column.add_child(header)
-
 	if Game.run == null:
 		var empty := Label.new()
 		empty.text = "No run in progress."
@@ -228,20 +191,30 @@ func _build_abilities_section(column: VBoxContainer) -> void:
 		var zone := DropZone.new()
 		zone.zone = config[0]
 		zone.screen = self
-		zone.custom_minimum_size = Vector2(140, 110) if config[0] == &"trash" else Vector2(760, 110)
+		zone.custom_minimum_size = Vector2(190, 104) if config[0] == &"trash" else Vector2(0, 0)
 		zone.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		var box := VBoxContainer.new()
 		zone.add_child(box)
-		var zone_header := Label.new()
-		zone_header.text = config[1]
-		zone_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		zone_header.add_theme_font_size_override("font_size", 16)
-		box.add_child(zone_header)
-		var slots := HBoxContainer.new()
-		slots.alignment = BoxContainer.ALIGNMENT_CENTER
-		slots.add_theme_constant_override("separation", 8)
-		slots.custom_minimum_size = Vector2(0, 76)
+		if config[0] == &"trash":
+			var zone_header := Label.new()
+			zone_header.text = config[1]
+			zone_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			zone_header.add_theme_font_size_override("font_size", 16)
+			box.add_child(zone_header)
+		var slots: Container
+		if config[0] == &"equipped":
+			var grid := GridContainer.new()
+			grid.columns = 3
+			grid.add_theme_constant_override("h_separation", 16)
+			grid.add_theme_constant_override("v_separation", 16)
+			slots = grid
+			box.alignment = BoxContainer.ALIGNMENT_CENTER
+		else:
+			var row := HBoxContainer.new()
+			row.alignment = BoxContainer.ALIGNMENT_CENTER
+			slots = row
 		box.add_child(slots)
+		zone.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		column.add_child(zone)
 		_zones[config[0]] = slots
 	_refresh()
@@ -257,7 +230,7 @@ func _refresh() -> void:
 
 
 func _fill_zone(zone: StringName, ids: Array) -> void:
-	var slots: HBoxContainer = _zones[zone]
+	var slots: Container = _zones[zone]
 	for child in slots.get_children():
 		child.queue_free()
 	for id: StringName in ids:
@@ -265,7 +238,7 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" else 1
 	for i in capacity - ids.size():
 		var empty := Panel.new()
-		empty.custom_minimum_size = Vector2(90, 66)
+		empty.custom_minimum_size = SLOT_SIZE
 		empty.modulate.a = 0.35
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slots.add_child(empty)
@@ -276,7 +249,7 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	chit.ability_id = id
 	chit.zone = zone
 	chit.screen = self
-	chit.custom_minimum_size = Vector2(90, 66)
+	chit.custom_minimum_size = SLOT_SIZE
 	# Drawn at the tier the run owns, so a chit matches the card it becomes
 	# in combat (v0.19).
 	var tier := Game.run.ability_tier(id) if Game.run != null else 0
@@ -297,13 +270,13 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 		icon.texture = icon_texture
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(30, 30)
+		icon.custom_minimum_size = Vector2(64, 64)
 		box.add_child(icon)
 	var name_label := Label.new()
 	name_label.text = def.name if def else String(id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_font_size_override("font_size", 17)
 	box.add_child(name_label)
 	return chit
 

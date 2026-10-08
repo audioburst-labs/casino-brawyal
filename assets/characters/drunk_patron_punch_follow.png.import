@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvix52d2gvoe7"
-path="res://.godot/imported/enemy_drunk_patreon.png-11cb8396ad6028dbaa83f725e840a9d6.ctex"
+uid="uid://jdbox13p73xv"
+path="res://.godot/imported/drunk_patron_punch_follow.png-8bfeb6fee8fc31cf52ad2c8e0f3ddef5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/enemy_drunk_patreon.png"
-dest_files=["res://.godot/imported/enemy_drunk_patreon.png-11cb8396ad6028dbaa83f725e840a9d6.ctex"]
+source_file="res://assets/characters/drunk_patron_punch_follow.png"
+dest_files=["res://.godot/imported/drunk_patron_punch_follow.png-8bfeb6fee8fc31cf52ad2c8e0f3ddef5.ctex"]
 
 [params]
 

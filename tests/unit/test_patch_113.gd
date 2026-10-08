@@ -176,16 +176,16 @@ func test_the_boss_heal_never_overshoots_his_maximum() -> void:
 const SHEET_LINEUPS := {
 	"door_duty": ["bouncer"],
 	"double_shift": ["server", "server"],
-	"happy_hour": ["drunk_patreon", "drunk_patreon", "drunk_patreon", "drunk_patreon"],
+	"happy_hour": ["drunk_patron", "drunk_patron", "drunk_patron", "drunk_patron"],
 	"muscle_and_service": ["bouncer", "server"],
 	"pit_backup": ["dealer", "server"],
-	"rowdy_tables": ["drunk_patreon", "drunk_patreon", "server", "server"],
+	"rowdy_tables": ["drunk_patron", "drunk_patron", "server", "server"],
 	"twin_tables": ["dealer", "dealer"],
 	"mixed_floor": ["bouncer", "dealer"],
 	"the_manager": ["manager"],
-	"managers_pet": ["drunk_patreon", "manager"],
-	"bar_brawl": ["bouncer", "server", "drunk_patreon", "drunk_patreon"],
-	"last_call": ["dealer", "server", "drunk_patreon", "drunk_patreon"],
+	"managers_pet": ["drunk_patron", "manager"],
+	"bar_brawl": ["bouncer", "server", "drunk_patron", "drunk_patron"],
+	"last_call": ["dealer", "server", "drunk_patron", "drunk_patron"],
 	"floor_check": ["bouncer", "manager"],
 	"the_pit": ["dealer", "manager"],
 	"closing_shift": ["server", "server", "manager"],
@@ -225,7 +225,7 @@ func test_enemy_health_matches_the_sheet() -> void:
 	# Sheet v0.122 (patch 0.114) put health up across the board.
 	var sheet := {
 		"bouncer": [56, 60], "server": [25, 30], "dealer": [51, 55],
-		"manager": [61, 65], "drunk_patreon": [12, 15], "chip_golem": [100, 109], "loan_shark": [100, 109],
+		"manager": [61, 65], "drunk_patron": [12, 15], "chip_golem": [100, 109], "loan_shark": [100, 109],
 	}
 	for id: String in sheet:
 		var def := _db.get_enemy(StringName(id))

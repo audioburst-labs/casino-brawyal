@@ -306,6 +306,7 @@ func _on_request_completed(result: int, code: int, _headers: PackedStringArray,
 ## going - deferred, never recursively, so this function can never re-enter
 ## itself through `flush()`.
 func _after_accepted(sent: int) -> void:
+	var began := Time.get_ticks_msec()
 	_failures = 0
 	if _timer != null:
 		_timer.wait_time = FLUSH_INTERVAL
@@ -318,8 +319,13 @@ func _after_accepted(sent: int) -> void:
 		# so let the spool go instead - the data is safely delivered.
 		_spool.clear()
 		return
-	if _spool.line_count() > 0:
-		flush.call_deferred()
+	if _spool.size_bytes() > 0:
+		# A backlog drains a beat at a time, never back to back: each batch is
+		# file work on the main thread.
+		get_tree().create_timer(0.3).timeout.connect(flush)
+	var spent := Time.get_ticks_msec() - began
+	if spent > 60:
+		print("[CB telemetry] accepting a batch cost %d ms on the main thread" % spent)
 
 
 func _schedule_retry() -> void:

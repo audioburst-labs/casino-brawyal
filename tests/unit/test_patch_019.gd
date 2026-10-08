@@ -75,16 +75,29 @@ func test_bust_pays_its_cash_in_on_a_marked_enemy() -> void:
 	assert_eq(enemy.status_stacks(&"mark"), 0)
 
 
-func test_on_a_roll_cashes_in_then_re_marks() -> void:
-	# "Deal 20. Cash In: Deal 30 instead and Mark." (sheet v0.122)
-	var sim := _sim(["bouncer"], ["on_a_roll"])
+func test_on_a_roll_hits_everyone_and_repeats_on_a_cash_in() -> void:
+	# "Deal 10 to All enemies. Cash In: Repeat 1." (sheet, re-read in 0.122)
+	var sim := _sim(["bouncer", "bouncer"], ["on_a_roll"])
 	sim.begin_round()
-	var enemy := sim.enemies[0]
-	enemy.apply_status(&"mark", 1)
-	var hp_start := enemy.hp
+	var first := sim.enemies[0]
+	var second := sim.enemies[1]
+	var hp_first := first.hp
+	var hp_second := second.hp
+	sim.set_target(first.id)
 	assert_true(_fire(sim, 0, [&"heart", &"spade", &"club"]))
-	assert_eq(enemy.hp, hp_start - 30)
-	assert_eq(enemy.status_stacks(&"mark"), 1, "the trailing Mark re-applies")
+	assert_eq(first.hp, hp_first - 10, "nothing marked: one hit on everybody")
+	assert_eq(second.hp, hp_second - 10)
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
+	first.apply_status(&"mark", 1)
+	sim.set_target(first.id)
+	hp_first = first.hp
+	hp_second = second.hp
+	assert_true(_fire(sim, 0, [&"heart", &"spade", &"club"]))
+	assert_eq(first.hp, hp_first - 20, "marked target: the Cash In repeats it")
+	assert_eq(second.hp, hp_second - 20, "and the repeat is also to all enemies")
+	assert_eq(first.status_stacks(&"mark"), 0, "the Mark was spent")
 
 
 # ---- conditions and limits ----

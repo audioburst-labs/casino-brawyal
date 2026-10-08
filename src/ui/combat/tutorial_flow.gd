@@ -11,19 +11,25 @@ extends Node
 ## Steps (the doc's numbering in brackets):
 ##   banter  [2]  Ace / Bouncer / Ace, three seconds apiece
 ##   machine [3]  dimmed screen, reels turning, "let's get started with some chips"
-##   sling   [5]  chip tray + Card Sling lit, ghost hand: Club onto Card Sling
-##   quick   [7]  Bouncer + Quick Maneuvers + tray lit: Diamond onto Quick Maneuvers
-##   final   [8]  "Final chip, where should it go?" with an arrow to the tray
-##   pass    [9]  "Round's up, go next" beside Pass
-##   free    [10] ordinary combat; the round-3 jackpot hint is the one exception
+##   sling   [5]  chip tray + Card Sling lit, ghost hand: a chip onto Card Sling
+##   nice    [7]  (doc v0.122) "Excellent, a few more hits..." with an arrow at his health
+##   quick   [8]  Bouncer's head and intent + Quick Maneuvers + tray lit: a chip onto it
+##   final   [9]  "Final chip, where should it go?" with an arrow to the tray
+##   pass    [10] "Round's up, go next" beside Pass
+##   free    [11] ordinary combat; the round-3 jackpot hint is the one exception
+##
+## ANY chip completes a step (designer, 0.122): the ghost hand shows one chip,
+## but the ability being taught is what is checked, not the suit.
 
-enum Step { BANTER, MACHINE, SLING, QUICK, FINAL, PASS, FREE }
+
+enum Step { BANTER, MACHINE, SLING, NICE, QUICK, FINAL, PASS, FREE }
 
 const LINE_ACE_1 := "Move aside, Mr. Moneybags is gonna pay."
 const LINE_BOUNCER := "No way pal, get lost, or I'll make you leave."
 const LINE_ACE_2 := "Hard way it is. Let's play."
 const LINE_START := "Let's get started with some chips."
 const LINE_SLING := "Let's try that."
+const LINE_NICE := "Excellent, a few more hits and he's out of here."
 const LINE_QUICK := "This is gonna hurt. Let's get some protection going."
 const LINE_FINAL := "Final chip, where should it go?"
 const LINE_PASS := "Round's up, go next."
@@ -57,6 +63,15 @@ func _hero() -> Control:
 
 func _bouncer() -> Control:
 	return screen.tutorial_target(&"enemy")
+
+
+func _bouncer_health() -> Control:
+	return screen.tutorial_target(&"enemy_hp")
+
+
+## The Bouncer's shoulders and head with the attack he announced above them.
+func _bouncer_head() -> Variant:
+	return screen.tutorial_head_rect()
 
 
 func _pass_button() -> Control:
@@ -126,17 +141,41 @@ func _enter_sling() -> void:
 	step = Step.SLING
 	director.spotlight([_tray, func() -> Control: return _card(&"card_sling")])
 	director.say("sling", LINE_SLING, true, func() -> Control: return _card(&"card_sling"), "above")
-	director.demo_drag(func() -> Control: return screen.tutorial_chip(&"club"),
-		func() -> Control: return _socket(&"card_sling"), &"club")
+	var suit := _demo_suit(&"club")
+	director.demo_drag(func() -> Control: return screen.tutorial_chip(suit),
+		func() -> Control: return _socket(&"card_sling"), suit)
+
+
+## [7] The teacher is pleased, with an arrow at the Bouncer's health, for one
+## beat; then the dark returns for Quick Maneuvers.
+func _enter_nice() -> void:
+	step = Step.NICE
+	director.say("nice", LINE_NICE, true, _bouncer_health, "left", 150.0)
+	director.arrow("nice", _bouncer_health)
+	await _wait(BEAT)
+	director.hush("nice")
+	director.clear_arrow()
+	await _wait(0.4)
+	_enter_quick()
+
+
+## The suit the ghost hand carries: the one the doc shows if the tray has it,
+## otherwise whatever is there.
+func _demo_suit(preferred: StringName) -> StringName:
+	if screen.tutorial_chip(preferred) != null:
+		return preferred
+	var any_chip: Variant = screen.tutorial_chip(&"")
+	return any_chip.suit if any_chip != null else preferred
 
 
 func _enter_quick() -> void:
 	step = Step.QUICK
-	director.spotlight([_bouncer, _tray, func() -> Control: return _card(&"quick_maneuvers")])
+	director.spotlight([_bouncer_head, _tray, func() -> Control: return _card(&"quick_maneuvers")])
 	director.say("quick", LINE_QUICK, true,
 		func() -> Control: return _card(&"quick_maneuvers"), "above")
-	director.demo_drag(func() -> Control: return screen.tutorial_chip(&"diamond"),
-		func() -> Control: return _socket(&"quick_maneuvers"), &"diamond")
+	var suit := _demo_suit(&"diamond")
+	director.demo_drag(func() -> Control: return screen.tutorial_chip(suit),
+		func() -> Control: return _socket(&"quick_maneuvers"), suit)
 
 
 func _enter_final() -> void:
@@ -163,12 +202,12 @@ func _socket(id: StringName) -> Control:
 ## accepted while a step is waiting for it; everything else is free.
 func allows_drop(ability_id: StringName, suit: StringName) -> bool:
 	match step:
-		Step.BANTER, Step.MACHINE:
+		Step.BANTER, Step.MACHINE, Step.NICE:
 			return false
 		Step.SLING:
-			return ability_id == &"card_sling" and suit == &"club"
+			return ability_id == &"card_sling"
 		Step.QUICK:
-			return ability_id == &"quick_maneuvers" and suit == &"diamond"
+			return ability_id == &"quick_maneuvers"
 	return true
 
 
@@ -199,7 +238,7 @@ func on_chip_assigned() -> void:
 func on_resolved() -> void:
 	match step:
 		Step.SLING:
-			_enter_quick()
+			_enter_nice()
 		Step.QUICK:
 			_enter_final()
 		Step.FINAL:

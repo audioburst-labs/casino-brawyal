@@ -22,6 +22,9 @@ const INK := Color(0.16, 0.1, 0.1)
 const BUBBLE_WIDTH := 330.0
 const HAND_SIZE := 72.0
 const CHIP_SIZE := 58.0
+## Bubble fades, 30% slower than the first cut (designer, 0.122).
+const FADE_IN := 0.39
+const FADE_OUT := 0.325
 
 
 ## One bubble on stage. `thinking` bubbles are square with a trail of dots;
@@ -31,6 +34,7 @@ class Bubble:
 
 	var anchor: Callable = Callable()          # -> Control the bubble belongs to
 	var side := "above"                        # which side of the anchor it sits
+	var distance := 34.0                           # distance from the anchor
 	var thinking := false
 	var label: Label
 	var panel: PanelContainer
@@ -145,18 +149,19 @@ func _ready() -> void:
 ## A bubble keyed by `key` (saying it again replaces the text). `anchor` is a
 ## Callable returning the Control it belongs to; `side` is where it sits.
 func say(key: String, text: String, thinking: bool, anchor: Callable,
-		side := "above") -> void:
+		side := "above", gap := 34.0) -> void:
 	hush(key, true)
 	var bubble := Bubble.new()
 	bubble.thinking = thinking
 	bubble.anchor = anchor
 	bubble.side = side
+	bubble.distance = gap
 	bubble.label = Label.new()
 	bubble.label.text = text
 	bubble.modulate.a = 0.0
 	add_child(bubble)
 	_bubbles[key] = bubble
-	create_tween().tween_property(bubble, "modulate:a", 1.0, 0.3)
+	create_tween().tween_property(bubble, "modulate:a", 1.0, FADE_IN)
 
 
 func hush(key: String, instantly := false) -> void:
@@ -168,7 +173,7 @@ func hush(key: String, instantly := false) -> void:
 		bubble.queue_free()
 		return
 	var tween := create_tween()
-	tween.tween_property(bubble, "modulate:a", 0.0, 0.25)
+	tween.tween_property(bubble, "modulate:a", 0.0, FADE_OUT)
 	tween.tween_callback(bubble.queue_free)
 
 
@@ -184,7 +189,8 @@ func has_bubble(key: String) -> bool:
 # --------------------------------------------------------------- spotlight
 
 ## Darkens everything except these windows. Each entry is a Callable returning
-## the Control to leave lit (resolved every frame, so it follows layout).
+## the Control to leave lit, or a global Rect2 for a part of one (the Bouncer's
+## head and shoulders) (resolved every frame, so it follows layout).
 func spotlight(holes: Array) -> void:
 	_holes = holes
 	_tween_dim(1.0)
@@ -308,7 +314,7 @@ func _process(delta: float) -> void:
 		if control is Control and is_instance_valid(control):
 			var rect := (control as Control).get_global_rect()
 			rect.position -= global_position
-			var gap := 34.0
+			var gap := bubble.distance
 			var at := Vector2.ZERO
 			match bubble.side:
 				"below":
@@ -332,11 +338,16 @@ func _draw() -> void:
 	if _dim > 0.01:
 		var windows: Array[Rect2] = []
 		for source: Callable in _holes:
-			var control: Variant = source.call() if source.is_valid() else null
-			if control is Control and is_instance_valid(control):
-				var rect := (control as Control).get_global_rect()
-				rect.position -= global_position
-				windows.append(rect.grow(WINDOW_PAD))
+			var item: Variant = source.call() if source.is_valid() else null
+			var rect := Rect2()
+			if item is Control and is_instance_valid(item):
+				rect = (item as Control).get_global_rect()
+			elif item is Rect2:
+				rect = item
+			else:
+				continue
+			rect.position -= global_position
+			windows.append(rect.grow(WINDOW_PAD))
 		_draw_dim(viewport, windows)
 		for rect in windows:
 			var ring := StyleBoxFlat.new()
