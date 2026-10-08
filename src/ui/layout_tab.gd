@@ -186,7 +186,6 @@ func _build_abilities_section(column: VBoxContainer) -> void:
 	# removed in v0.20 and an owned ability is now always in one of these.
 	for config in [
 		[&"equipped", "Equipped (max %d)" % RunState.EQUIP_CAP],
-		[&"trash", "Trash"],
 	]:
 		var zone := DropZone.new()
 		zone.zone = config[0]
@@ -223,10 +222,6 @@ func _build_abilities_section(column: VBoxContainer) -> void:
 func _refresh() -> void:
 	var run: RunState = Game.run
 	_fill_zone(&"equipped", run.equipped_ids)
-	var trash: Array[StringName] = []
-	if run.trash_id != &"":
-		trash.append(run.trash_id)
-	_fill_zone(&"trash", trash)
 
 
 func _fill_zone(zone: StringName, ids: Array) -> void:
