@@ -29,7 +29,7 @@ func test_path_follows_the_category_folder_convention() -> void:
 	assert_eq(SoundBank.path_for(&"combat"), "res://assets/audio/music/combat.ogg")
 	assert_eq(SoundBank.path_for(&"hit_enemy"), "res://assets/audio/sfx/hit_enemy.ogg")
 	assert_eq(SoundBank.path_for(&"amb_casino_floor"),
-		"res://assets/audio/ambience/amb_casino_floor.ogg")
+		"res://assets/audio/ambience/amb_casino_floor.mp3")
 
 
 func test_a_variant_take_gets_a_numbered_file() -> void:

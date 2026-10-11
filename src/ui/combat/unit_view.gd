@@ -423,7 +423,12 @@ func refresh_statuses() -> void:
 	_add_passive_chip()
 	_add_bonus_chip()
 	_update_bonus_fx()
-	modulate = Color.WHITE if actor.is_alive() else Color(0.35, 0.3, 0.3, 0.5)
+	# A dead unit stays at full strength until its OWN death animation starts
+	# (1.23: Ace vanished while the hits that killed him were still playing,
+	# because the sim has already resolved the whole attack and any refresh in
+	# between saw hp 0). After that the animation owns the colour.
+	if actor.is_alive() or not _death_started:
+		modulate = Color.WHITE
 	_refresh_mark()
 
 
@@ -485,6 +490,7 @@ func _add_passive_chip() -> void:
 ## of its next turn.
 const BONUS_TINT := Color(1.0, 0.62, 0.22)
 var _bonus_fx: CPUParticles2D = null
+var _death_started := false
 var _bonus_tween: Tween = null
 
 
@@ -1283,6 +1289,7 @@ func play_telegraph() -> void:
 
 ## Death: a white blowout, then the sprite crumples at its feet and fades.
 func play_death() -> void:
+	_death_started = true
 	if _sprite.material is ShaderMaterial:
 		_sprite.material.set_shader_parameter("flash", 1.0)
 		var flash_tween := create_tween()
@@ -1303,6 +1310,7 @@ func play_death() -> void:
 ## banner until then. The caller waits for the killing blow's own animation
 ## before calling it.
 func play_hero_death() -> void:
+	_death_started = true
 	_update_bonus_fx()
 	var back := -1.0 if actor.is_hero else 1.0
 	if _sprite.material is ShaderMaterial:
@@ -1331,6 +1339,8 @@ func play_hero_death() -> void:
 	tween.chain().tween_property(_sprite, "rotation", 1.45 * back, 0.14) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tween.finished
+	# He stays on the floor, a little dimmer.
+	modulate = Color(0.75, 0.7, 0.75, 0.9)
 
 
 func _on_gui_input(event: InputEvent) -> void:

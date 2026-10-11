@@ -247,10 +247,21 @@ static func _deal_flat_damage(base: int, sim: CombatSim,
 ## did not aim it.
 static func _op_cash_in(effect: Dictionary, sim: CombatSim,
 		source: CombatActor, target: CombatActor) -> void:
-	var cashed := target != null and target.is_alive() and target.has_status(&"mark")
-	if cashed:
-		target.statuses.erase(&"mark")   # a toggle: cashing it clears it
-		sim.emit_event(&"mark_cashed", {"actor": target.id})
+	var cashed := false
+	if str(effect.get("scope", "")) == "all_damaged":
+		# On a Roll (1.23): "Cash In all marks on all damaged enemies". It follows
+		# an all-enemies hit, so every living enemy was damaged; each one that
+		# wears a Mark loses it, and the payoff runs once if any did.
+		for enemy in sim.enemies:
+			if enemy.is_alive() and enemy.has_status(&"mark"):
+				enemy.statuses.erase(&"mark")
+				sim.emit_event(&"mark_cashed", {"actor": enemy.id})
+				cashed = true
+	else:
+		cashed = target != null and target.is_alive() and target.has_status(&"mark")
+		if cashed:
+			target.statuses.erase(&"mark")   # a toggle: cashing it clears it
+			sim.emit_event(&"mark_cashed", {"actor": target.id})
 	var payoff := _effect_list(effect, "effects" if cashed else "else_effects")
 	if not payoff.is_empty():
 		execute(payoff, sim, source, target)

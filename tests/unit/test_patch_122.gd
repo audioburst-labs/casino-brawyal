@@ -146,3 +146,44 @@ func test_dropping_before_an_offset_keeps_only_what_arrived_since() -> void:
 	assert_eq(int(left[0].seq), 4)
 	assert_eq(int(left[2].seq), 99)
 	spool.clear()
+
+
+# ---- On a Roll cashes in every mark on every damaged enemy (1.23) --------------------
+
+func test_on_a_roll_cashes_every_mark_not_just_the_selected_targets() -> void:
+	var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer", "bouncer"],
+		"abilities": ["on_a_roll"], "seed": 3})
+	sim.hero.max_hp = 99999
+	sim.hero.hp = 99999
+	sim.begin_round()
+	var picked := sim.enemies[0]
+	sim.set_target(picked.id)
+	sim.enemies[1].apply_status(&"mark", 1)      # NOT the selected target
+	sim.enemies[2].apply_status(&"mark", 1)
+	var hp: Array[int] = []
+	for enemy in sim.enemies:
+		hp.append(enemy.hp)
+	for slot in 3:
+		var suit: StringName = [&"heart", &"spade", &"club"][slot]
+		sim.tray.add(suit, 1)
+		assert_true(sim.assign_chip(suit, 0, slot))
+	for i in 3:
+		assert_eq(sim.enemies[i].hp, hp[i] - 20, "enemy %d took the hit and the repeat" % i)
+		assert_false(sim.enemies[i].has_status(&"mark"), "enemy %d's Mark was cashed" % i)
+	var cashed := sim.drain_events().filter(
+		func(e: CombatEvent) -> bool: return e.type == &"mark_cashed").size()
+	assert_eq(cashed, 2, "one cash-in per marked enemy")
+
+
+func test_on_a_roll_with_no_marks_hits_once() -> void:
+	var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer"],
+		"abilities": ["on_a_roll"], "seed": 3})
+	sim.hero.max_hp = 99999
+	sim.hero.hp = 99999
+	sim.begin_round()
+	var hp := sim.enemies[0].hp
+	for slot in 3:
+		var suit: StringName = [&"heart", &"spade", &"club"][slot]
+		sim.tray.add(suit, 1)
+		sim.assign_chip(suit, 0, slot)
+	assert_eq(sim.enemies[0].hp, hp - 10)

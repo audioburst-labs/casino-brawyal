@@ -669,6 +669,7 @@
         },
         {
           "op": "cash_in",
+          "scope": "all_damaged",
           "effects": [
             {
               "op": "damage",
@@ -694,6 +695,7 @@
             },
             {
               "op": "cash_in",
+              "scope": "all_damaged",
               "effects": [
                 {
                   "op": "damage",
@@ -714,6 +716,7 @@
             },
             {
               "op": "cash_in",
+              "scope": "all_damaged",
               "effects": [
                 {
                   "op": "damage",

@@ -21,7 +21,7 @@
      "prompt": "Losing the run. A slow sorrowful blues: a lonely muted trumpet over sparse piano and bowed bass, the room emptying out. Dignified rather than tragic."},
 
     {"id": "amb_casino_floor", "category": "ambience", "loop": true, "seconds": 45,
-     "prompt": "Casino floor room tone: distant slot machines chiming, chips clinking, the low murmur of a crowd, an occasional far-off cheer, air conditioning hum. Steady, no events, loopable."},
+     "prompt": "Quiet casino floor room tone: slot machines being played far away, soft muffled electronic reel chimes and gentle spinning ticks, faint low coin payouts, a distant low murmur, air conditioning hum. Very soft and unobtrusive, low intensity, no sudden loud sounds, no clinking of chips, no cheers, steady and loopable."},
 
     {"id": "lever_pull", "category": "sfx", "seconds": 1.2, "variants": 2,
      "prompt": "A heavy slot machine lever pulled down and released: metallic clunk, spring ratchet, mechanical thunk."},

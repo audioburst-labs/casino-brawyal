@@ -75,7 +75,11 @@ static func path_for(id: StringName, variant := 0) -> String:
 	if category == "":
 		return ""
 	var stem := String(id) if variant <= 0 else "%s_%d" % [id, variant]
-	return "%s/%s/%s.ogg" % [ROOT, category, stem]
+	# The room tone ships as MP3 (1.23): the audio service hands back MP3 even when
+	# WAV is asked for, and this machine has no encoder to turn it into OGG. Godot
+	# loops an MP3 stream through the same `loop` property the OGG loops use.
+	var extension := "mp3" if category == "ambience" else "ogg"
+	return "%s/%s/%s.%s" % [ROOT, category, stem, extension]
 
 
 static func default_variance(id: StringName) -> float:
