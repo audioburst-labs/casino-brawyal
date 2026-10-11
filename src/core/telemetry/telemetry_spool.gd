@@ -28,6 +28,9 @@ var path: String
 var degraded := false
 var dropped_lines := 0
 var malformed_lines := 0
+## Bumped whenever the file is rewritten or cleared, which moves every byte
+## offset a caller may be holding.
+var generation := 0
 
 var _file: FileAccess = null
 var _writes_since_check := 0
@@ -136,6 +139,53 @@ func read_lines(limit: int = 0) -> Array[Dictionary]:
 	return out
 
 
+## Up to `limit` parseable events starting at byte `offset`, with the byte
+## offset just past each one (`ends`). This is how a backlog drains without
+## rereading or rewriting the file for every batch: the caller remembers how
+## far it has got and calls `drop_before()` once at the end.
+func read_from(offset: int, limit: int) -> Dictionary:
+	var events: Array[Dictionary] = []
+	var ends := PackedInt64Array()
+	malformed_lines = 0
+	if _file != null:
+		_file.flush()
+	var reader := FileAccess.open(path, FileAccess.READ) if FileAccess.file_exists(path) else null
+	if reader != null:
+		reader.seek(offset)
+		while not reader.eof_reached() and events.size() < limit:
+			var line := reader.get_line()
+			var after := reader.get_position()
+			if line.strip_edges().is_empty():
+				continue
+			var parser := JSON.new()
+			if parser.parse(line) == OK and parser.data is Dictionary:
+				events.append(parser.data)
+				ends.append(after)
+			else:
+				malformed_lines += 1
+	return {"events": events, "ends": ends}
+
+
+## Drops everything before byte `offset`, keeping the rest.
+func drop_before(offset: int) -> bool:
+	if offset <= 0:
+		return true
+	if degraded:
+		return false
+	if _file != null:
+		_file.flush()
+	var kept := PackedStringArray()
+	if FileAccess.file_exists(path):
+		var reader := FileAccess.open(path, FileAccess.READ)
+		if reader != null:
+			reader.seek(offset)
+			for line in reader.get_buffer(reader.get_length() - offset).get_string_from_utf8().split("
+", false):
+				if not line.strip_edges().is_empty():
+					kept.append(line)
+	return _rewrite(kept)
+
+
 ## Drops the first `count` lines, keeping the rest byte-for-byte. Called only
 ## after the server has taken them.
 func truncate_head(count: int) -> bool:
@@ -149,6 +199,7 @@ func truncate_head(count: int) -> bool:
 
 ## Everything goes: opting out, or a cap breach we could not repair.
 func clear() -> void:
+	generation += 1
 	close()
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
@@ -196,6 +247,7 @@ func _tail_after(count: int) -> PackedStringArray:
 ## write-tmp, swap, reopen. Any failure along the way degrades rather than
 ## leaving a half-written spool behind.
 func _rewrite(lines: PackedStringArray) -> bool:
+	generation += 1
 	close()
 	var tmp := path + ".tmp"
 	var out := FileAccess.open(tmp, FileAccess.WRITE)

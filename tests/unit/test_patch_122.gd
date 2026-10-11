@@ -100,3 +100,49 @@ func test_on_a_roll_reads_as_the_sheet_does() -> void:
 func test_the_river_reads_as_the_sheet_does() -> void:
 	assert_eq(db.get_ability(&"the_river", 0).description,
 		"Deal 10. For each expended ability, Repeat 1.")
+
+
+# ---- Telemetry spool: draining a backlog by offset ---------------------------------
+
+const SPOOL_PATH := "user://test_patch_122_spool.ndjson"
+
+
+func _spool_with(count: int) -> TelemetrySpool:
+	var spool := TelemetrySpool.new(SPOOL_PATH)
+	spool.clear()
+	for i in count:
+		spool.append({"t": "x", "seq": i})
+	return spool
+
+
+func test_a_backlog_is_read_in_batches_by_offset_without_rewriting() -> void:
+	var spool := _spool_with(25)
+	var generation := spool.generation
+	var offset := 0
+	var seen: Array[int] = []
+	while true:
+		var batch := spool.read_from(offset, 10)
+		var events: Array[Dictionary] = batch.events
+		if events.is_empty():
+			break
+		for event in events:
+			seen.append(int(event.seq))
+		offset = int((batch.ends as PackedInt64Array)[events.size() - 1])
+	assert_eq(seen.size(), 25)
+	assert_eq(seen[0], 0)
+	assert_eq(seen[24], 24)
+	assert_eq(spool.generation, generation, "reading never touches the file")
+	spool.clear()
+
+
+func test_dropping_before_an_offset_keeps_only_what_arrived_since() -> void:
+	var spool := _spool_with(6)
+	var batch := spool.read_from(0, 4)
+	var offset := int((batch.ends as PackedInt64Array)[3])
+	spool.append({"t": "x", "seq": 99})            # arrives while the batch is in flight
+	assert_true(spool.drop_before(offset))
+	var left := spool.read_lines()
+	assert_eq(left.size(), 3, "events 4, 5 and the late one")
+	assert_eq(int(left[0].seq), 4)
+	assert_eq(int(left[2].seq), 99)
+	spool.clear()

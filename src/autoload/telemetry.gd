@@ -40,6 +40,9 @@ var _http: HTTPRequest = null
 var _timer: Timer = null
 var _seq := 0
 var _inflight := 0                 # lines the server is being offered
+var _offset := 0                   # bytes of the spool already acknowledged
+var _offset_generation := 0
+var _inflight_end := 0             # where the in-flight batch ends
 var _sending := false
 var _failures := 0
 var _stopped := false              # a bad key: stop asking until next launch
@@ -242,7 +245,11 @@ func _on_flush_tick() -> void:
 func flush() -> void:
 	if not _live or _sending or _stopped or _spool == null:
 		return
-	var lines := _spool.read_lines(TelemetryBatch.MAX_EVENTS)
+	if _offset_generation != _spool.generation:
+		_offset = 0                      # the file was rewritten under us
+		_offset_generation = _spool.generation
+	var batch := _spool.read_from(_offset, TelemetryBatch.MAX_EVENTS)
+	var lines: Array[Dictionary] = batch.events
 	if lines.is_empty():
 		return
 	var built := TelemetryBatch.build(lines, {
@@ -264,6 +271,7 @@ func flush() -> void:
 	if _api_key != "":
 		headers.append("X-Api-Key: " + _api_key)
 	_inflight = int(built.count)
+	_inflight_end = int((batch.ends as PackedInt64Array)[_inflight - 1])
 	_sending = true
 	# The lines stay in the spool until a 2xx: a crash here simply resends.
 	var err := _http.request(_endpoint, headers, HTTPClient.METHOD_POST,
@@ -313,15 +321,24 @@ func _after_accepted(sent: int) -> void:
 		_timer.start()
 	if sent <= 0:
 		return
-	if not _spool.truncate_head(sent):
-		# The spool could not drop what the server already has. Resending it
-		# would duplicate nothing (the server dedups) but would loop forever,
-		# so let the spool go instead - the data is safely delivered.
-		_spool.clear()
+	if _offset_generation != _spool.generation:
+		# The file was rewritten while this batch was in flight, so its byte
+		# offsets mean nothing now: start over (the server dedups the resend).
+		_offset = 0
+		_offset_generation = _spool.generation
 		return
-	if _spool.size_bytes() > 0:
-		# A backlog drains a beat at a time, never back to back: each batch is
-		# file work on the main thread.
+	# Acknowledged lines are remembered by byte offset, and the file is only
+	# rewritten once the backlog has fully drained: rewriting a multi-megabyte
+	# spool after every batch was the main-thread stall behind the "stuck a
+	# few seconds after opening" reports.
+	_offset = _inflight_end
+	if _offset >= _spool.size_bytes():
+		if not _spool.drop_before(_offset):
+			_spool.clear()
+		_offset = 0
+		_offset_generation = _spool.generation
+	else:
+		# A backlog drains a beat at a time, never back to back.
 		get_tree().create_timer(0.3).timeout.connect(flush)
 	var spent := Time.get_ticks_msec() - began
 	if spent > 60:
