@@ -67,12 +67,12 @@ func test_gold_tier_block_figures_are_previewed_too() -> void:
 
 func test_relic_prices_match_the_sheet() -> void:
 	var expected := {
-		&"gamblers_confidence": [22, 28], &"bounty_list": [22, 28],
-		&"spade_protection": [27, 33], &"heart_protection": [27, 33],
-		&"club_protection": [27, 33], &"diamond_protection": [27, 33],
-		&"winners_aura": [22, 28], &"high_roller": [32, 38],
-		&"dark_emblem": [37, 43], &"red_emblems": [37, 43],
-		&"lucky_foot": [27, 33],
+		&"gamblers_confidence": [97, 103], &"bounty_list": [97, 103],
+		&"spade_protection": [117, 123], &"heart_protection": [117, 123],
+		&"club_protection": [117, 123], &"diamond_protection": [117, 123],
+		&"winners_aura": [97, 103], &"high_roller": [137, 143],
+		&"dark_emblem": [157, 163], &"red_emblems": [157, 163],
+		&"lucky_foot": [157, 163],
 	}
 	for id: StringName in expected:
 		var relic := _db.get_relic(id)
@@ -80,16 +80,16 @@ func test_relic_prices_match_the_sheet() -> void:
 		assert_eq([relic.price_min, relic.price_max], expected[id], str(id))
 
 
-func test_sticker_price_is_ten_plus_five_per_encounter() -> void:
+func test_sticker_price_is_twenty_five_plus_five_per_encounter() -> void:
 	var run := RunState.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
-	assert_eq(int(ShopStock.generate(_db, run, rng).stickers[0].price), 15,
-		"encounter 1: 10 + 5")
+	assert_eq(int(ShopStock.generate(_db, run, rng).stickers[0].price), 30,
+		"encounter 1: 25 + 5")
 	run.record_visit(&"combat")
 	run.record_visit(&"combat")
-	assert_eq(int(ShopStock.generate(_db, run, rng).stickers[0].price), 25,
-		"encounter 3: 10 + 15")
+	assert_eq(int(ShopStock.generate(_db, run, rng).stickers[0].price), 40,
+		"encounter 3: 25 + 15")
 
 
 func test_server_glass_barrage_hits_twice() -> void:

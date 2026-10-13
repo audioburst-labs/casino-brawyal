@@ -22,7 +22,7 @@ func _sim(enemies: Array) -> CombatSim:
 func test_the_patron_is_a_small_fragile_drinker() -> void:
 	var def := _db.get_enemy(&"drunk_patron")
 	assert_eq(def.name, "Drunk Patron")
-	assert_eq([def.hp_min, def.hp_max], [12, 15])
+	assert_eq([def.hp_min, def.hp_max], [13, 15])
 	assert_true(def.passive.is_empty(), "no passive on the sheet")
 
 
@@ -52,9 +52,9 @@ func test_the_patron_art_is_found_under_its_id() -> void:
 
 func test_the_sheets_other_changes_are_in() -> void:
 	var golem := _db.get_enemy(&"chip_golem")
-	assert_eq(int(golem.moves["bash"].intent.per_hit), 20, "Deal 20")
+	assert_eq(int(golem.moves["bash"].intent.per_hit), 14, "Deal 14")
 	assert_eq(int(golem.moves["crush"].intent.instances), 3)
-	assert_eq(int(golem.moves["crush"].intent.per_hit), 6, "Deal 3X6")
+	assert_eq(int(golem.moves["crush"].intent.per_hit), 5, "Deal 3X5")
 	var boss := _db.get_enemy(&"mr_moneybags")
 	assert_eq(int(boss.moves["call_server"].intent.summon.count), 2, "Summon 2 Servers")
 	assert_eq(int(boss.moves["call_bouncers"].intent.summon.count), 1, "Summon a Bouncer")

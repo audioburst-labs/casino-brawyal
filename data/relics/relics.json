@@ -5,8 +5,8 @@
       "id": "gamblers_confidence",
       "name": "Gambler's Confidence",
       "trigger": "combat_started",
-      "price_min": 22,
-      "price_max": 28,
+      "price_min": 97,
+      "price_max": 103,
       "effects": [
         {
           "op": "gain_block",
@@ -19,8 +19,8 @@
       "id": "bounty_list",
       "name": "Bounty List",
       "trigger": "enemy_killed",
-      "price_min": 22,
-      "price_max": 28,
+      "price_min": 97,
+      "price_max": 103,
       "effects": [
         {
           "op": "gain_coins",
@@ -33,8 +33,8 @@
       "id": "spade_protection",
       "name": "Spade's Protection",
       "trigger": "spin_resolved",
-      "price_min": 27,
-      "price_max": 33,
+      "price_min": 117,
+      "price_max": 123,
       "effects": [
         {
           "op": "block_per_chip",
@@ -48,8 +48,8 @@
       "id": "heart_protection",
       "name": "Heart's Protection",
       "trigger": "spin_resolved",
-      "price_min": 27,
-      "price_max": 33,
+      "price_min": 117,
+      "price_max": 123,
       "effects": [
         {
           "op": "block_per_chip",
@@ -63,8 +63,8 @@
       "id": "club_protection",
       "name": "Club's Protection",
       "trigger": "spin_resolved",
-      "price_min": 27,
-      "price_max": 33,
+      "price_min": 117,
+      "price_max": 123,
       "effects": [
         {
           "op": "block_per_chip",
@@ -78,8 +78,8 @@
       "id": "diamond_protection",
       "name": "Diamond's Protection",
       "trigger": "spin_resolved",
-      "price_min": 27,
-      "price_max": 33,
+      "price_min": 117,
+      "price_max": 123,
       "effects": [
         {
           "op": "block_per_chip",
@@ -93,8 +93,8 @@
       "id": "winners_aura",
       "name": "Winner's Aura",
       "trigger": "combat_started",
-      "price_min": 22,
-      "price_max": 28,
+      "price_min": 97,
+      "price_max": 103,
       "effects": [
         {
           "op": "apply_status",
@@ -109,8 +109,8 @@
       "id": "high_roller",
       "name": "High Roller",
       "trigger": "spin_resolved",
-      "price_min": 32,
-      "price_max": 38,
+      "price_min": 137,
+      "price_max": 143,
       "effects": [
         {
           "op": "damage",
@@ -126,8 +126,8 @@
       "id": "dark_emblem",
       "name": "Dark Emblem",
       "trigger": "combat_started",
-      "price_min": 37,
-      "price_max": 43,
+      "price_min": 157,
+      "price_max": 163,
       "effects": [],
       "description": "Attacks that require a Spade or a Club deal 30% more damage."
     },
@@ -135,8 +135,8 @@
       "id": "red_emblems",
       "name": "Red Emblem",
       "trigger": "combat_started",
-      "price_min": 37,
-      "price_max": 43,
+      "price_min": 157,
+      "price_max": 163,
       "effects": [],
       "description": "Attacks that require a Heart or a Diamond deal 30% more damage."
     },
@@ -144,8 +144,8 @@
       "id": "lucky_foot",
       "name": "Lucky Foot",
       "trigger": "combat_started",
-      "price_min": 27,
-      "price_max": 33,
+      "price_min": 157,
+      "price_max": 163,
       "effects": [],
       "description": "When attacked, there's a 10% chance the damage is reduced to 0."
     }

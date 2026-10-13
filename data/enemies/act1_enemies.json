@@ -103,7 +103,7 @@
     {
       "id": "drunk_patron",
       "name": "Drunk Patron",
-      "hp_min": 12,
+      "hp_min": 13,
       "hp_max": 15,
       "brain": {
         "type": "sequence",
@@ -133,6 +133,53 @@
               {
                 "status": "strength",
                 "stacks": 4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "chip_goblin",
+      "name": "Chip Goblin",
+      "hp_min": 19,
+      "hp_max": 22,
+      "passive": {
+        "type": "break",
+        "mode": "death"
+      },
+      "brain": {
+        "type": "sequence",
+        "loop": true,
+        "steps": [
+          "claw_flurry",
+          "sharpen"
+        ]
+      },
+      "moves": {
+        "claw_flurry": {
+          "name": "Claw Flurry",
+          "intent": {
+            "instances": 4,
+            "per_hit": 1,
+            "debuffs": [
+              {
+                "status": "weak",
+                "stacks": 1
+              }
+            ]
+          }
+        },
+        "sharpen": {
+          "name": "Sharpen",
+          "intent": {
+            "instances": 0,
+            "per_hit": 0,
+            "debuffs": [],
+            "self_status": [
+              {
+                "status": "strength",
+                "stacks": 1
               }
             ]
           }
@@ -344,7 +391,7 @@
         "bash": {
           "intent": {
             "instances": 1,
-            "per_hit": 20,
+            "per_hit": 14,
             "debuffs": [],
             "gift_chips": 1
           }
@@ -354,14 +401,14 @@
             "instances": 0,
             "per_hit": 0,
             "debuffs": [],
-            "self_block": 20,
+            "self_block": 10,
             "absorb": true
           }
         },
         "crush": {
           "intent": {
             "instances": 3,
-            "per_hit": 6,
+            "per_hit": 5,
             "debuffs": [],
             "self_status": [
               {
@@ -376,8 +423,8 @@
     {
       "id": "loan_shark",
       "name": "Loan Shark",
-      "hp_min": 100,
-      "hp_max": 109,
+      "hp_min": 90,
+      "hp_max": 99,
       "passive": {
         "type": "loan",
         "every_rounds": 3,

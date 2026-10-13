@@ -7,18 +7,19 @@
       "enemies": [
         "bouncer"
       ],
-      "gold_min": 27,
-      "gold_max": 33
+      "gold_min": 37,
+      "gold_max": 43
     },
     {
-      "id": "double_shift",
+      "id": "chip_heist",
       "stage": 1,
       "enemies": [
-        "server",
-        "server"
+        "chip_goblin",
+        "chip_goblin",
+        "chip_goblin"
       ],
-      "gold_min": 27,
-      "gold_max": 33
+      "gold_min": 37,
+      "gold_max": 43
     },
     {
       "id": "happy_hour",
@@ -26,82 +27,81 @@
       "enemies": [
         "drunk_patron",
         "drunk_patron",
+        "drunk_patron"
+      ],
+      "gold_min": 37,
+      "gold_max": 43
+    },
+    {
+      "id": "last_orders",
+      "stage": 2,
+      "enemies": [
+        "server",
         "drunk_patron",
         "drunk_patron"
       ],
-      "gold_min": 27,
-      "gold_max": 33
+      "gold_min": 47,
+      "gold_max": 53
     },
     {
-      "id": "muscle_and_service",
+      "id": "pit_goblin",
+      "stage": 2,
+      "enemies": [
+        "dealer",
+        "chip_goblin"
+      ],
+      "gold_min": 47,
+      "gold_max": 53
+    },
+    {
+      "id": "bouncer_tab",
       "stage": 2,
       "enemies": [
         "bouncer",
-        "server"
+        "drunk_patron"
       ],
-      "gold_min": 37,
-      "gold_max": 43
+      "gold_min": 47,
+      "gold_max": 53
     },
     {
       "id": "pit_backup",
-      "stage": 2,
-      "enemies": [
-        "dealer",
-        "server"
-      ],
-      "gold_min": 37,
-      "gold_max": 43
-    },
-    {
-      "id": "rowdy_tables",
-      "stage": 2,
-      "enemies": [
-        "drunk_patron",
-        "drunk_patron",
-        "server",
-        "server"
-      ],
-      "gold_min": 37,
-      "gold_max": 43
-    },
-    {
-      "id": "twin_tables",
       "stage": 3,
       "enemies": [
         "dealer",
-        "dealer"
-      ],
-      "gold_min": 47,
-      "gold_max": 53
-    },
-    {
-      "id": "mixed_floor",
-      "stage": 3,
-      "enemies": [
-        "bouncer",
-        "dealer"
-      ],
-      "gold_min": 47,
-      "gold_max": 53
-    },
-    {
-      "id": "the_manager",
-      "stage": 3,
-      "enemies": [
-        "manager"
-      ],
-      "gold_min": 47,
-      "gold_max": 53
-    },
-    {
-      "id": "managers_pet",
-      "stage": 4,
-      "enemies": [
-        "drunk_patron",
-        "manager"
+        "server"
       ],
       "gold_min": 57,
       "gold_max": 63
+    },
+    {
+      "id": "muscle_and_service",
+      "stage": 3,
+      "enemies": [
+        "bouncer",
+        "server"
+      ],
+      "gold_min": 57,
+      "gold_max": 63
+    },
+    {
+      "id": "loot_run",
+      "stage": 3,
+      "enemies": [
+        "bouncer",
+        "chip_goblin",
+        "chip_goblin"
+      ],
+      "gold_min": 57,
+      "gold_max": 63
+    },
+    {
+      "id": "the_manager",
+      "stage": 4,
+      "enemies": [
+        "manager"
+      ],
+      "gold_min": 67,
+      "gold_max": 73
     },
     {
       "id": "bar_brawl",
@@ -112,51 +112,50 @@
         "drunk_patron",
         "drunk_patron"
       ],
-      "gold_min": 57,
-      "gold_max": 63
+      "gold_min": 67,
+      "gold_max": 73
     },
     {
-      "id": "last_call",
+      "id": "twin_tables",
       "stage": 4,
       "enemies": [
         "dealer",
-        "server",
-        "drunk_patron",
-        "drunk_patron"
+        "dealer"
       ],
-      "gold_min": 57,
-      "gold_max": 63
+      "gold_min": 67,
+      "gold_max": 73
     },
     {
-      "id": "floor_check",
+      "id": "managers_pet",
+      "stage": 5,
+      "enemies": [
+        "manager",
+        "drunk_patron"
+      ],
+      "gold_min": 77,
+      "gold_max": 83
+    },
+    {
+      "id": "managers_goblin",
+      "stage": 5,
+      "enemies": [
+        "manager",
+        "chip_goblin"
+      ],
+      "gold_min": 77,
+      "gold_max": 83
+    },
+    {
+      "id": "full_shift",
       "stage": 5,
       "enemies": [
         "bouncer",
-        "manager"
-      ],
-      "gold_min": 67,
-      "gold_max": 73
-    },
-    {
-      "id": "the_pit",
-      "stage": 5,
-      "enemies": [
-        "dealer",
-        "manager"
-      ],
-      "gold_min": 67,
-      "gold_max": 73
-    },
-    {
-      "id": "closing_shift",
-      "stage": 5,
-      "enemies": [
         "server",
         "server",
-        "manager"
+        "drunk_patron"
       ],
-      "gold_min": 67,
-      "gold_max": 73
+      "gold_min": 77,
+      "gold_max": 83
     },
     {
       "id": "final_fight",
@@ -174,8 +173,8 @@
       "enemies": [
         "chip_golem"
       ],
-      "gold_min": 77,
-      "gold_max": 83
+      "gold_min": 97,
+      "gold_max": 103
     },
     {
       "id": "loan_office",
@@ -184,8 +183,8 @@
       "enemies": [
         "loan_shark"
       ],
-      "gold_min": 77,
-      "gold_max": 83
+      "gold_min": 97,
+      "gold_max": 103
     }
   ]
 }

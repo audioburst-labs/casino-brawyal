@@ -461,6 +461,9 @@ func _add_passive_chip() -> void:
 	if figure > 0:
 		var keyword_figure := 21 if kind == "bust" else 20
 		text = text.replace(str(keyword_figure), str(figure))
+	var on_death := str(def.passive.get("mode", "")) == "death"
+	if on_death:
+		text = "When this enemy dies, you get a random chip."
 	var hint := "%s: %s" % [keyword.name if keyword != null else kind.capitalize(), text]
 	var chip := PassiveChip.new()
 	chip.custom_minimum_size = Vector2(50, 64) if kind != "loan" else Vector2(48, 48)
@@ -473,7 +476,7 @@ func _add_passive_chip() -> void:
 		"loan": LOAN_ICON}.get(kind, "")
 	if art != "" and ResourceLoader.exists(art):
 		chip.icon = load(art)
-	chip.show_value = kind != "loan"
+	chip.show_value = kind != "loan" and not on_death
 	chip.tooltip_text = hint
 	chip.mouse_filter = Control.MOUSE_FILTER_PASS
 	_status_row.add_child(chip)

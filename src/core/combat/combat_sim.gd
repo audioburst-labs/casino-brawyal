@@ -275,13 +275,15 @@ func _deliver_gift_chips() -> void:
 		_grant_random_chip(&"gift")
 
 
-func _grant_random_chip(source: StringName) -> void:
+func _grant_random_chip(source: StringName, from_actor: StringName = &"") -> void:
 	var suit: StringName = ContentDB.SUITS[
 		rng.stream(&"combat").randi_range(0, ContentDB.SUITS.size() - 1)]
 	tray.add(suit, 1)
 	var data := {"suit": suit, "count": 1, "source": source}
 	if source == &"gift":
 		data["actor"] = _gift_giver
+	elif from_actor != &"":
+		data["actor"] = from_actor
 	emit_event(&"chips_generated", data)
 
 
@@ -494,6 +496,8 @@ static func passive_start(passive: Dictionary) -> int:
 		"bust":
 			return maxi(1, int(passive.get("threshold", 21)))
 		"break":
+			if str(passive.get("mode", "")) == "death":
+				return -1                # the Chip Goblin: nothing to count down
 			return maxi(1, int(passive.get("every", 20)))
 	return -1
 
@@ -505,6 +509,8 @@ func on_enemy_damaged(actor: CombatActor, hp_lost: int) -> void:
 		return
 	var passive: Dictionary = _db.get_enemy(actor.def_id).passive
 	if passive.is_empty():
+		return
+	if str(passive.get("mode", "")) == "death":
 		return
 	var start := passive_start(passive)
 	if actor.passive_counter < 0:
@@ -561,6 +567,13 @@ func check_death(actor: CombatActor) -> void:
 	if actor.is_alive() or actor.is_hero:
 		return
 	emit_event(&"actor_died", {"actor": actor.id})
+	# Break, death mode (sheet v0.123, the Chip Goblin): "When I die, give the
+	# player a random Chip."
+	var passive: Dictionary = _db.get_enemy(actor.def_id).passive
+	if str(passive.get("type", "")) == "break" and str(passive.get("mode", "")) == "death" \
+			and actor.passive_counter != -2:
+		_grant_random_chip(&"break", actor.id)
+		actor.passive_counter = -2           # paid once, however often this is called
 	if targeting.manual_target_id == actor.id:
 		targeting.manual_target_id = &""
 	_fire_relics(&"enemy_killed")

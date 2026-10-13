@@ -219,6 +219,6 @@ func test_combat_config_can_be_pinned_to_a_lineup() -> void:
 	var run := RunState.new()
 	run.record_visit(&"combat")
 	var config := EncounterFactory.combat_config(_db, run, _rng(),
-		{"type": &"combat", "lineup": &"double_shift"})
-	assert_eq(config.enemies, [&"server", &"server"] as Array[StringName])
-	assert_eq(str(config.lineup), "double_shift", "the config names the lineup it drew")
+		{"type": &"combat", "lineup": &"bouncer_tab"})
+	assert_eq(config.enemies, [&"bouncer", &"drunk_patron"] as Array[StringName])
+	assert_eq(str(config.lineup), "bouncer_tab", "the config names the lineup it drew")

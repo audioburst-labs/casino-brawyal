@@ -1075,7 +1075,7 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				var source := StringName(str(event.data.get("source", "")))
 				match source:
 					&"break":
-						await _golem_drops_chip(suit)
+						await _golem_drops_chip(suit, StringName(str(event.data.get("actor", ""))))
 					&"gift":
 						var giver := _view_of(StringName(str(event.data.get("actor", ""))))
 						await _chip_arrives(suit,
@@ -1678,13 +1678,18 @@ func _chip_arrives(suit: StringName, from: Vector2) -> void:
 	_cabinet.celebrate(0.4)
 
 
-func _golem_drops_chip(suit: StringName) -> void:
+func _golem_drops_chip(suit: StringName, from_actor: StringName = &"") -> void:
+	# The shedding unit: the one named in the event (the Chip Goblin sheds when it
+	# DIES, so it may already be a corpse), else the Chip Golem.
 	var golem: UnitView = null
-	for view: UnitView in _enemy_views.values():
-		if is_instance_valid(view) and view.actor != null \
-			and view.actor.def_id == &"chip_golem":
-			golem = view
-			break
+	if from_actor != &"":
+		golem = _enemy_views.get(from_actor, _corpse_views.get(from_actor))
+	if golem == null:
+		for view: UnitView in _enemy_views.values():
+			if is_instance_valid(view) and view.actor != null \
+					and view.actor.def_id == &"chip_golem":
+				golem = view
+				break
 	if golem == null:
 		return
 	var texture := SuitAssets.chip_texture(suit)

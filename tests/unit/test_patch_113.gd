@@ -175,22 +175,22 @@ func test_the_boss_heal_never_overshoots_his_maximum() -> void:
 ## drifted from it before this patch.
 const SHEET_LINEUPS := {
 	"door_duty": ["bouncer"],
-	"double_shift": ["server", "server"],
-	"happy_hour": ["drunk_patron", "drunk_patron", "drunk_patron", "drunk_patron"],
-	"muscle_and_service": ["bouncer", "server"],
+	"chip_heist": ["chip_goblin", "chip_goblin", "chip_goblin"],
+	"happy_hour": ["drunk_patron", "drunk_patron", "drunk_patron"],
+	"last_orders": ["server", "drunk_patron", "drunk_patron"],
+	"pit_goblin": ["dealer", "chip_goblin"],
+	"bouncer_tab": ["bouncer", "drunk_patron"],
 	"pit_backup": ["dealer", "server"],
-	"rowdy_tables": ["drunk_patron", "drunk_patron", "server", "server"],
-	"twin_tables": ["dealer", "dealer"],
-	"mixed_floor": ["bouncer", "dealer"],
+	"muscle_and_service": ["bouncer", "server"],
+	"loot_run": ["bouncer", "chip_goblin", "chip_goblin"],
 	"the_manager": ["manager"],
-	"managers_pet": ["drunk_patron", "manager"],
 	"bar_brawl": ["bouncer", "server", "drunk_patron", "drunk_patron"],
-	"last_call": ["dealer", "server", "drunk_patron", "drunk_patron"],
-	"floor_check": ["bouncer", "manager"],
-	"the_pit": ["dealer", "manager"],
-	"closing_shift": ["server", "server", "manager"],
+	"twin_tables": ["dealer", "dealer"],
+	"managers_pet": ["manager", "drunk_patron"],
+	"managers_goblin": ["manager", "chip_goblin"],
+	"full_shift": ["bouncer", "server", "server", "drunk_patron"],
 }
-const SHEET_STAGE_GOLD := {1: [27, 33], 2: [37, 43], 3: [47, 53], 4: [57, 63], 5: [67, 73]}
+const SHEET_STAGE_GOLD := {1: [37, 43], 2: [47, 53], 3: [57, 63], 4: [67, 73], 5: [77, 83]}
 
 
 func test_every_shipped_lineup_is_one_of_the_sheets() -> void:
@@ -213,7 +213,7 @@ func test_gold_matches_the_sheets_band_for_each_stage() -> void:
 	for lineup: Dictionary in _db.all_lineups():
 		var band := [int(lineup.gold_min), int(lineup.gold_max)]
 		if bool(lineup.elite):
-			assert_eq(band, [77, 83], String(lineup.id))
+			assert_eq(band, [97, 103], String(lineup.id))
 		elif int(lineup.stage) == 6:
 			assert_eq(band, [0, 0], "the boss pays none")
 		else:
@@ -225,7 +225,7 @@ func test_enemy_health_matches_the_sheet() -> void:
 	# Sheet v0.122 (patch 0.114) put health up across the board.
 	var sheet := {
 		"bouncer": [56, 60], "server": [25, 30], "dealer": [51, 55],
-		"manager": [61, 65], "drunk_patron": [12, 15], "chip_golem": [100, 109], "loan_shark": [100, 109],
+		"manager": [61, 65], "drunk_patron": [13, 15], "chip_goblin": [19, 22], "chip_golem": [100, 109], "loan_shark": [90, 99],
 	}
 	for id: String in sheet:
 		var def := _db.get_enemy(StringName(id))

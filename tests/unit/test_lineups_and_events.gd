@@ -53,8 +53,8 @@ func test_elite_lineups_are_their_own_pool() -> void:
 	for lineup: Dictionary in elites:
 		ids.append(lineup.id)
 		assert_eq((lineup.enemies as Array).size(), 1, "one mini-boss each")
-		assert_gte(int(lineup.gold_min), 77, "the sheet's elite reward")
-		assert_lte(int(lineup.gold_max), 83)
+		assert_gte(int(lineup.gold_min), 97, "the sheet's elite reward")
+		assert_lte(int(lineup.gold_max), 103)
 	assert_has(ids, &"vault_golem")
 	assert_has(ids, &"loan_office")
 	for stage in range(1, 7):

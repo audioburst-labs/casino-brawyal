@@ -262,11 +262,11 @@
       "prompt": "Full-body cartoon enemy sprite on a fully transparent background: an anthropomorphic shark card dealer standing upright. Sleek grey shark head with a toothy grin, wearing a cream dealer vest with a maroon bowtie and gold armbands, fanning razor-sharp playing cards in one fin. Lean and slippery posture, facing slightly left. Exaggerated cartoon proportions, thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
-      "id": "enemy_slot_gremlin",
-      "out": "assets/characters/enemy_slot_gremlin.png",
+      "id": "enemy_chip_goblin",
+      "out": "assets/characters/enemy_chip_goblin.png",
       "size": "1024x1536",
       "transparent": true,
-      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a small mischievous gremlin made of slot machine parts. Round maroon metal body with a tiny reel window in its belly showing mismatched suit symbols, one big yellow marquee-light eye, coin-slot mouth grin, spindly brass arms clutching stacks of casino poker chips (red, blue, green and black with white edge stripes), a bent lever sticking from its back like a tail. Facing slightly left, sneaky crouched pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a small mischievous chip goblin made of slot machine parts. Round maroon metal body with a tiny reel window in its belly showing mismatched suit symbols, one big yellow marquee-light eye, coin-slot mouth grin, spindly brass arms clutching stacks of casino poker chips (red, blue, green and black with white edge stripes), a bent lever sticking from its back like a tail. Facing slightly left, sneaky crouched pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
       "id": "enemy_bouncer",
@@ -298,6 +298,30 @@
       "size": "1024x1536",
       "transparent": true,
       "prompt": "Redraw this exact same character — same towering vault-door build, same maroon doorman coat with gold braid and epaulettes, same velvet rope bandolier, same stern jaw, identical art style and colors — in a HAYMAKER FOLLOW-THROUGH pose: the punch has connected and finished, his right arm now relaxing slightly forward and down after full extension, shoulders settling back to a squared stance, weight resting fully on his front foot, a satisfied smirk on his stern face, coat settling from the motion. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "chip_goblin_punch_windup",
+      "out": "assets/characters/chip_goblin_punch_windup.png",
+      "base": "assets/characters/enemy_chip_goblin.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same small mischievous chip goblin made of slot machine parts, same round maroon body with the belly reel window showing a diamond, a spade and a heart, same single yellow marquee-light eye, same coin-slot grin, same brass-and-green pointed ears, same bent lever tail, same stacks of poker chips, identical art style and colors — in a CLAW-FLURRY WIND-UP pose: crouched low and coiled back, both brass clawed hands pulled back behind its head with the poker chip stacks tucked under one arm, ears flattened, grin widening, eye narrowed, facing slightly left toward its target. Full body, three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "chip_goblin_punch_strike",
+      "out": "assets/characters/chip_goblin_punch_strike.png",
+      "base": "assets/characters/enemy_chip_goblin.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same small mischievous chip goblin made of slot machine parts, same round maroon body with the belly reel window showing a diamond, a spade and a heart, same single yellow marquee-light eye, same coin-slot grin, same brass-and-green pointed ears, same bent lever tail, same stacks of poker chips, identical art style and colors — at the IMPACT INSTANT of a rapid claw flurry: lunging forward and slightly left, both brass clawed hands raking out in front of it with brass motion-blur streaks, a few poker chips flying loose, body stretched forward, lever tail whipping behind. Full body, dynamic three-quarter view. Same scale and framing as the original."
+    },
+    {
+      "id": "chip_goblin_punch_follow",
+      "out": "assets/characters/chip_goblin_punch_follow.png",
+      "base": "assets/characters/enemy_chip_goblin.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Redraw this exact same character — same small mischievous chip goblin made of slot machine parts, same round maroon body with the belly reel window showing a diamond, a spade and a heart, same single yellow marquee-light eye, same coin-slot grin, same brass-and-green pointed ears, same bent lever tail, same stacks of poker chips, identical art style and colors — in a FOLLOW-THROUGH pose: the flurry is done, it skitters back into a crouch with its claws lowered and chips held to its chest, smug sneaky grin, one chip spinning in the air. Full body, three-quarter view. Same scale and framing as the original."
     },
     {
       "id": "enemy_croupier",
