@@ -266,7 +266,7 @@
       "out": "assets/characters/enemy_slot_gremlin.png",
       "size": "1024x1536",
       "transparent": true,
-      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a small mischievous gremlin made of slot machine parts. Round maroon metal body with a tiny reel window in its belly showing mismatched suit symbols, one big yellow marquee-light eye, coin-slot mouth grin, spindly brass arms clutching stolen gold coins, a bent lever sticking from its back like a tail. Facing slightly left, sneaky crouched pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
+      "prompt": "Full-body cartoon enemy sprite on a fully transparent background: a small mischievous gremlin made of slot machine parts. Round maroon metal body with a tiny reel window in its belly showing mismatched suit symbols, one big yellow marquee-light eye, coin-slot mouth grin, spindly brass arms clutching stacks of casino poker chips (red, blue, green and black with white edge stripes), a bent lever sticking from its back like a tail. Facing slightly left, sneaky crouched pose. Thick outlines. Character fills the frame vertically. No shadow, no background."
     },
     {
       "id": "enemy_bouncer",
