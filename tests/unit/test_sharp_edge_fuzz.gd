@@ -139,9 +139,9 @@ func test_card_sling_marking_a_fresh_enemy_after_sharp_edge_was_played_earlier()
 		assert_eq(fresh.hp, hp - 9, "6 from Card Sling and 3 from Sharp Edge (same round: %s)" % same_round)
 
 
-## Equipped is not played: until Sharp Edge's own socket is filled this fight,
-## it has no passive to answer with.
-func test_an_unplayed_sharp_edge_does_nothing() -> void:
+## Equipped is enough (designer, 1.23): Sharp Edge answers a Mark from the first
+## round of the fight without ever being played.
+func test_an_unplayed_sharp_edge_still_answers_a_mark() -> void:
 	var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer"],
 		"abilities": ["sharp_edge", "card_sling"], "seed": 5})
 	sim.hero.max_hp = 99999
@@ -151,4 +151,4 @@ func test_an_unplayed_sharp_edge_does_nothing() -> void:
 	sim.set_target(sim.enemies[0].id)
 	sim.tray.add(&"spade", 1)
 	assert_true(sim.assign_chip(&"spade", 1, 0))
-	assert_eq(sim.enemies[0].hp, hp - 6, "only Card Sling's own 6")
+	assert_eq(sim.enemies[0].hp, hp - 9, "Card Sling 6 plus Sharp Edge 3, never played")

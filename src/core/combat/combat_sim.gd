@@ -101,6 +101,13 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 	for ability_id in config.get("abilities", []):
 		var id := StringName(str(ability_id))
 		abilities.append(AbilityState.new(db.get_ability(id, int(tiers.get(id, 0)))))
+		# A triggered passive (Sharp Edge, Chip Tricks) is live from the first
+		# round of the fight just by being equipped (designer, 1.23: "even though
+		# I haven't played Sharp Edge, whenever I mark I deal an extra 3").
+		# Playing it only adds its Active half.
+		var equipped := abilities[abilities.size() - 1].def
+		if equipped.passive and equipped.passive_trigger != "" and not passives.has(equipped):
+			passives.append(equipped)
 
 	for relic_id in config.get("relics", []):
 		var relic := db.get_relic(StringName(str(relic_id)))
