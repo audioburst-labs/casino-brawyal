@@ -112,3 +112,43 @@ func test_a_round_start_mark_from_house_edge_trips_sharp_edge() -> void:
 			return e.type == &"passive_fired" and e.data.ability == &"sharp_edge").size()
 		assert_gt(marks, 0, "tier %d: House Edge marked someone" % tier)
 		assert_eq(fired, marks, "tier %d: one Sharp Edge answer per fresh Mark" % tier)
+
+
+## The designer's own scenario (1.23): Sharp Edge was played, then Card Sling
+## with a Spade marks an enemy that had no Mark. It must hit for 6 and then 3.
+func test_card_sling_marking_a_fresh_enemy_after_sharp_edge_was_played_earlier() -> void:
+	for same_round in [true, false]:
+		var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer"],
+			"abilities": ["sharp_edge", "card_sling"], "seed": 5})
+		sim.hero.max_hp = 99999
+		sim.hero.hp = 99999
+		sim.begin_round()
+		sim.tray.add(&"spade", 1)
+		assert_true(sim.assign_chip(&"spade", 0, 0))            # Sharp Edge, played
+		if not same_round:
+			sim.tray.discard_all()
+			sim.end_assignment()
+			sim.begin_round()
+		var fresh := sim.enemies[1]
+		fresh.statuses.erase(&"mark")
+		sim.set_target(fresh.id)
+		var hp := fresh.hp
+		sim.tray.add(&"spade", 1)
+		assert_true(sim.assign_chip(&"spade", 1, 0))            # Card Sling + Spade
+		assert_true(fresh.has_status(&"mark"), "Card Sling marked it")
+		assert_eq(fresh.hp, hp - 9, "6 from Card Sling and 3 from Sharp Edge (same round: %s)" % same_round)
+
+
+## Equipped is not played: until Sharp Edge's own socket is filled this fight,
+## it has no passive to answer with.
+func test_an_unplayed_sharp_edge_does_nothing() -> void:
+	var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer"],
+		"abilities": ["sharp_edge", "card_sling"], "seed": 5})
+	sim.hero.max_hp = 99999
+	sim.hero.hp = 99999
+	sim.begin_round()
+	var hp := sim.enemies[0].hp
+	sim.set_target(sim.enemies[0].id)
+	sim.tray.add(&"spade", 1)
+	assert_true(sim.assign_chip(&"spade", 1, 0))
+	assert_eq(sim.enemies[0].hp, hp - 6, "only Card Sling's own 6")
