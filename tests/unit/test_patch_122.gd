@@ -168,7 +168,7 @@ func test_on_a_roll_cashes_every_mark_not_just_the_selected_targets() -> void:
 		sim.tray.add(suit, 1)
 		assert_true(sim.assign_chip(suit, 0, slot))
 	for i in 3:
-		assert_eq(sim.enemies[i].hp, hp[i] - 20, "enemy %d took the hit and the repeat" % i)
+		assert_eq(sim.enemies[i].hp, hp[i] - 30, "enemy %d took the hit and one repeat per Mark" % i)
 		assert_false(sim.enemies[i].has_status(&"mark"), "enemy %d's Mark was cashed" % i)
 	var cashed := sim.drain_events().filter(
 		func(e: CombatEvent) -> bool: return e.type == &"mark_cashed").size()
@@ -187,3 +187,37 @@ func test_on_a_roll_with_no_marks_hits_once() -> void:
 		sim.tray.add(suit, 1)
 		sim.assign_chip(suit, 0, slot)
 	assert_eq(sim.enemies[0].hp, hp - 10)
+
+
+# ---- 1.24: no fight twice running ------------------------------------------------------
+
+func test_two_encounters_in_one_stage_never_roll_the_same_fight() -> void:
+	for seed_value in 60:
+		var run := RunState.new()
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		run.history.append(&"combat")
+		run.history.append(&"combat")   # encounter 2: stage 2
+		var first := EncounterFactory.combat_config(db, run, rng, {"type": &"combat"})
+		run.record_lineup(StringName(str(first.lineup)))
+		run.history.append(&"combat")   # encounter 3: same stage
+		var second := EncounterFactory.combat_config(db, run, rng, {"type": &"combat"})
+		assert_ne(String(second.lineup), String(first.lineup), "seed %d" % seed_value)
+
+
+func test_on_a_roll_repeats_once_per_mark_cashed() -> void:
+	var sim := CombatSim.new(db, {"hero": "ace", "enemies": ["bouncer", "bouncer", "bouncer", "bouncer"],
+		"abilities": ["on_a_roll"], "seed": 3})
+	sim.hero.max_hp = 99999
+	sim.hero.hp = 99999
+	sim.begin_round()
+	for enemy in sim.enemies:
+		enemy.hp = 500
+		enemy.max_hp = 500
+		enemy.apply_status(&"mark", 1)
+	for slot in 3:
+		var suit: StringName = [&"heart", &"spade", &"club"][slot]
+		sim.tray.add(suit, 1)
+		sim.assign_chip(suit, 0, slot)
+	for enemy in sim.enemies:
+		assert_eq(enemy.hp, 450, "10 + 4 repeats of 10")

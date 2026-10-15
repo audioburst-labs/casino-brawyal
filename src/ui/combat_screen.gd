@@ -1956,7 +1956,14 @@ func _payout_flourish(symbols: Array) -> void:
 	var window := _cabinet.window_rect_global()
 	var tray_center := _cabinet.drawer_centre_global()
 	_cabinet.celebrate(1.0)
-	var triple: bool = symbols.size() >= 3 and symbols[0] == symbols[1] and symbols[1] == symbols[2]
+	# Three of a kind anywhere on the row, not just the first three reels: the
+	# payout's bonus chip is per suit with 3+ matches (1.24, machines of 4+ reels).
+	var counts := {}
+	var triple := false
+	for s in symbols:
+		counts[s] = int(counts.get(s, 0)) + 1
+		if counts[s] >= 3:
+			triple = true
 	if triple:
 		Audio.duck()
 		Audio.play_sfx(&"jackpot")

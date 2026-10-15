@@ -27,14 +27,15 @@ static func combat_config(db: ContentDB, run: RunState,
 		lineup_stage = ContentDB.BOSS_STAGE
 	var lineups := db.elite_lineups() if option.type == &"elite" \
 		else db.lineups_for_stage(lineup_stage)
-	if option.type == &"elite":
-		# An Elite is fought at most once per run (designer, 0.117): a second
-		# Elite node draws from what is left. Only if every Elite has been
-		# fought does the full pool come back, rather than the run breaking.
-		var fresh := lineups.filter(func(l: Dictionary) -> bool:
-			return not run.fought_lineups.has(StringName(str(l.id))))
-		if not fresh.is_empty():
-			lineups = fresh
+	# An Elite is fought at most once per run (designer, 0.117): a second Elite
+	# node draws from what is left. Ordinary fights follow the same rule (1.24:
+	# two encounters share a stage, so the same fight came up twice running).
+	# Only if every lineup in the pool has been fought does the full pool come
+	# back, rather than the run breaking.
+	var fresh := lineups.filter(func(l: Dictionary) -> bool:
+		return not run.fought_lineups.has(StringName(str(l.id))))
+	if not fresh.is_empty():
+		lineups = fresh
 	var lineup: Dictionary = lineups[rng.randi_range(0, lineups.size() - 1)]
 	# A resumed encounter names the lineup it was fighting (0.0.111), so the
 	# same fight comes back rather than a fresh roll.
