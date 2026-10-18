@@ -14,6 +14,8 @@ var run_elapsed_sec := 0.0
 var cinematic_playing := false
 
 var _screen_root: Node = null
+var _curtain: CurtainTransition = null
+var _queued_nav: Dictionary = {}
 var _combat_gold := Vector2i.ZERO   # gold range of the lineup being fought
 
 ## The header (HeaderHud) hides itself outside an active run — main menu and
@@ -30,8 +32,43 @@ func register_screen_root(root: Node) -> void:
 	_screen_root = root
 
 
+## The theatre curtain (patch 0.125), registered by Main in a real window and
+## left null headless, so every test and the bots still swap screens
+## synchronously.
+func register_curtain(curtain: CurtainTransition) -> void:
+	_curtain = curtain
+
+
 func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 	assert(_screen_root != null, "Main scene must register its ScreenRoot before navigation.")
+	if _curtain != null and _screen_root.get_child_count() > 0:
+		if _curtain.is_covering():
+			# Asked again while the cloth is still closing: the later destination wins.
+			_queued_nav = {"path": scene_path, "args": args}
+			return
+		if not _curtain.is_busy() and ScreenTransitionRules.wants_curtain(current_screen_path, scene_path):
+			_curtain_goto(scene_path, args)
+			return
+	_swap_screen(scene_path, args)
+
+
+## Close, swap behind the cloth, open. The caller has already waited out any
+## victory banner, so this starts the moment the player is meant to move on.
+func _curtain_goto(scene_path: String, args: Dictionary) -> void:
+	_queued_nav = {"path": scene_path, "args": args}
+	await _curtain.cover()
+	var nav := _queued_nav
+	_queued_nav = {}
+	_swap_screen(String(nav.path), nav.args)
+	# Let the new screen lay itself out (and any load hitch pass) while hidden,
+	# so the opening tween starts on a clean frame.
+	await get_tree().process_frame
+	_curtain.adopt_screen()
+	await get_tree().create_timer(ScreenTransitionRules.HOLD_SEC, true, false, true).timeout
+	await _curtain.reveal()
+
+
+func _swap_screen(scene_path: String, args: Dictionary) -> void:
 	for child in _screen_root.get_children():
 		# Detach immediately so the incoming screen never collides with the
 		# outgoing one (same-name siblings get auto-renamed by Godot).

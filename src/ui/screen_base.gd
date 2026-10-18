@@ -29,6 +29,7 @@ func build_screen(title: String, background_path: String) -> void:
 	dim.color = Color(0.05, 0.02, 0.03, 0.42)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
+	add_child(_idle_curtains())
 
 	var column := VBoxContainer.new()
 	column.anchor_left = 0.18
@@ -50,6 +51,25 @@ func build_screen(title: String, background_path: String) -> void:
 	content.add_theme_constant_override("separation", 18)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
+
+
+## The stage curtains hanging at the sides (patch 0.125: every screen wears
+## them, and the transition curtain gathers onto them when it opens). They sit
+## above the painting and below the UI, so nothing the player uses is covered.
+func _idle_curtains() -> TextureRect:
+	var curtains := TextureRect.new()
+	curtains.set_anchors_preset(Control.PRESET_FULL_RECT)
+	curtains.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	curtains.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	curtains.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	curtains.add_to_group(CurtainTransition.GROUP)   # the transition stands in for it
+	if ResourceLoader.exists(LivingBackdrop.CURTAINS):
+		curtains.texture = load(LivingBackdrop.CURTAINS)
+	if ResourceLoader.exists(LivingBackdrop.CLOTH_SHADER):
+		var cloth := ShaderMaterial.new()
+		cloth.shader = load(LivingBackdrop.CLOTH_SHADER)
+		curtains.material = cloth
+	return curtains
 
 
 func set_title(text: String) -> void:

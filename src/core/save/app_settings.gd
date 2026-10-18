@@ -24,7 +24,9 @@ var muted := false
 ## notch under the effects by default so a hit still lands over the band.
 var music_pct := 80.0
 var sfx_pct := 100.0
-var fullscreen := false
+## Window mode (patch 0.125): remembered between launches, fullscreen the first time.
+const DEFAULT_FULLSCREEN := true
+var fullscreen := DEFAULT_FULLSCREEN
 var max_fps := 60
 ## Combat animation speed, one of `SpeedRules.ALLOWED` (phase 0 roadmap).
 var combat_speed := 1.0
@@ -64,7 +66,13 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	settings.music_pct = clampf(float(audio.get("music_pct", 80.0)), 0.0, 100.0)
 	settings.sfx_pct = clampf(float(audio.get("sfx_pct", 100.0)), 0.0, 100.0)
 	var display: Dictionary = data.get("display", {}) if data.get("display") is Dictionary else {}
-	settings.fullscreen = bool(display.get("fullscreen", false))
+	# `mode` is new in 0.125. The old `fullscreen` flag was only ever written as its
+	# default and never applied, so it is not read: nobody chose it.
+	match str(display.get("mode", "")):
+		"windowed":
+			settings.fullscreen = false
+		"fullscreen":
+			settings.fullscreen = true
 	settings.max_fps = int(display.get("max_fps", 60))
 	var gameplay: Dictionary = data.get("gameplay", {}) if data.get("gameplay") is Dictionary else {}
 	settings.combat_speed = SpeedRules.clamp_speed(float(gameplay.get("combat_speed", 1.0)))
@@ -87,7 +95,7 @@ func save(path: String = DEFAULT_PATH) -> bool:
 		},
 		"audio": {"volume_pct": volume_pct, "muted": muted,
 			"music_pct": music_pct, "sfx_pct": sfx_pct},
-		"display": {"fullscreen": fullscreen, "max_fps": max_fps},
+		"display": {"mode": "fullscreen" if fullscreen else "windowed", "max_fps": max_fps},
 		"gameplay": {"combat_speed": combat_speed, "tutorial_completed": tutorial_completed,
 			"play_tutorial": play_tutorial,
 			"seen_stories": seen_stories},

@@ -159,6 +159,7 @@ func _build(texture_path: String, params: Dictionary, with_curtains: bool, with_
 		curtains.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		curtains.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		curtains.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		curtains.add_to_group(CurtainTransition.GROUP)   # the transition stands in for it
 		curtains.texture = load(CURTAINS)
 		if ResourceLoader.exists(CLOTH_SHADER):
 			_cloth = ShaderMaterial.new()
