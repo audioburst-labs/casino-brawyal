@@ -10,9 +10,12 @@ extends ScreenBase
 const LOADOUT_WIDTH := 404.0
 ## Patch 0.20: bigger shelf items — the 0.19 sizes left the lower third of the
 ## board empty.
-const OFFER_SIZE := Vector2(286, 320)
-const SMALL_OFFER := Vector2(192, 182)
-const RELIC_SIZE := Vector2(202, 210)
+## Patch 0.125: an ability offer is the card itself, `OFFER_SCALE` times its combat size.
+const OFFER_SCALE := 1.2
+const PLATE_SIZE := Vector2(100, 96)
+## Patch 0.125: more room between the non-ability items (the cards took the left of the board).
+const SMALL_OFFER := Vector2(200, 200)
+const RELIC_SIZE := Vector2(240, 236)
 
 var _stock: Dictionary
 var _sold: Dictionary = {}            # offer key -> true
@@ -27,7 +30,7 @@ var _sticker_grid: GridContainer
 var _relic_row: HBoxContainer
 var _reel_holder: VBoxContainer
 var _hint: Label
-var _preview: PanelContainer = null
+var _preview: Control = null
 
 
 func _ready() -> void:
@@ -77,8 +80,9 @@ func _build_board() -> void:
 	title.text = "Dreams Shop"
 	title.theme_type_variation = &"TitleLabel"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.anchor_left = 0.22
-	title.anchor_right = 0.78
+	# Moved right, over the stickers (patch 0.125), to leave the left of the board to the ability cards.
+	title.anchor_left = 0.545
+	title.anchor_right = 0.86
 	title.offset_top = 10.0
 	title.offset_bottom = 74.0
 	_board.add_child(title)
@@ -100,6 +104,7 @@ func _build_board() -> void:
 func _build_loadout_column() -> void:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"FeltPanel"
+	panel.add_theme_stylebox_override("panel", TierStyle.teal_panel())   # the card teal, not felt green (0.125)
 	panel.anchor_left = 0.012
 	panel.anchor_top = 0.01
 	panel.anchor_bottom = 0.80
@@ -151,6 +156,7 @@ func _build_loadout_column() -> void:
 
 	var trash_panel := PanelContainer.new()
 	trash_panel.theme_type_variation = &"FeltPanel"
+	trash_panel.add_theme_stylebox_override("panel", TierStyle.teal_panel())
 	column.add_child(trash_panel)
 	var trash_column := VBoxContainer.new()
 	trash_panel.add_child(trash_column)
@@ -162,7 +168,7 @@ func _build_loadout_column() -> void:
 	var trash_zone := LayoutTab.DropZone.new()
 	trash_zone.zone = &"trash"
 	trash_zone.screen = self
-	trash_zone.custom_minimum_size = Vector2(LOADOUT_WIDTH - 60.0, 76)
+	trash_zone.custom_minimum_size = Vector2(LOADOUT_WIDTH - 60.0, 112)
 	trash_column.add_child(trash_zone)
 	_trash_slot = HBoxContainer.new()
 	_trash_slot.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -174,25 +180,25 @@ func _build_ability_shelf() -> void:
 	_ability_grid.columns = 2
 	_ability_grid.add_theme_constant_override("h_separation", 16)
 	_ability_grid.add_theme_constant_override("v_separation", 16)
-	_ability_grid.position = Vector2(452, 92)
+	_ability_grid.position = Vector2(452, 30)
 	_board.add_child(_ability_grid)
 
 
 func _build_right_column() -> void:
 	_sticker_grid = GridContainer.new()
 	_sticker_grid.columns = 2
-	_sticker_grid.add_theme_constant_override("h_separation", 14)
-	_sticker_grid.add_theme_constant_override("v_separation", 14)
-	_sticker_grid.position = Vector2(1046, 92)
+	_sticker_grid.add_theme_constant_override("h_separation", 36)
+	_sticker_grid.add_theme_constant_override("v_separation", 36)
+	_sticker_grid.position = Vector2(1010, 136)
 	_board.add_child(_sticker_grid)
 
 	_reel_holder = VBoxContainer.new()
-	_reel_holder.position = Vector2(1452, 92)
+	_reel_holder.position = Vector2(1520, 136)
 	_board.add_child(_reel_holder)
 
 	_relic_row = HBoxContainer.new()
-	_relic_row.add_theme_constant_override("separation", 14)
-	_relic_row.position = Vector2(1046, 580)
+	_relic_row.add_theme_constant_override("separation", 60)
+	_relic_row.position = Vector2(1010, 646)
 	_board.add_child(_relic_row)
 
 
@@ -233,7 +239,7 @@ func _refresh_offers() -> void:
 	if reel.available:
 		var reel_tile := _offer_tile("reel", "Extra Reel",
 			_load_texture("res://assets/props/slot_cabinet.png"),
-			int(reel.price), Vector2(256, 470), _buy_reel)
+			int(reel.price), Vector2(280, 436), _buy_reel)
 		reel_tile.tooltip_text = "Adds a reel with one of each suit (max %d)." \
 			% SlotMachine.MAX_REELS
 		_reel_holder.add_child(reel_tile)
@@ -248,59 +254,21 @@ func _ability_offer(offer: Dictionary) -> Control:
 	var def := Db.content.get_ability(id, shown_tier)
 	var key := "ability_%s" % id
 
-	var tile := Button.new()
-	tile.custom_minimum_size = OFFER_SIZE
-	for state in ["normal", "hover", "pressed", "focus"]:
-		tile.add_theme_stylebox_override(state,
-			TierStyle.upgrade_panel() if upgrade else TierStyle.panel(0))
-
-	var column := VBoxContainer.new()
-	column.set_anchors_preset(Control.PRESET_FULL_RECT)
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 4)
-	tile.add_child(column)
-
-	var icon_holder := CenterContainer.new()
-	var icon := TextureRect.new()
-	icon.texture = SuitAssets.ability_texture(id)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(46, 46)
-	icon_holder.add_child(icon)
-	column.add_child(icon_holder)
-
-	var name_label := Label.new()
-	name_label.text = def.name
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 18)
-	if shown_tier > 0:
-		name_label.add_theme_color_override("font_color", TierStyle.color(shown_tier))
-	column.add_child(name_label)
-
-	column.add_child(AbilityCard.cost_row(def, 22.0))
-	var limits := AbilityCard.limits_row(def)
-	if limits.get_child_count() > 0:
-		column.add_child(limits)
-	var text := Label.new()
-	text.text = def.description
-	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD
-	text.custom_minimum_size = Vector2(OFFER_SIZE.x - 26.0, 0)
-	text.add_theme_font_size_override("font_size", 13)
-	text.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(text)
-
-	var price := _price_button(key, int(offer.price), _buy_ability.bind(id))
-	column.add_child(price)
-
+	# The card itself (patch 0.125), the price under it. The UPGRADE! flag and
+	# glowing ring from the doc ride on top of an upgrade.
+	var tile := VBoxContainer.new()
+	tile.add_theme_constant_override("separation", 8)
+	var card_holder := Control.new()
+	card_holder.custom_minimum_size = AbilityCard.CARD_SIZE * OFFER_SCALE
+	card_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tile.add_child(card_holder)
+	card_holder.add_child(AbilityCard.preview(def, OFFER_SCALE))
 	if upgrade:
-		var overlay := Control.new()
-		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tile.add_child(overlay)
+		card_holder.add_child(TierStyle.glow_ring(shown_tier))
 		var badge := TierStyle.upgrade_badge(shown_tier)
-		badge.position = Vector2(OFFER_SIZE.x - 104.0, 6.0)
-		overlay.add_child(badge)
+		badge.position = Vector2(AbilityCard.CARD_SIZE.x * OFFER_SCALE - 104.0, -20.0)
+		card_holder.add_child(badge)
+	tile.add_child(_price_button(key, int(offer.price), _buy_ability.bind(id)))
 	return tile
 
 
@@ -382,38 +350,13 @@ func _refresh_loadout() -> void:
 ## they are enlarged to their full ability look."
 func _loadout_chit(id: StringName, zone: StringName = &"equipped") -> Control:
 	var tier := Game.run.ability_tier(id)
-	var def := Db.content.get_ability(id, tier)
 	var chit := LayoutTab.AbilityChit.new()
 	chit.ability_id = id
 	chit.zone = zone
 	chit.screen = self
-	chit.custom_minimum_size = Vector2(102, 92)
-	chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))
 	chit.mouse_entered.connect(_show_preview.bind(chit, id, tier))
 	chit.mouse_exited.connect(_hide_preview)
-
-	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 2)
-	chit.add_child(column)
-
-	var icon_holder := CenterContainer.new()
-	var icon := TextureRect.new()
-	icon.texture = SuitAssets.ability_texture(id)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(38, 38)
-	icon_holder.add_child(icon)
-	column.add_child(icon_holder)
-
-	var name_label := Label.new()
-	name_label.text = def.name
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 12)
-	if tier > 0:
-		name_label.add_theme_color_override("font_color", TierStyle.color(tier))
-	column.add_child(name_label)
+	AbilityPlate.fill(chit, id, tier, PLATE_SIZE, 12)
 	return chit
 
 
@@ -421,7 +364,7 @@ func _empty_slot() -> Control:
 	var slot := LayoutTab.DropZone.new()
 	slot.zone = &"equipped"
 	slot.screen = self
-	slot.custom_minimum_size = Vector2(102, 92)
+	slot.custom_minimum_size = PLATE_SIZE
 	slot.modulate.a = 0.35
 	return slot
 
@@ -430,7 +373,7 @@ func _empty_slot() -> Control:
 func _show_preview(anchor: Control, id: StringName, tier: int) -> void:
 	_hide_preview()
 	var def := Db.content.get_ability(id, tier)
-	_preview = AbilityCard.detail_panel(def, tier)
+	_preview = AbilityCard.preview(def, 1.5)
 	_preview.top_level = true
 	_preview.z_index = 220
 

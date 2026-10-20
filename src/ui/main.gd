@@ -103,7 +103,7 @@ func _attach_curtain() -> void:
 		var target := OS.get_environment("CB_DEBUG_CURTAIN_SCREEN")
 		if target != "":
 			await get_tree().create_timer(1.0).timeout
-			Game.goto_screen("res://scenes/screens/%s_screen.tscn" % target)
+			Game.goto_screen("res://scenes/screens/%s_screen.tscn" % target, {"gold_min": 30, "gold_max": 40, "elite": false} if target == "reward" else {})
 			await get_tree().create_timer(3.0).timeout
 		await get_tree().create_timer(1.0).timeout
 		if pose.to_float() >= 0.0:

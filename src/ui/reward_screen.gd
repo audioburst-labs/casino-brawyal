@@ -70,6 +70,8 @@ func setup(args: Dictionary) -> void:
 ## the button with an internal wrapped Label instead, capping its width so
 ## all three choices fit.
 const CARD_WIDTH := 320.0
+## Patch 0.125: a choice is the combat card enlarged.
+const CARD_SCALE := 1.7
 
 
 ## One choice. An ability already owned shows what it would become — the doc's
@@ -80,62 +82,27 @@ func _build_ability_card(ability_id: StringName) -> Button:
 	var shown_tier := tier + 1 if owned else 0
 	var def := Db.content.get_ability(ability_id, shown_tier)
 
+	# The card itself (patch 0.125), bigger than it is in combat. The whole thing
+	# is the button: a click anywhere on it takes the ability. An ability already
+	# owned shows what it would become, with the glowing ring and the flag.
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(CARD_WIDTH, 246)
+	card.custom_minimum_size = AbilityCard.CARD_SIZE * CARD_SCALE
+	card.flat = true
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		card.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	card.pressed.connect(_pick_ability.bind(ability_id))
-	for state in ["normal", "hover", "pressed", "focus"]:
-		card.add_theme_stylebox_override(state,
-			TierStyle.upgrade_panel() if owned else TierStyle.panel(0))
-
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_FULL_RECT)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_constant_override("separation", 6)
-	card.add_child(box)
-
-	var icon_texture := SuitAssets.ability_texture(ability_id)
-	if icon_texture != null:
-		var icon_holder := CenterContainer.new()
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(54, 54)
-		icon_holder.add_child(icon)
-		box.add_child(icon_holder)
-
-	var title_label := Label.new()
-	title_label.text = def.name
-	title_label.theme_type_variation = &"SubtitleLabel"
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	if shown_tier > 0:
-		title_label.add_theme_color_override("font_color", TierStyle.color(shown_tier))
-	box.add_child(title_label)
-
-	# Suit art and the use-limit pills (designer, 0.117): the cost used to be
-	# letters ("H S"), and a once-per-turn card looked like any other here.
-	box.add_child(AbilityCard.cost_row(def))
-	var limits := AbilityCard.limits_row(def)
-	if limits.get_child_count() > 0:
-		box.add_child(limits)
-	var body_label := Label.new()
-	body_label.text = def.description
-	body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	body_label.custom_minimum_size = Vector2(CARD_WIDTH - 30.0, 0)
-	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(body_label)
+	card.pivot_offset = card.custom_minimum_size * 0.5
+	card.mouse_entered.connect(func() -> void:
+		create_tween().tween_property(card, "scale", Vector2(1.04, 1.04), 0.1))
+	card.mouse_exited.connect(func() -> void:
+		create_tween().tween_property(card, "scale", Vector2.ONE, 0.12))
+	card.add_child(AbilityCard.preview(def, CARD_SCALE))
 
 	if owned:
-		# The glowing border, the tier-coloured name and the UPGRADE! flag
-		# already say it — the "You own this" caption was noise (0.0.111).
-		var overlay := Control.new()
-		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(overlay)
+		card.add_child(TierStyle.glow_ring(shown_tier))
 		var badge := TierStyle.upgrade_badge(shown_tier)
-		badge.position = Vector2(CARD_WIDTH - 108.0, 8.0)
-		overlay.add_child(badge)
+		badge.position = Vector2(AbilityCard.CARD_SIZE.x * CARD_SCALE - 112.0, -22.0)
+		card.add_child(badge)
 	return card
 
 

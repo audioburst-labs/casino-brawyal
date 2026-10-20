@@ -46,6 +46,12 @@ static func status_texture(status_id: StringName) -> Texture2D:
 	return _load("res://assets/icons/status_%s.png" % status_id)
 
 
+## The full-art scene on an ability card (patch 0.125), falling back to the old emblem.
+static func card_art(ability_id: StringName) -> Texture2D:
+	var art := _load("res://assets/cards/art/%s.jpg" % ability_id)
+	return art if art != null else ability_texture(ability_id)
+
+
 static func ability_texture(ability_id: StringName) -> Texture2D:
 	return _load("res://assets/icons/ability_%s.png" % ability_id)
 

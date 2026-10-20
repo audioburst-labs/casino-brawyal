@@ -12,12 +12,29 @@ signal chip_dropped(ability_index: int, slot_index: int, suit: StringName)
 ## band of a FIXED height whose font shrinks to fit — the old card clipped
 ## longer ability text against its own border.
 const CARD_SIZE := Vector2(190, 300)
-const SOCKET_SIZE := 46.0
-const DESC_HEIGHT := 64.0
+## Patch 0.125 (the designer's card mock): a metal frame, a title strip, full
+## art, the text, then the sockets.
+const FRAME := 6.0
+const TITLE_HEIGHT := 34.0
+const ART_HEIGHT := 104.0
+const DESC_PAD := 6.0
+## The band is as tall as the card leaves it (300 - frame - title - art - the socket row),
+## so a long text fills more ROWS before it ever has to shrink (patch 0.125).
+const DESC_HEIGHT := 94.0
 const DESC_FONT_MAX := 17
 const DESC_FONT_MIN := 11
+const TITLE_FONT_MAX := 21
+## Where the use-limit tab hangs: straddling the line under the art (frame + title + rule + art).
+const LIMIT_TAB_TOP := 136.0
+const TITLE_FONT_MIN := 11
+const TITLE_FONT := "res://assets/fonts/AlfaSlabOne-Regular.ttf"
+const BODY_FONT := "res://assets/fonts/Nunito-Variable.ttf"
+const FRAME_SHADER := "res://assets/shaders/ability_card_frame.gdshader"
 
 var ability_index := -1
+## A picture of the card for lists and tooltips (patch 0.125): no hover, no
+## drops, no clicks. See `preview()`.
+var static_mode := false
 
 var _state: AbilityState
 var _sim: CombatSim = null
@@ -29,6 +46,8 @@ var _highlight_suit: StringName = &""
 var _keyword_panel: PanelContainer = null
 var _glowing := false
 var _glow_phase := 0.0
+var _body: ColorRect
+var _sheen_time := 0.0
 
 
 class SocketButton:
@@ -157,6 +176,65 @@ const PER_FIGHT_FILL := Color(0.96, 0.79, 0.63)
 const PILL_TEXT := Color(0.13, 0.09, 0.15)
 
 
+## The use-limit tab on a card (patch 0.125): dark teal, a rim in the frame's
+## metal, a small drawn icon (a circular arrow for per turn, crossed swords for per
+## fight) and the count in tiny capitals, tinted lavender or peach so the two
+## limits stay apart.
+static func limit_tab(per_turn: bool, count: int, rim: Color, hint: String) -> PanelContainer:
+	var tab := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.03, 0.2, 0.21)
+	box.border_color = rim
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(10)
+	box.content_margin_left = 6.0
+	box.content_margin_right = 8.0
+	box.content_margin_top = 1.0
+	box.content_margin_bottom = 1.0
+	box.shadow_color = Color(0, 0, 0, 0.6)
+	box.shadow_size = 2
+	tab.add_theme_stylebox_override("panel", box)
+	tab.tooltip_text = hint
+	tab.mouse_filter = Control.MOUSE_FILTER_PASS
+	var tint := Color(0.84, 0.77, 1.0) if per_turn else Color(1.0, 0.81, 0.68)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tab.add_child(row)
+	var icon := LimitIcon.new()
+	icon.per_turn = per_turn
+	icon.tint = tint
+	icon.custom_minimum_size = Vector2(12, 12)
+	row.add_child(icon)
+	var label := Label.new()
+	label.text = "%d / %s" % [count, "TURN" if per_turn else "FIGHT"]
+	label.add_theme_font_override("font", body_font())
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", tint)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(label)
+	return tab
+
+
+## The little drawn icon on a limit tab.
+class LimitIcon:
+	extends Control
+	var per_turn := true
+	var tint := Color.WHITE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := size.x * 0.36
+		if per_turn:
+			draw_arc(c, r, deg_to_rad(-40.0), deg_to_rad(250.0), 16, tint, 1.8, true)
+			draw_polyline(PackedVector2Array([c + Vector2(r * 0.2, -r * 1.25), c + Vector2(r * 1.0, -r * 0.8), c + Vector2(r * 0.15, -r * 0.15)]), tint, 1.6, true)
+		else:
+			draw_line(c + Vector2(-r, r), c + Vector2(r, -r), tint, 1.8, true)
+			draw_line(c + Vector2(r, r), c + Vector2(-r, -r), tint, 1.8, true)
+			draw_line(c + Vector2(r, -r), c + Vector2(r * 0.2, -r), tint, 1.8, true)
+			draw_line(c + Vector2(-r, -r), c + Vector2(-r * 0.2, -r), tint, 1.8, true)
+
+
 static func _limit_pill(text: String, fill: Color, hint: String) -> PanelContainer:
 	var pill := PanelContainer.new()
 	var box := StyleBoxFlat.new()
@@ -175,12 +253,40 @@ static func _limit_pill(text: String, fill: Color, hint: String) -> PanelContain
 	pill.mouse_filter = Control.MOUSE_FILTER_PASS
 	var label := Label.new()
 	label.text = text
+	label.add_theme_font_override("font", body_font())
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", PILL_TEXT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pill.add_child(label)
 	return pill
+
+
+## The card as a picture, `scale` times its combat size (patch 0.125: the reward
+## screen, the shop and the hover tooltips). It is the SAME card, laid out at
+## 190 x 300 inside a SubViewport and stretched, so the text is rasterised at the
+## final size instead of being a blurred enlargement. `def` carries the tier.
+static func preview(def: Defs.AbilityDef, scale: float = 1.0) -> Control:
+	var holder := SubViewportContainer.new()
+	holder.stretch = true
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.custom_minimum_size = CARD_SIZE * scale
+	holder.size = CARD_SIZE * scale
+	var port := SubViewport.new()
+	port.transparent_bg = true
+	port.handle_input_locally = false
+	port.gui_disable_input = true
+	port.size = Vector2i(CARD_SIZE * scale)
+	port.size_2d_override = Vector2i(CARD_SIZE)
+	port.size_2d_override_stretch = true
+	holder.add_child(port)
+	var card := AbilityCard.new()
+	card.static_mode = true
+	port.add_child(card)
+	card.setup(AbilityState.new(def), -1, null)
+	card.size_flags_vertical = Control.SIZE_FILL
+	card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return holder
 
 
 func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
@@ -190,135 +296,179 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	custom_minimum_size = CARD_SIZE
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	pivot_offset = Vector2(CARD_SIZE.x * 0.5, CARD_SIZE.y)
-	mouse_entered.connect(_on_hover_entered)
-	mouse_exited.connect(_on_hover_exited)
+	if static_mode:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	else:
+		mouse_entered.connect(_on_hover_entered)
+		mouse_exited.connect(_on_hover_exited)
+	var tier := _state.def.tier
+	var metal := TierStyle.metal(tier)
 
+	# The body (patch 0.125): a rounded metal frame, copper at base, silver then
+	# gold as the ability is upgraded, around a teal green panel. It is one shader
+	# on one rect; everything else is laid over it. The panel stylebox is empty so
+	# nothing else paints under it.
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_body = ColorRect.new()
+	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if ResourceLoader.exists(FRAME_SHADER):
+		var shader_material := ShaderMaterial.new()
+		shader_material.shader = load(FRAME_SHADER)
+		shader_material.set_shader_parameter("size_px", CARD_SIZE)
+		shader_material.set_shader_parameter("m_hi", metal.hi)
+		shader_material.set_shader_parameter("m_mid", metal.mid)
+		shader_material.set_shader_parameter("m_lo", metal.lo)
+		shader_material.set_shader_parameter("glint", 0.0 if tier == 0 else (0.3 if tier == 1 else 0.4))
+		_body.material = shader_material
+	else:
+		_body.color = Color(0.05, 0.27, 0.28)
+	add_child(_body)
+
+	var inset := MarginContainer.new()
+	inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left", "top", "right", "bottom"]:
+		inset.add_theme_constant_override("margin_" + side, int(FRAME))
+	add_child(inset)
 	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_BEGIN
-	box.add_theme_constant_override("separation", 6)
-	add_child(box)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 0)
+	inset.add_child(box)
 
-	var icon_holder := CenterContainer.new()
-	icon_holder.custom_minimum_size = Vector2(0, 58)
-	box.add_child(icon_holder)
-	var icon_texture := SuitAssets.ability_texture(_state.def.id)
-	if icon_texture != null:
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(70, 70)
-		icon_holder.add_child(icon)
+	var title := Label.new()
+	title.text = _state.def.name
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.custom_minimum_size = Vector2(0, TITLE_HEIGHT)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var display_font := load(TITLE_FONT) as Font
+	title.add_theme_font_override("font", display_font)
+	title.add_theme_font_size_override("font_size", _fit_title_size(display_font, _state.def.name))
+	title.add_theme_color_override("font_color", metal.title)
+	title.add_theme_color_override("font_outline_color", Color(0.0, 0.05, 0.06, 0.9))
+	title.add_theme_constant_override("outline_size", 4)
+	box.add_child(title)
+	box.add_child(_rule(metal))
 
-	var name_label := Label.new()
-	name_label.text = _state.def.name
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 22)
-	box.add_child(name_label)
+	# Full art (patch 0.125): a scene painted for this ability, cropped to fit.
+	var art_holder := Control.new()
+	art_holder.custom_minimum_size = Vector2(0, ART_HEIGHT)
+	art_holder.clip_contents = true
+	art_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(art_holder)
+	var art_texture := SuitAssets.card_art(_state.def.id)
+	if art_texture != null:
+		var art := TextureRect.new()
+		art.texture = art_texture
+		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art_holder.add_child(art)
+	box.add_child(_rule(metal))
 
+	var text_margin := MarginContainer.new()
+	text_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for side in ["left", "right"]:
+		text_margin.add_theme_constant_override("margin_" + side, int(DESC_PAD))
+	box.add_child(text_margin)
 	_description = RichTextLabel.new()
 	_description.bbcode_enabled = true
 	_description.fit_content = false
 	_description.scroll_active = false
 	_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_description.add_theme_font_size_override("normal_font_size", DESC_FONT_MAX)
-	_description.add_theme_color_override("default_color", Color(0.9, 0.86, 0.78))
+	_description.add_theme_color_override("default_color", Color(0.93, 0.97, 0.95))
+	_description.add_theme_font_override("normal_font", body_font())
+	_description.add_theme_font_override("bold_font", body_font())
+	_description.add_theme_color_override("font_outline_color", Color(0.0, 0.07, 0.08, 0.85))
+	_description.add_theme_constant_override("outline_size", 3)
 	_description.custom_minimum_size = Vector2(0, DESC_HEIGHT)
 	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(_description)
+	text_margin.add_child(_description)
 
-	# Upgrade tier (v0.19): the card re-trims silver or gold and carries a pip.
-	# The tier comes from the def the sim resolved, so the card cannot disagree
-	# with what the ability actually does this combat.
-	if _state.def.tier > 0:
-		add_theme_stylebox_override("panel", TierStyle.panel(_state.def.tier))
-		var pip := Label.new()
-		pip.text = TierStyle.pips(_state.def.tier)
-		pip.add_theme_font_size_override("font_size", 15)
-		pip.add_theme_color_override("font_color", TierStyle.color(_state.def.tier))
-		pip.tooltip_text = "%s tier" % TierStyle.label(_state.def.tier)
-		pip.mouse_filter = Control.MOUSE_FILTER_PASS
-		pip.position = Vector2(9, 5)
-		var pip_overlay := Control.new()
-		pip_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(pip_overlay)
-		pip_overlay.add_child(pip)
-
-	# Use limits (doc "Per Turn & Per Combat", patch 0.113): a pill in the
-	# card's top-right corner naming the limit and how many uses it allows,
-	# stacked when an ability is capped both ways. It replaces the 0.13 icon
-	# badge, which said "limited" without saying limited to WHAT, and showed
-	# nothing at all for the per-fight abilities (House Edge, Face Reader).
+	# Use limits (doc "Per Turn & Per Combat", patch 0.113): since 0.125 a small
+	# metal-rimmed tab hung from the line under the art at the right, so it covers a
+	# sliver of the picture instead of a corner of it. Two tabs sit side by side.
 	if _state.def.per_turn > 0 or _state.def.per_combat > 0:
 		var limits := Control.new()
 		limits.set_anchors_preset(Control.PRESET_FULL_RECT)
 		limits.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(limits)
-		var pills := VBoxContainer.new()
-		pills.add_theme_constant_override("separation", 3)
-		pills.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		# Flush with the card's right edge, growing leftward and downward, so a
-		# long reading can never push the pill off the card.
-		pills.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		pills.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		limits.add_child(pills)
+		var tabs := HBoxContainer.new()
+		tabs.add_theme_constant_override("separation", 4)
+		tabs.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		tabs.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		tabs.offset_top = LIMIT_TAB_TOP
+		tabs.offset_right = -(FRAME + 2.0)
+		tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		limits.add_child(tabs)
 		if _state.def.per_turn > 0:
-			pills.add_child(_limit_pill(
-				"%d Per Turn" % _state.def.per_turn, PER_TURN_FILL,
+			tabs.add_child(limit_tab(true, _state.def.per_turn, metal.mid,
 				"Usable %d time(s) each turn." % _state.def.per_turn))
 		if _state.def.per_combat > 0:
-			pills.add_child(_limit_pill(
-				"%d Per Fight" % _state.def.per_combat, PER_FIGHT_FILL,
+			tabs.add_child(limit_tab(false, _state.def.per_combat, metal.mid,
 				"Usable %d time(s) this fight, and never refreshed between turns."
 				% _state.def.per_combat))
 
-	# Socket rows: odd costs of 5+ put 2 on top, the rest in rows of 3
-	# (patch 0.13); otherwise up to 3 per centered row.
+	# Sockets: one centred row (up to four fit), recessed into the panel with a
+	# rim in the frame's metal.
+	var count := _state.def.cost.size()
 	var socket_box := VBoxContainer.new()
+	socket_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	socket_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	socket_box.add_theme_constant_override("separation", 5)
-	box.add_child(socket_box)
-	var rows := _socket_rows(_state.def.cost.size())
-	var socket_rows: Array[HBoxContainer] = []
+	var socket_margin := MarginContainer.new()
+	socket_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	socket_margin.add_theme_constant_override("margin_bottom", 6)
+	socket_margin.add_theme_constant_override("margin_top", 0)
+	socket_margin.add_child(socket_box)
+	box.add_child(socket_margin)
+	var rows := socket_rows(count)
+	var socket_rows_nodes: Array[HBoxContainer] = []
 	for row_size in rows:
 		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 5)
 		socket_box.add_child(row)
-		socket_rows.append(row)
+		socket_rows_nodes.append(row)
 	var row_index := 0
 	var placed_in_row := 0
-	var socket_row: HBoxContainer = socket_rows[0]
+	var socket_row: HBoxContainer = socket_rows_nodes[0]
 	var socket_style := StyleBoxFlat.new()
-	socket_style.bg_color = Color(0.94, 0.9, 0.8)
-	socket_style.border_color = Color(0.83, 0.69, 0.22)
-	socket_style.set_border_width_all(2)
-	socket_style.set_corner_radius_all(10)
-	for slot in _state.def.cost.size():
+	socket_style.bg_color = Color(0.02, 0.13, 0.14)
+	socket_style.border_color = metal.mid
+	socket_style.set_border_width_all(3)
+	socket_style.set_corner_radius_all(8)
+	socket_style.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
+	socket_style.shadow_size = 3
+	var side_px := socket_size(count)
+	for slot in count:
 		if placed_in_row >= int(rows[row_index]):
 			row_index += 1
 			placed_in_row = 0
-			socket_row = socket_rows[row_index]
+			socket_row = socket_rows_nodes[row_index]
 		placed_in_row += 1
 		var socket := SocketButton.new()
 		socket.card = self
 		socket.slot = slot
-		socket.custom_minimum_size = Vector2(SOCKET_SIZE, SOCKET_SIZE)
+		socket.custom_minimum_size = Vector2(side_px, side_px)
 		for style_name in ["normal", "hover", "pressed", "disabled"]:
 			socket.add_theme_stylebox_override(style_name, socket_style)
 		socket.pressed.connect(_on_socket_pressed.bind(slot))
+		if static_mode:
+			socket.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		socket_row.add_child(socket)
 		_sockets.append(socket)
 		var face := TextureRect.new()
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		face.set_anchors_preset(Control.PRESET_FULL_RECT)
-		face.offset_left = 6
-		face.offset_top = 6
-		face.offset_right = -6
-		face.offset_bottom = -6
+		face.offset_left = 5
+		face.offset_top = 5
+		face.offset_right = -5
+		face.offset_bottom = -5
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		socket.add_child(face)
 		_socket_faces.append(face)
@@ -326,12 +476,56 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 		fallback.set_anchors_preset(Control.PRESET_FULL_RECT)
 		fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		fallback.add_theme_color_override("font_color", Color(0.35, 0.25, 0.2))
-		fallback.add_theme_font_size_override("font_size", 22)
+		fallback.add_theme_color_override("font_color", Color(0.7, 0.85, 0.82))
+		fallback.add_theme_font_size_override("font_size", 20)
 		fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		socket.add_child(fallback)
 		_socket_labels.append(fallback)
 	refresh()
+	# Silver and gold frames carry a slow glint, so the card ticks.
+	if tier > 0:
+		set_process(true)
+
+
+## The thin metal line under the title and under the art.
+func _rule(metal: Dictionary) -> ColorRect:
+	var line := ColorRect.new()
+	line.custom_minimum_size = Vector2(0, 2)
+	line.color = Color(metal.mid, 0.9)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return line
+
+
+## The largest display size at which the whole name sits on one line.
+static func _fit_title_size(font: Font, text: String) -> int:
+	if font == null:
+		return TITLE_FONT_MAX
+	var width := CARD_SIZE.x - FRAME * 2.0 - 14.0
+	for font_size in range(TITLE_FONT_MAX, TITLE_FONT_MIN - 1, -1):
+		if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= width:
+			return font_size
+	return TITLE_FONT_MIN
+
+
+## Where sockets sit (patch 0.125): up to four share one row, so even Pay Line
+## and Flush leave room for the description. Longer costs wrap in rows of three.
+static func socket_rows(count: int) -> Array:
+	if count <= 4:
+		return [count]
+	var rows := []
+	var remaining := count
+	while remaining > 0:
+		rows.append(mini(3, remaining))
+		remaining -= 3
+	return rows
+
+
+static func socket_size(count: int) -> float:
+	if count <= 2:
+		return 44.0
+	if count == 3:
+		return 40.0
+	return 36.0
 
 
 ## Whether this ability's condition is live right now (doc "Glow"):
@@ -402,13 +596,17 @@ func set_glowing(on: bool) -> void:
 	if on == _glowing:
 		return
 	_glowing = on
-	set_process(on)
+	set_process(on or (_state != null and _state.def.tier > 0))
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
-	_glow_phase = fposmod(_glow_phase + delta * 1.8, TAU)
-	queue_redraw()
+	_sheen_time += delta
+	if _body != null and _body.material is ShaderMaterial:
+		(_body.material as ShaderMaterial).set_shader_parameter("time", _sheen_time)
+	if _glowing:
+		_glow_phase = fposmod(_glow_phase + delta * 1.8, TAU)
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -440,24 +638,6 @@ func refresh(highlight_suit: StringName = &"") -> void:
 	for slot in _sockets.size():
 		_render_socket(slot, _state.filled[slot])
 	_refresh_description()
-
-
-## Row layout for cost sockets: <=3 one row; 4 = 2+2; odd 5+ = 2 on top then
-## rows of 3 (patch 0.13); even 6+ = rows of 3.
-static func _socket_rows(count: int) -> Array:
-	if count <= 3:
-		return [count]
-	if count == 4:
-		return [2, 2]
-	var rows := []
-	var remaining := count
-	if count % 2 == 1:
-		rows.append(2)
-		remaining -= 2
-	while remaining > 0:
-		rows.append(mini(3, remaining))
-		remaining -= 3
-	return rows
 
 
 ## Every damage figure an ability can print, in the order it prints them.
@@ -523,7 +703,7 @@ static func _collect_block(effects: Array, into: Array[int]) -> void:
 ## (patch 0.17). Keyword icons render on enemy intents instead — inline
 ## icons here were on the wrong text (patch 0.17).
 func _refresh_description() -> void:
-	var text := _state.def.description
+	var text := tier_marked(_state.def, _base_def())
 	if _sim != null:
 		# Largest first: replacing "10" before "100" would corrupt the longer
 		# number, and every match is bounded to a whole number so a figure
@@ -599,17 +779,25 @@ static func _plain_text(text: String) -> String:
 ## waiting a frame and reading a laid-out height (patch 0.18). Text that will
 ## not fit even at the floor size is still readable in full on hover.
 func _fit_description_font(plain: String) -> void:
-	var font := _description.get_theme_font("normal_font")
-	if font == null:
-		return
-	var width := CARD_SIZE.x - 26.0
+	_description.add_theme_font_size_override("normal_font_size", fit_size(body_font(), plain))
+
+
+## The bold body face of the card text (patch 0.125: Nunito at weight 800, the
+## regular weight was hard to read on the teal).
+static func body_font() -> Font:
+	var face := FontVariation.new()
+	face.base_font = load(BODY_FONT)
+	face.variation_opentype = {2003265652: 800}   # wght
+	return face
+
+
+## The largest size at which `plain` fits the description band.
+static func fit_size(font: Font, plain: String) -> int:
+	var width := CARD_SIZE.x - FRAME * 2.0 - DESC_PAD * 2.0
 	for font_size in range(DESC_FONT_MAX, DESC_FONT_MIN - 1, -1):
-		var measured := font.get_multiline_string_size(
-			plain, HORIZONTAL_ALIGNMENT_CENTER, width, font_size)
-		if measured.y <= DESC_HEIGHT:
-			_description.add_theme_font_size_override("normal_font_size", font_size)
-			return
-	_description.add_theme_font_size_override("normal_font_size", DESC_FONT_MIN)
+		if font.get_multiline_string_size(plain, HORIZONTAL_ALIGNMENT_CENTER, width, font_size).y <= DESC_HEIGHT:
+			return font_size
+	return DESC_FONT_MIN
 
 
 ## Immediately paints a chip into a socket, even if the sim already cleared
@@ -738,3 +926,34 @@ func _exit_tree() -> void:
 
 func _on_socket_pressed(slot: int) -> void:
 	socket_clicked.emit(ability_index, slot)
+
+
+## The un-upgraded def of this ability, to see what an upgrade changed.
+func _base_def() -> Defs.AbilityDef:
+	var base: Defs.AbilityDef = Db.content.get_ability(_state.def.id, 0) if Db != null and Db.content != null else null
+	return base if base != null else _state.def
+
+
+## The description with the numbers an upgrade raised picked out in the tier's
+## colour (copper cards stay plain). Named bbcode colours on purpose: a hex code
+## holds digits, and `_replace_number` would try to swap them.
+static func tier_marked(def: Defs.AbilityDef, base: Defs.AbilityDef) -> String:
+	if def.tier <= 0 or base == null or base.description == def.description:
+		return def.description
+	var colour: String = TierStyle.metal(def.tier).up
+	var was := base.description.split(" ")
+	var now := def.description.split(" ")
+	var out: Array[String] = []
+	var same_length := was.size() == now.size()
+	for i in now.size():
+		var word: String = now[i]
+		var changed := word != was[i] if same_length else (_has_digit(word) and not was.has(word))
+		out.append("[color=%s]%s[/color]" % [colour, word] if changed else word)
+	return " ".join(out)
+
+
+static func _has_digit(word: String) -> bool:
+	for i in word.length():
+		if word[i] >= "0" and word[i] <= "9":
+			return true
+	return false

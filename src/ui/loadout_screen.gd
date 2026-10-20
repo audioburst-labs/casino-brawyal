@@ -4,6 +4,8 @@ extends ScreenBase
 ## is deleted for good when the next combat begins).
 
 var _zones := {}   # zone id -> slot container
+## The compact ability plate (patch 0.125), art first.
+const PLATE_SIZE := Vector2(200, 124)
 
 
 class AbilityChit:
@@ -11,6 +13,11 @@ class AbilityChit:
 	var ability_id: StringName = &""
 	var zone: StringName = &""
 	var screen: Node = null
+	## What the hover shows: the full card (patch 0.125).
+	var tooltip_def: Defs.AbilityDef = null
+
+	func _make_custom_tooltip(_for_text: String) -> Object:
+		return AbilityCard.preview(tooltip_def, 1.5) if tooltip_def != null else null
 
 	func _get_drag_data(_position: Vector2) -> Variant:
 		var preview := Label.new()
@@ -98,7 +105,7 @@ func _fill_zone(zone: StringName, ids: Array) -> void:
 	var capacity: int = RunState.EQUIP_CAP if zone == &"equipped" else 1
 	for i in capacity - ids.size():
 		var empty := Panel.new()
-		empty.custom_minimum_size = Vector2(120, 84)
+		empty.custom_minimum_size = PLATE_SIZE
 		empty.modulate.a = 0.35
 		# Let drops fall through to the DropZone panel behind (patch 0.12).
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -110,7 +117,7 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	chit.ability_id = id
 	chit.zone = zone
 	chit.screen = self
-	chit.custom_minimum_size = Vector2(120, 84)
+	chit.custom_minimum_size = PLATE_SIZE
 	# Drawn at the tier the run owns, so a chit matches the card it becomes
 	# in combat (v0.19).
 	var tier := Game.run.ability_tier(id) if Game.run != null else 0
@@ -118,25 +125,8 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 	chit.tooltip_text = "%s%s\n%s" % [def.name,
 		" (%s)" % TierStyle.label(tier) if tier > 0 else "",
 		def.description] if def else String(id)
-	if tier > 0:
-		chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	chit.add_child(box)
-	var icon_texture := SuitAssets.ability_texture(id)
-	if icon_texture != null:
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(40, 40)
-		box.add_child(icon)
-	var name_label := Label.new()
-	name_label.text = def.name if def else String(id)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 14)
-	box.add_child(name_label)
+	chit.tooltip_def = def
+	AbilityPlate.fill(chit, id, tier, PLATE_SIZE, 16)
 	return chit
 
 

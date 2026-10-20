@@ -33,7 +33,8 @@ class AbilityChit:
 	func _make_custom_tooltip(_for_text: String) -> Object:
 		if tooltip_def == null:
 			return null
-		return AbilityCard.detail_panel(tooltip_def, tooltip_tier)
+		# The real card, enlarged (doc: "they are enlarged to their full ability look").
+		return AbilityCard.preview(tooltip_def, 1.5)
 
 	func _can_drop_data(_position: Vector2, data: Variant) -> bool:
 		return data is Dictionary and data.has("ability") and data.ability != ability_id
@@ -254,25 +255,8 @@ func _build_chit(id: StringName, zone: StringName) -> Control:
 		def.description] if def else String(id)
 	chit.tooltip_def = def
 	chit.tooltip_tier = tier
-	if tier > 0:
-		chit.add_theme_stylebox_override("panel", TierStyle.panel(tier, 2))
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	chit.add_child(box)
-	var icon_texture := SuitAssets.ability_texture(id)
-	if icon_texture != null:
-		var icon := TextureRect.new()
-		icon.texture = icon_texture
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(64, 64)
-		box.add_child(icon)
-	var name_label := Label.new()
-	name_label.text = def.name if def else String(id)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 17)
-	box.add_child(name_label)
+	# The new card art as a compact plate (patch 0.125); hovering shows the card.
+	AbilityPlate.fill(chit, id, tier, SLOT_SIZE, 17)
 	return chit
 
 

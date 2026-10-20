@@ -72,3 +72,59 @@ static func upgrade_badge(to_tier: int) -> Control:
 	label_node.add_theme_color_override("font_color", Color(0.16, 0.09, 0.03))
 	badge.add_child(label_node)
 	return badge
+
+
+## The metal of the ability card's frame (patch 0.125): copper at base, silver
+## after one upgrade, gold after two. `hi` is the bright end of the diagonal
+## sheen, `mid` the body colour and `lo` the shadow. Separate from `color()`,
+## which the other surfaces still use for their plain trim.
+const METALS: Array[Dictionary] = [
+	{"hi": Color(0.94, 0.72, 0.55), "mid": Color(0.75, 0.42, 0.25), "lo": Color(0.42, 0.19, 0.09),
+		"title": Color(0.91, 0.74, 0.41), "up": "orange"},
+	{"hi": Color(1.0, 1.0, 1.0), "mid": Color(0.71, 0.75, 0.79), "lo": Color(0.36, 0.40, 0.45),
+		"title": Color(0.93, 0.95, 0.97), "up": "cyan"},
+	{"hi": Color(1.0, 0.95, 0.66), "mid": Color(0.89, 0.69, 0.24), "lo": Color(0.55, 0.36, 0.05),
+		"title": Color(1.0, 0.85, 0.42), "up": "gold"},
+]
+
+
+static func metal(tier: int) -> Dictionary:
+	return METALS[clampi(tier, 0, METALS.size() - 1)]
+
+
+## The doc's "distinctive glowing border" for an upgrade offer (patch 0.125): a
+## ring in the tier's colour hung just outside the card it surrounds. Gold for
+## the first upgrade's reward is silver, so the ring follows the tier shown.
+static func glow_ring(to_tier: int) -> Control:
+	var ring := Panel.new()
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring.offset_left = -6.0
+	ring.offset_top = -6.0
+	ring.offset_right = 6.0
+	ring.offset_bottom = 6.0
+	var box := StyleBoxFlat.new()
+	box.draw_center = false
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(16)
+	var tint: Color = metal(to_tier).hi if to_tier == 1 else Color(1.0, 0.83, 0.29)
+	box.border_color = tint
+	box.shadow_color = Color(tint, 0.6)
+	box.shadow_size = 14
+	ring.add_theme_stylebox_override("panel", box)
+	return ring
+
+
+## The shop's loadout panel (patch 0.125): the same teal as the ability cards, with
+## the gold trim the felt panel had.
+static func teal_panel() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.043, 0.239, 0.251, 0.97)
+	box.border_color = Color(0.831, 0.686, 0.216, 0.9)
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(14)
+	box.content_margin_left = 16.0
+	box.content_margin_top = 12.0
+	box.content_margin_right = 16.0
+	box.content_margin_bottom = 12.0
+	return box
