@@ -122,8 +122,9 @@ func setup(cabinet_mode: Mode, content: Control, drawer_content: Control = null)
 	_content = content
 	_drawer_content = drawer_content
 	show_drawer = drawer_content != null and mode != Mode.GRID
-	if mode == Mode.GRID:
-		show_lever = false
+	# No lever (0.126, designer: it never did anything and was confusing). The
+	# flag and `pull_lever()` stay so callers need no change; they just do nothing.
+	show_lever = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_backdrop = CabinetArt.new()
@@ -160,7 +161,9 @@ func setup(cabinet_mode: Mode, content: Control, drawer_content: Control = null)
 	_marquee_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_marquee_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# The size is set from the plaque's real width in _relayout.
-	_marquee_label.add_theme_color_override("font_color", Color(0.97, 0.86, 0.45))
+	_marquee_label.add_theme_color_override("font_color", NeonPalette.current().money)
+	_marquee_label.add_theme_color_override("font_outline_color", NeonPalette.alpha(NeonPalette.current().money, 0.35))
+	_marquee_label.add_theme_constant_override("outline_size", 6)
 	_marquee_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_marquee_label.visible = marquee_text != ""
 	add_child(_marquee_label)
@@ -243,12 +246,12 @@ func _relayout() -> void:
 	if _marquee_label != null:
 		# The casino's name fills the marquee's plaque — the flat middle third
 		# between the bulb clusters — at whatever size actually fits it.
-		var inset := body_width * MARQUEE_MARGIN.x
+		var inset := body_width * 0.12
 		var plaque := maxf(10.0, body_width - inset * 2.0)
 		_marquee_label.position = Vector2(inset, marquee * 0.16)
 		_marquee_label.size = Vector2(plaque, marquee * 0.68)
 		_marquee_label.add_theme_font_size_override("font_size",
-			clampi(int(plaque / maxf(1.0, float(marquee_text.length())) * 1.45), 8, 22))
+			clampi(int(plaque / maxf(1.0, float(marquee_text.length())) * 1.45), 8, 24))
 	if _art != null:
 		_art.queue_redraw()
 	if _backdrop != null:
@@ -325,13 +328,13 @@ func draw_chassis(canvas: CanvasItem) -> void:
 	if body_width <= 0.0 or _window_holder == null:
 		return
 	var slab := StyleBoxFlat.new()
-	slab.bg_color = CHASSIS_BODY
+	slab.bg_color = NeonPalette.current().glass_deep
 	slab.set_corner_radius_all(int(14.0 * art_scale))
 	slab.set_border_width_all(int(maxf(2.0, 3.0 * art_scale)))
-	slab.border_color = CHASSIS_GOLD_DARK
-	slab.shadow_color = Color(0.0, 0.0, 0.0, 0.55)
-	slab.shadow_size = int(10.0 * art_scale)
-	slab.shadow_offset = Vector2(0, 5.0 * art_scale)
+	slab.border_color = NeonPalette.current().tube
+	# A neon tube round the machine (0.126): the border IS the light, the shadow its glow.
+	slab.shadow_color = NeonPalette.alpha(NeonPalette.current().tube, 0.5)
+	slab.shadow_size = int(18.0 * art_scale)
 	canvas.draw_style_box(slab, Rect2(0, 0, body_width, size.y))
 
 	# A dark well behind the REEL window only, so the reels read against it.
@@ -360,47 +363,51 @@ func draw_cabinet(canvas: CanvasItem) -> void:
 	window_band.position.x = 0.0
 	window_band.size.x = body_width
 
-	_draw_nine(canvas, MARQUEE_ART, MARQUEE_BOX,
-		Rect2(0, 0, body_width, marquee),
-		Vector2(MARQUEE_BOX.size.x * MARQUEE_MARGIN.x, MARQUEE_BOX.size.y * MARQUEE_MARGIN.y),
-		Vector2(minf(body_width * 0.30, 90.0 * art_scale), marquee * 0.34))
-	_draw_nine(canvas, WINDOW_ART, WINDOW_BOX, window_band,
-		Vector2(WINDOW_BOX.size.x * WINDOW_HOLE.position.x,
-			WINDOW_BOX.size.y * WINDOW_HOLE.position.y), frame)
+	var p := NeonPalette.current()
+	var tube: Color = p.tube
+	var gold: Color = p.money
+	var glass_deep: Color = p.glass_deep
+
+	# Neon cabinet (0.126, from the designer's mock): no generated gold bands any
+	# more. A glass marquee plate with the casino's name in gold, a gold-framed
+	# window the reels show through, and a tube-edged drawer for the chips.
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Color(glass_deep.r, glass_deep.g, glass_deep.b, 0.97)
+	plate.border_color = tube
+	plate.set_border_width_all(int(maxf(2.0, 3.0 * art_scale)))
+	plate.border_width_bottom = 0
+	plate.corner_radius_top_left = int(14.0 * art_scale)
+	plate.corner_radius_top_right = int(14.0 * art_scale)
+	plate.shadow_color = NeonPalette.alpha(tube, 0.5)
+	plate.shadow_size = int(10.0 * art_scale)
+	canvas.draw_style_box(plate, Rect2(0, 0, body_width, marquee))
+
+	var window_frame := StyleBoxFlat.new()
+	window_frame.draw_center = false
+	window_frame.border_color = gold
+	window_frame.set_border_width_all(int(maxf(2.0, 3.0 * art_scale)))
+	window_frame.set_corner_radius_all(int(10.0 * art_scale))
+	window_frame.shadow_color = NeonPalette.alpha(gold, 0.45)
+	window_frame.shadow_size = int(12.0 * art_scale)
+	var window_rect := Rect2(_window_holder.position - frame * 0.55,
+		_window_holder.size + frame * 1.1)
+	canvas.draw_style_box(window_frame, window_rect)
 
 	if show_drawer and _drawer_holder != null and _drawer_holder.visible:
-		var drawer_band := Rect2(
-			Vector2(0.0, _drawer_holder.position.y - lip.y),
-			Vector2(body_width, _drawer_holder.size.y + lip.y * 2.0))
-		_draw_nine(canvas, DRAWER_ART, DRAWER_BOX, drawer_band,
-			Vector2(DRAWER_BOX.size.x * DRAWER_HOLE.position.x,
-				DRAWER_BOX.size.y * DRAWER_HOLE.position.y), lip)
+		var drawer_frame := StyleBoxFlat.new()
+		drawer_frame.draw_center = false
+		drawer_frame.border_color = tube
+		drawer_frame.set_border_width_all(int(maxf(2.0, 2.0 * art_scale)))
+		drawer_frame.set_corner_radius_all(int(10.0 * art_scale))
+		drawer_frame.shadow_color = NeonPalette.alpha(tube, 0.4)
+		drawer_frame.shadow_size = int(8.0 * art_scale)
+		canvas.draw_style_box(drawer_frame, Rect2(
+			_drawer_holder.position - lip * 0.55, _drawer_holder.size + lip * 1.1))
 
-	# The joinery (patch 0.113): two rails down the sides and a coupler across
-	# the window/drawer seam, drawn over the bands' transparent padding so the
-	# three of them become one machine.
 	var rail := RAIL_WIDTH * art_scale
 	var rail_top := marquee * 0.55
-	var rail_style := StyleBoxFlat.new()
-	rail_style.bg_color = CHASSIS_GOLD
-	rail_style.set_corner_radius_all(int(rail * 0.5))
-	var body_height := custom_minimum_size.y
-	for x: float in [0.0, body_width - rail]:
-		canvas.draw_style_box(rail_style,
-			Rect2(x, rail_top, rail, body_height - rail_top - 2.0))
-	if show_drawer and _drawer_holder != null and _drawer_holder.visible:
-		var seam := window_band.end.y - 3.0 * art_scale
-		canvas.draw_style_box(rail_style,
-			Rect2(0.0, seam, body_width, 7.0 * art_scale))
-		# Two bolts on the coupler, the detail that sells it as hardware.
-		for x: float in [body_width * 0.22, body_width * 0.78]:
-			canvas.draw_circle(Vector2(x, seam + 3.5 * art_scale),
-				3.0 * art_scale, CHASSIS_GOLD_DARK)
 
-	_draw_bulbs(canvas, body_width, rail, rail_top)
-
-	if show_lever:
-		_draw_lever(canvas, body_width, window_band)
+	_draw_marquee_bulbs(canvas, body_width, marquee)
 
 
 ## The chase: bulbs around the machine's outline, lit in a running wave. The
@@ -428,11 +435,44 @@ func _draw_bulbs(canvas: CanvasItem, body_width: float, rail: float,
 	for i in points.size():
 		# A travelling wave rather than a blink: every bulb is somewhere on it.
 		var wave := 0.5 + 0.5 * sin(_phase - float(i) * 0.7)
-		var lit: Color = BULB_DIM.lerp(BULB_LIT, wave * (0.75 + 0.25 * glow))
+		var tube: Color = NeonPalette.current().tube
+		var lit: Color = tube.darkened(0.55).lerp(NeonPalette.current().tube_hi, wave * (0.75 + 0.25 * glow))
 		if wave > 0.80 or glow > 0.05:
 			canvas.draw_circle(points[i], BULB_RADIUS * art_scale * 1.9,
 				Color(lit.r, lit.g, lit.b, 0.26 * (wave - 0.6 + glow)))
 		canvas.draw_circle(points[i], BULB_RADIUS * art_scale, lit)
+
+
+## The marquee's lamps, as in the mock: a short row either side of the name,
+## blinking in alternate steps, quicker and hotter while the machine celebrates.
+func _draw_marquee_bulbs(canvas: CanvasItem, body_width: float, marquee: float) -> void:
+	if _marquee_label == null:
+		return
+	var p := NeonPalette.current()
+	var font := _marquee_label.get_theme_font("font")
+	var font_size := _marquee_label.get_theme_font_size("font_size")
+	var text_width := font.get_string_size(marquee_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var centre := body_width * 0.5
+	var gap := 14.0 * art_scale
+	var spacing := 16.0 * art_scale
+	var y := marquee * 0.5
+	var edge := 18.0 * art_scale
+	var step := int(_phase * 0.5)
+	for side in [-1, 1]:
+		var x: float = centre + side * (text_width * 0.5 + gap)
+		var index := 0
+		while (x - edge >= 0.0 if side < 0 else x + edge <= body_width):
+			var lit := (index + step) % 2 == 0 or _excited > 0.05
+			var tube: Color = p.tube
+			var bulb: Color = (p.tube_hi if lit else tube.darkened(0.55))
+			if lit:
+				canvas.draw_circle(Vector2(x, y), 6.5 * art_scale, Color(tube.r, tube.g, tube.b, 0.32))
+				canvas.draw_circle(Vector2(x, y), 2.0 * art_scale, Color.WHITE)
+			canvas.draw_circle(Vector2(x, y), 3.6 * art_scale, Color(bulb.r, bulb.g, bulb.b, 0.9 if lit else 0.7))
+			if lit:
+				canvas.draw_circle(Vector2(x, y), 1.8 * art_scale, Color.WHITE)
+			x += side * spacing
+			index += 1
 
 
 ## Where the bulb row across the top sits: just inside the marquee's crown.
@@ -442,25 +482,28 @@ func marquee_top_inset() -> float:
 
 ## The lever, mounted on the right rail and swung by `pull_lever()`.
 func _draw_lever(canvas: CanvasItem, body_width: float, window_band: Rect2) -> void:
-	var lever: Texture2D = LEVER_ART
-	if lever == null:
-		return
-	var lever_height := minf(window_band.size.y * 1.15, 160.0 * art_scale)
-	var lever_width := lever_height * float(lever.get_width()) / float(lever.get_height())
-	var pivot := Vector2(body_width - lever_width * 0.30 + lever_width * 0.5,
-		window_band.position.y + window_band.size.y * 0.5 + lever_height * 0.4)
-	# A gold bracket joining the lever to the body — it used to float free.
+	var lever_height := minf(window_band.size.y * 0.72, 120.0 * art_scale)
+	var pivot := Vector2(body_width + 14.0 * art_scale,
+		window_band.end.y - 18.0 * art_scale)
+	var tube: Color = NeonPalette.current().tube
 	var bracket := StyleBoxFlat.new()
-	bracket.bg_color = CHASSIS_GOLD
+	bracket.bg_color = tube
 	bracket.set_corner_radius_all(int(5.0 * art_scale))
 	canvas.draw_style_box(bracket, Rect2(
 		body_width - 6.0 * art_scale, pivot.y - 9.0 * art_scale,
 		maxf(8.0, pivot.x - body_width + 6.0 * art_scale), 18.0 * art_scale))
 	canvas.draw_set_transform(pivot, _lever_angle, Vector2.ONE)
-	canvas.draw_texture_rect(lever,
-		Rect2(-lever_width * 0.5, -lever_height, lever_width, lever_height), false)
+	# A steel stem and a lit knob, the mock's lever.
+	var stem := StyleBoxFlat.new()
+	stem.bg_color = Color(0.84, 0.87, 0.95)
+	stem.set_corner_radius_all(int(4.0 * art_scale))
+	canvas.draw_style_box(stem, Rect2(-4.0 * art_scale, -lever_height, 8.0 * art_scale, lever_height))
+	var knob := Vector2(0.0, -lever_height)
+	canvas.draw_circle(knob, 21.0 * art_scale, NeonPalette.alpha(tube, 0.30))
+	canvas.draw_circle(knob, 15.0 * art_scale, tube)
+	canvas.draw_circle(knob + Vector2(-4, -5) * art_scale, 5.0 * art_scale, NeonPalette.current().tube_hi)
 	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	canvas.draw_circle(pivot, 7.0 * art_scale, CHASSIS_GOLD_DARK)
+	canvas.draw_circle(pivot, 7.0 * art_scale, NeonPalette.current().tube_hi)
 
 
 ## Hand-rolled nine-slice. `source_box` is the drawn part of the art inside its

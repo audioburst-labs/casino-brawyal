@@ -76,6 +76,36 @@ func set_title(text: String) -> void:
 	_title_label.text = text
 
 
+## A small spaced line of capitals above the title (0.126): where you are, in one
+## line. Sits between the title and the content.
+func add_eyebrow(text: String) -> Label:
+	var label := Label.new()
+	label.text = text.to_upper()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", NeonPalette.current().tube)
+	label.theme_type_variation = &"SubtitleLabel"
+	_title_label.get_parent().add_child(label)
+	_title_label.get_parent().move_child(label, _title_label.get_index())
+	return label
+
+
+## The lit pill at the foot of a card that is itself the button: it only SHOWS
+## what the card does, so the click goes through to the card.
+func choose_tag(text := "Choose") -> Label:
+	var tag := Label.new()
+	tag.text = text.to_upper()
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.theme_type_variation = &"SubtitleLabel"
+	tag.add_theme_font_size_override("font_size", 18)
+	var project := ThemeDB.get_project_theme()
+	if project != null and project.has_stylebox("normal", "PrimaryButton"):
+		tag.add_theme_stylebox_override("normal", project.get_stylebox("normal", "PrimaryButton"))
+	return tag
+
+
 func add_continue_button(text := "Continue", callback := Callable()) -> Button:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER

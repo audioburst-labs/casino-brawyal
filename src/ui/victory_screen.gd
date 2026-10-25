@@ -15,6 +15,7 @@ func _ready() -> void:
 	var name := boss.name if boss != null else "The boss"
 	build_screen("%s DEFEATED!" % name.to_upper(),
 		"res://assets/backgrounds/bg_main_menu.png")
+	_title_label.theme_type_variation = &"BannerLabel"
 	add_info_label("Ace settled the score.\nCoins gathered: %d    Relics: %d\nSeed: %d" % [
 		Game.run.coins, Game.run.relic_ids.size(), Game.run.seed_value], 28)
 	add_continue_button("Return to Menu",

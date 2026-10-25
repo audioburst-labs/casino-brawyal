@@ -48,33 +48,44 @@ var _hp_bar: ProgressBar
 var _hp_label: Label
 var _block_label: Label
 var _status_row: HBoxContainer
-var _target_ring: TargetRing
-var _frame_outline: FrameOutline
+var _reticle: Reticle
 var _base_sprite_position := Vector2.ZERO
 var _shown_block := 0              # block currently drawn under the HP bar
 var _shown_passive := -1           # last enemy-passive number drawn, for its flash
 
 
-## The blue target circle drawn under the targeted enemy's model (patch 0.13).
-class TargetRing:
+## Four corners round the targeted enemy and a small chevron over it (0.126, the
+## mock's way of marking the target). Hidden until `set_targeted`.
+class Reticle:
 	extends Control
+	var _t := 0.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
 
 	func _draw() -> void:
-		var center := Vector2(size.x * 0.5, size.y - 14.0)
-		draw_set_transform(center, 0.0, Vector2(1.0, 0.35))
-		draw_arc(Vector2.ZERO, size.x * 0.42, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.9), 5.0, true)
-		draw_arc(Vector2.ZERO, size.x * 0.42 + 6.0, 0, TAU, 48, Color(0.35, 0.7, 1.0, 0.35), 9.0, true)
-
-
-## Targeted marker (patch 0.17): only the outer frame of the name/HP
-## panel outlines blue — the panel's fill and text stay normal, instead
-## of the whole box getting tinted.
-class FrameOutline:
-	extends Control
-
-	func _draw() -> void:
-		draw_rect(Rect2(Vector2(2, 2), size - Vector2(4, 4)),
-			Color(0.45, 0.8, 1.0, 0.95), false, 3.0)
+		var tint: Color = NeonPalette.current().tube_hi
+		var pulse := 0.75 + 0.25 * sin(_t * 4.0)
+		var arm := 34.0
+		var r := Rect2(Vector2(3, 8), size - Vector2(6, 14))
+		var corners := [
+			[r.position, Vector2(1, 0), Vector2(0, 1)],
+			[Vector2(r.end.x, r.position.y), Vector2(-1, 0), Vector2(0, 1)],
+			[Vector2(r.position.x, r.end.y), Vector2(1, 0), Vector2(0, -1)],
+			[r.end, Vector2(-1, 0), Vector2(0, -1)],
+		]
+		for c in corners:
+			var o: Vector2 = c[0]
+			var a: Vector2 = c[1]
+			var b: Vector2 = c[2]
+			draw_polyline(PackedVector2Array([o + b * arm, o, o + a * arm]),
+				Color(tint.r, tint.g, tint.b, 0.28 * pulse), 9.0, true)
+			draw_polyline(PackedVector2Array([o + b * arm, o, o + a * arm]),
+				Color(tint.r, tint.g, tint.b, pulse), 4.0, true)
+		var tip := Vector2(size.x * 0.5, 4.0 + 3.0 * sin(_t * 4.0))
+		draw_colored_polygon(PackedVector2Array([tip + Vector2(-10, -12), tip + Vector2(10, -12), tip]),
+			Color(tint.r, tint.g, tint.b, pulse))
 
 
 ## A minted plaque carrying an enemy passive's running number — the Dealer's
@@ -281,12 +292,11 @@ func setup(combat_actor: CombatActor) -> void:
 	sprite_holder.add_child(_breath)
 	_breath.add_child(_sprite)
 
-	_target_ring = TargetRing.new()
-	_target_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_target_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_target_ring.show_behind_parent = true
-	_target_ring.visible = false
-	_sprite.add_child(_target_ring)
+	_reticle = Reticle.new()
+	_reticle.custom_minimum_size = Vector2(UNIT_WIDTH, sprite_height)
+	_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_reticle.visible = false
+	sprite_holder.add_child(_reticle)
 
 	if texture == null:
 		_fallback = ColorRect.new()
@@ -295,14 +305,10 @@ func setup(combat_actor: CombatActor) -> void:
 		sprite_holder.add_child(_fallback)
 
 	_hp_holder = PanelContainer.new()
+	_hp_holder.add_theme_stylebox_override("panel", NeonTheme.plate(NeonPalette.current(), _side_colour()))
 	add_child(_hp_holder)
 	var hp_box := VBoxContainer.new()
 	_hp_holder.add_child(hp_box)
-	_frame_outline = FrameOutline.new()
-	_frame_outline.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_frame_outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame_outline.visible = false
-	_hp_holder.add_child(_frame_outline)
 
 	var name_label := Label.new()
 	name_label.text = actor.display_name
@@ -322,6 +328,7 @@ func setup(combat_actor: CombatActor) -> void:
 	_hp_bar = ProgressBar.new()
 	_hp_bar.custom_minimum_size = Vector2(0, 29)
 	_hp_bar.show_percentage = false
+	_hp_bar.theme_type_variation = &"HeroBar" if actor.is_hero else &"FoeBar"
 	hp_box.add_child(_hp_bar)
 
 	var under_bar := HBoxContainer.new()
@@ -329,6 +336,7 @@ func setup(combat_actor: CombatActor) -> void:
 	hp_box.add_child(under_bar)
 	_hp_label = Label.new()
 	_hp_label.add_theme_font_size_override("font_size", 20)
+	_hp_label.theme_type_variation = &"SubtitleLabel"
 	under_bar.add_child(_hp_label)
 	_block_label = Label.new()
 	_block_label.add_theme_font_size_override("font_size", 20)
@@ -361,6 +369,12 @@ func setup(combat_actor: CombatActor) -> void:
 	refresh()
 
 
+## The side's neon colour: the hero's, or the enemies'.
+func _side_colour() -> Color:
+	var p := NeonPalette.current()
+	return p.hero if actor != null and actor.is_hero else p.foe
+
+
 ## Largest font size at which `text` still fits the panel on one line.
 static func _name_font_size(label: Label, text: String) -> int:
 	var font := label.get_theme_font("font")
@@ -368,7 +382,7 @@ static func _name_font_size(label: Label, text: String) -> int:
 		return 24
 	for font_size in range(24, 13, -1):
 		if font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1,
-				font_size).x <= UNIT_WIDTH - 24.0:
+				font_size).x <= UNIT_WIDTH - 40.0:
 			return font_size
 	return 14
 
@@ -859,8 +873,11 @@ func _add_intent_chunk(status_id: StringName, label_text: String) -> void:
 
 func _add_intent_text(text: String, hint: String = "") -> void:
 	var label := Label.new()
-	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
-	label.add_theme_font_size_override("font_size", 22)
+	label.theme_type_variation = &"SubtitleLabel"
+	label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.9))
+	label.add_theme_font_size_override("font_size", 23)
+	label.add_theme_color_override("font_outline_color", Color(0.04, 0.02, 0.06, 0.95))
+	label.add_theme_constant_override("outline_size", 6)
 	label.text = text
 	if hint != "":
 		label.tooltip_text = hint
@@ -1108,8 +1125,7 @@ func _finish_slash(origin: Vector2) -> void:
 ## Blue ring around the model + a blue outline on just the frame of the
 ## stats box (patch 0.17: not a full tint over the whole panel).
 func set_targeted(targeted: bool) -> void:
-	_target_ring.visible = targeted
-	_frame_outline.visible = targeted
+	_reticle.visible = targeted
 
 
 ## The name/health panel, for a tutorial arrow to point at.

@@ -27,6 +27,7 @@ var _coins_label: Label
 var _encounter_label: Label
 var _hp_label: Label
 var _last_relic_count := -1
+var _encounter_tab: EncounterTab
 
 
 ## Ace's face in a gold-rimmed medallion: the portrait art drawn through a
@@ -54,7 +55,9 @@ class Portrait:
 			draw_polygon(points, colors, uvs, texture)
 		else:
 			draw_circle(centre, radius, Color(0.25, 0.1, 0.12))
-		draw_arc(centre, radius + 0.5, 0, TAU, SEGMENTS, Color(0.83, 0.69, 0.22, 0.95), 3.0, true)
+		var ring: Color = NeonPalette.current().tube
+		draw_arc(centre, radius + 3.0, 0, TAU, SEGMENTS, Color(ring.r, ring.g, ring.b, 0.35), 6.0, true)
+		draw_arc(centre, radius + 0.5, 0, TAU, SEGMENTS, ring, 3.0, true)
 
 
 ## A distinct bolded bar behind the header content (patch 0.17 — "like in
@@ -64,9 +67,79 @@ class Bar:
 	extends Control
 
 	func _draw() -> void:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.08, 0.04, 0.05, 0.82))
-		draw_rect(Rect2(Vector2(0, size.y - 3), Vector2(size.x, 3)),
-			Color(0.83, 0.69, 0.22, 0.9))
+		var p := NeonPalette.current()
+		var glass: Color = p.glass_deep
+		draw_rect(Rect2(Vector2.ZERO, size), Color(glass.r, glass.g, glass.b, 0.9))
+		# The tube along the bottom edge: bright in the middle of the bar, softer at the ends.
+		var tube: Color = p.tube
+		var steps := 24
+		for i in steps:
+			var x0 := size.x * float(i) / steps
+			var x1 := size.x * float(i + 1) / steps
+			var mid := 1.0 - absf((float(i) + 0.5) / steps - 0.5) * 2.0
+			var line := Color(tube.r, tube.g, tube.b, 0.55 + 0.4 * mid)
+			draw_rect(Rect2(Vector2(x0, size.y - 6), Vector2(x1 - x0 + 1.0, 6)), Color(line.r, line.g, line.b, 0.18))
+			draw_rect(Rect2(Vector2(x0, size.y - 3), Vector2(x1 - x0 + 1.0, 3)), line)
+
+
+## The encounter tab (0.126): a glass tab that hangs from the top rail with the
+## run's ten stops under the number: lit for the ones behind you, a bright one for
+## where you are, the boss at the end.
+class EncounterTab:
+	extends Control
+	const TAB_SIZE := Vector2(380, 70)
+	var encounter := 1:
+		set(v):
+			if v != encounter:
+				encounter = v
+				queue_redraw()
+
+	func _init() -> void:
+		custom_minimum_size = TAB_SIZE
+		size = TAB_SIZE
+
+	func _draw() -> void:
+		var p := NeonPalette.current()
+		var tube: Color = p.tube
+		var glass: Color = p.glass_deep
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(glass.r, glass.g, glass.b, 0.96)
+		box.border_color = Color(tube.r, tube.g, tube.b, 0.9)
+		box.set_border_width_all(2)
+		box.border_width_top = 0
+		box.corner_radius_bottom_left = 16
+		box.corner_radius_bottom_right = 16
+		box.shadow_color = Color(tube.r, tube.g, tube.b, 0.4)
+		box.shadow_size = 9
+		draw_style_box(box, Rect2(Vector2.ZERO, size))
+		var font := get_theme_font("font", "SubtitleLabel")
+		var label := "ENCOUNTER"
+		var number := str(encounter)
+		var small := 15
+		var big := 30
+		var w1 := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x
+		var w2 := font.get_string_size(number, HORIZONTAL_ALIGNMENT_LEFT, -1, big).x
+		var w3 := font.get_string_size(" / 10", HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		var x := (size.x - (w1 + w2 + w3 + 16.0)) * 0.5
+		draw_string(font, Vector2(x, 28), label, HORIZONTAL_ALIGNMENT_LEFT, -1, small, p.dim)
+		draw_string(font, Vector2(x + w1 + 8.0, 33), number, HORIZONTAL_ALIGNMENT_LEFT, -1, big, Color.WHITE)
+		draw_string(font, Vector2(x + w1 + w2 + 8.0, 33), " / 10", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, p.dim)
+		# ten stops
+		var gap := 26.0
+		var x0 := (size.x - gap * 9.0) * 0.5
+		for i in 10:
+			var at := Vector2(x0 + gap * i, 52.0)
+			var stop := i + 1
+			if stop < encounter:
+				draw_circle(at, 5.0, Color(tube.r, tube.g, tube.b, 0.95))
+			elif stop == encounter:
+				draw_circle(at, 10.0, Color(tube.r, tube.g, tube.b, 0.25))
+				draw_circle(at, 6.5, Color.WHITE)
+			else:
+				draw_arc(at, 5.0, 0, TAU, 20, Color(1, 1, 1, 0.28), 2.0, true)
+			if stop == 10:
+				var foe: Color = p.foe
+				draw_arc(at, 9.0, 0, TAU, 28, Color(foe.r, foe.g, foe.b, 0.9), 2.0, true)
 
 
 static func attach(main_node: Node) -> HeaderHud:
@@ -119,7 +192,7 @@ func _ready() -> void:
 	health_box.add_child(heart)
 	_hp_label = _header_label("")
 	_hp_label.tooltip_text = "Health"
-	_hp_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
+	_hp_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.99))
 	health_box.add_child(_hp_label)
 	var divider := VSeparator.new()
 	divider.custom_minimum_size = Vector2(4, 34)
@@ -135,13 +208,26 @@ func _ready() -> void:
 
 	# Gold and the encounter number belong on this row too (patch 0.18);
 	# they used to float on their own line under the bar on the combat screen.
+	var coin := TextureRect.new()
+	coin.texture = load("res://assets/icons/coin.png") if ResourceLoader.exists("res://assets/icons/coin.png") else null
+	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	coin.custom_minimum_size = Vector2(30, 30)
+	coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	coin.tooltip_text = "Gold"
+	coin.mouse_filter = Control.MOUSE_FILTER_PASS
+	right.add_child(coin)
 	_coins_label = _header_label("")
+	_coins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_coins_label.tooltip_text = "Gold"
 	right.add_child(_coins_label)
 
+	# The encounter hangs from the middle of the bar as a tab with ten stops (0.126).
 	_encounter_label = _header_label("")
 	_encounter_label.tooltip_text = "Encounter"
-	right.add_child(_encounter_label)
+	_encounter_tab = EncounterTab.new()
+	_encounter_tab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_encounter_tab)
 
 	_timer_label = _header_label("00:00")
 	_timer_label.tooltip_text = "Run time"
@@ -175,8 +261,7 @@ static func _header_label(text: String) -> Label:
 func _reserve_number_widths() -> void:
 	var digit := _widest_digit(_timer_label)
 	_reserve(_timer_label, "%s%s:%s%s" % [digit, digit, digit, digit])
-	_reserve(_coins_label, "🪙 %s" % digit.repeat(4))
-	_reserve(_encounter_label, "Encounter %s%s/10" % [digit, digit])
+	_reserve(_coins_label, digit.repeat(4), HORIZONTAL_ALIGNMENT_LEFT)
 	# Left-aligned: right-aligning it inside a "999/999" column parked a
 	# two-digit reading at the far end, a thumb's width from the heart.
 	_reserve(_hp_label, "%s/%s" % [digit.repeat(3), digit.repeat(3)],
@@ -232,16 +317,17 @@ func _process(delta: float) -> void:
 		Game.run_elapsed_sec += delta / maxf(Engine.time_scale, 0.001)
 	var total := int(Game.run_elapsed_sec)
 	_timer_label.text = "%02d:%02d" % [total / 60, total % 60]
-	_coins_label.text = "🪙 %d" % Game.run.coins
+	_coins_label.text = "%d" % Game.run.coins
 	# During a fight the combat screen publishes what Ace's own panel shows,
 	# because run.hp is only written back when the fight ends.
 	var hp := Game.live_hp if Game.live_hp >= 0 else Game.run.hp
 	_hp_label.text = "%d/%d" % [hp, Game.run.max_hp]
-	_encounter_label.text = "Encounter %d/10" % clampi(Game.run.history.size(), 1, 10)
+	_encounter_tab.encounter = clampi(Game.run.history.size(), 1, 10)
 	if Game.run.relic_ids.size() != _last_relic_count:
 		_refresh_relics()
 	var view_width := get_viewport_rect().size.x
 	_bar.size = Vector2(view_width, BAR_HEIGHT)
+	_encounter_tab.position = Vector2((view_width - _encounter_tab.size.x) * 0.5, 0.0)
 	# Anchoring rows without a known content width fights Godot's anchor math
 	# (it collapses to zero/negative width) — position them against their own
 	# measured size instead, vertically centred in the bar.

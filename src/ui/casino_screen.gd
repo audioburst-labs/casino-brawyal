@@ -63,7 +63,7 @@ func _show_choice() -> void:
 
 func _game_card(game: Dictionary) -> Button:
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(300, 250)
+	card.custom_minimum_size = Vector2(400, 340)
 	card.pressed.connect(_play.bind(game.id, null))
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -77,7 +77,7 @@ func _game_card(game: Dictionary) -> Button:
 	icon.texture = load(game.icon) if ResourceLoader.exists(game.icon) else null
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(110, 110)
+	icon.custom_minimum_size = Vector2(150, 150)
 	icon_holder.add_child(icon)
 	box.add_child(icon_holder)
 
@@ -85,15 +85,18 @@ func _game_card(game: Dictionary) -> Button:
 	title.text = game.title
 	title.theme_type_variation = &"SubtitleLabel"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 38)
 	box.add_child(title)
 
 	var rules := Label.new()
 	rules.text = game.rules
 	rules.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rules.add_theme_font_size_override("font_size", 17)
-	rules.custom_minimum_size = Vector2(0, 56)
+	rules.add_theme_font_size_override("font_size", 20)
+	rules.add_theme_color_override("font_color", NeonPalette.current().dim)
+	rules.custom_minimum_size = Vector2(0, 62)
 	box.add_child(rules)
+	box.add_child(choose_tag("Play"))
 	return card
 
 

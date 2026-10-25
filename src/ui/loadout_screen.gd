@@ -55,7 +55,7 @@ func _ready() -> void:
 		for id in Db.content.all_ability_ids().slice(0, 9):
 			Game.run.acquire_ability(id)
 	build_screen("Choose Your Hand", "res://assets/backgrounds/bg_rest.png")
-	add_info_label("Drag abilities between zones. Only Equipped abilities are usable in combat.\nWhatever sits in the Trash is destroyed when the next combat begins.", 18)
+	add_info_label("Drag abilities between zones. Only Equipped abilities are usable in combat.\nWhatever sits in the Trash is destroyed when you leave this screen.", 18)
 	# Two zones only (doc "Ability Choosing Screen"); the Storage tier was
 	# removed in v0.20 — a 7th ability goes straight to the Trash.
 	for config in [

@@ -3,6 +3,7 @@ extends Control
 
 
 func _ready() -> void:
+	apply_theme()
 	Game.register_screen_root($ScreenRoot)
 	Fx.set_shake_target($ScreenRoot)
 	Fx.init_cursor()
@@ -146,3 +147,10 @@ func _ready_freeze_probe() -> void:
 		return
 	await get_tree().create_timer(2.0).timeout
 	OS.delay_msec(ms)
+
+
+## The neon look (patch 0.126): one Theme built from the current act's palette
+## and handed to the root window, so every screen and the header inherit it.
+## Call again after `NeonPalette.set_act()` when a new act begins.
+func apply_theme() -> void:
+	NeonTheme.apply_project()

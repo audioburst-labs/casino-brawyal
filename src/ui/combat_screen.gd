@@ -550,6 +550,8 @@ func _build_layout() -> void:
 	_round_label = Label.new()
 	_round_label.theme_type_variation = &"SubtitleLabel"
 	# Clear of the persistent run header bar, which draws above this screen.
+	_round_label.add_theme_font_size_override("font_size", 30)
+	_round_label.add_theme_stylebox_override("normal", NeonTheme.plate(NeonPalette.current(), NeonPalette.current().tube))
 	_round_label.position = Vector2(40, HeaderHud.BAR_HEIGHT + 16)
 	add_child(_round_label)
 
@@ -610,6 +612,7 @@ func _build_layout() -> void:
 	# so no count of reels or cards can ever crowd it off the screen again.
 	_end_turn = Button.new()
 	_end_turn.text = "Pass"
+	_end_turn.theme_type_variation = &"PrimaryButton"
 	_end_turn.pressed.connect(_on_end_turn)
 	_end_turn.anchor_left = 0.878
 	_end_turn.anchor_right = 0.985
@@ -619,7 +622,7 @@ func _build_layout() -> void:
 
 	# Hero stands between the machine and the enemies.
 	_banner = Label.new()
-	_banner.theme_type_variation = &"TitleLabel"
+	_banner.theme_type_variation = &"BannerLabel"
 	# Patch 0.19: PRESET_CENTER on an empty Label bakes zero-size offsets, so
 	# the text started at screen centre and ran off to the right. Spanning the
 	# full width and centring the text inside it is size-independent.

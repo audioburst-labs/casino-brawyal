@@ -15,7 +15,11 @@ const OFFER_SCALE := 1.2
 const PLATE_SIZE := Vector2(100, 96)
 ## Patch 0.125: more room between the non-ability items (the cards took the left of the board).
 const SMALL_OFFER := Vector2(200, 200)
-const RELIC_SIZE := Vector2(240, 236)
+const RELIC_SIZE := Vector2(272, 380)
+## The loadout column and the Extra Reel are one height (0.126, designer), both level
+## with the sticker grid; the Trash box hangs under the loadout.
+const BAND_TOP := 136.0
+const BAND_HEIGHT := 560.0
 
 var _stock: Dictionary
 var _sold: Dictionary = {}            # offer key -> true
@@ -112,8 +116,8 @@ func _build_loadout_column() -> void:
 	panel.offset_left = 0.012 * 1920.0
 	_board.add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE)
-	panel.position = Vector2(24, 8)
-	panel.custom_minimum_size = Vector2(LOADOUT_WIDTH, 0)
+	panel.position = Vector2(24, BAND_TOP)
+	panel.custom_minimum_size = Vector2(LOADOUT_WIDTH, BAND_HEIGHT)
 
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 12)
@@ -133,13 +137,13 @@ func _build_loadout_column() -> void:
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.custom_minimum_size = Vector2(LOADOUT_WIDTH - 40.0, 0)
-	_hint.add_theme_font_size_override("font_size", 15)
+	_hint.add_theme_font_size_override("font_size", 17)
 	column.add_child(_hint)
 
 	var equipped_label := Label.new()
 	equipped_label.text = "Equipped (max %d)" % RunState.EQUIP_CAP
 	equipped_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equipped_label.add_theme_font_size_override("font_size", 16)
+	equipped_label.add_theme_font_size_override("font_size", 18)
 	column.add_child(equipped_label)
 
 	# Six slots in two rows of three, as the mock draws them.
@@ -157,18 +161,20 @@ func _build_loadout_column() -> void:
 	var trash_panel := PanelContainer.new()
 	trash_panel.theme_type_variation = &"FeltPanel"
 	trash_panel.add_theme_stylebox_override("panel", TierStyle.teal_panel())
-	column.add_child(trash_panel)
+	_board.add_child(trash_panel)
+	trash_panel.position = Vector2(24, BAND_TOP + BAND_HEIGHT + 16.0)
+	trash_panel.custom_minimum_size = Vector2(LOADOUT_WIDTH, 0)
 	var trash_column := VBoxContainer.new()
 	trash_panel.add_child(trash_column)
 	var trash_label := Label.new()
 	trash_label.text = "Trash Ability"
 	trash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	trash_label.add_theme_font_size_override("font_size", 16)
+	trash_label.add_theme_font_size_override("font_size", 18)
 	trash_column.add_child(trash_label)
 	var trash_zone := LayoutTab.DropZone.new()
 	trash_zone.zone = &"trash"
 	trash_zone.screen = self
-	trash_zone.custom_minimum_size = Vector2(LOADOUT_WIDTH - 60.0, 112)
+	trash_zone.custom_minimum_size = Vector2(LOADOUT_WIDTH - 60.0, 100)
 	trash_column.add_child(trash_zone)
 	_trash_slot = HBoxContainer.new()
 	_trash_slot.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -180,7 +186,7 @@ func _build_ability_shelf() -> void:
 	_ability_grid.columns = 2
 	_ability_grid.add_theme_constant_override("h_separation", 16)
 	_ability_grid.add_theme_constant_override("v_separation", 16)
-	_ability_grid.position = Vector2(452, 30)
+	_ability_grid.position = Vector2(452, 74)
 	_board.add_child(_ability_grid)
 
 
@@ -197,8 +203,8 @@ func _build_right_column() -> void:
 	_board.add_child(_reel_holder)
 
 	_relic_row = HBoxContainer.new()
-	_relic_row.add_theme_constant_override("separation", 60)
-	_relic_row.position = Vector2(1010, 646)
+	_relic_row.add_theme_constant_override("separation", 12)
+	_relic_row.position = Vector2(1010, 604)
 	_board.add_child(_relic_row)
 
 
@@ -230,7 +236,7 @@ func _refresh_offers() -> void:
 		var relic := Db.content.get_relic(offer.id)
 		var tile := _offer_tile("relic_%s" % offer.id, relic.name,
 			SuitAssets.relic_texture(offer.id), int(offer.price), RELIC_SIZE,
-			_buy_relic.bind(offer.id))
+			_buy_relic.bind(offer.id), relic.description)
 		tile.tooltip_text = "%s: %s" % [relic.name, relic.description]
 		tile.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		_relic_row.add_child(tile)
@@ -239,7 +245,8 @@ func _refresh_offers() -> void:
 	if reel.available:
 		var reel_tile := _offer_tile("reel", "Extra Reel",
 			_load_texture("res://assets/props/slot_cabinet.png"),
-			int(reel.price), Vector2(280, 436), _buy_reel)
+			int(reel.price), Vector2(280, 436), _buy_reel,
+			"Adds a reel with one of each suit. More symbols, more chips.")
 		reel_tile.tooltip_text = "Adds a reel with one of each suit (max %d)." \
 			% SlotMachine.MAX_REELS
 		_reel_holder.add_child(reel_tile)
@@ -274,7 +281,7 @@ func _ability_offer(offer: Dictionary) -> Control:
 
 ## Everything else on the shelf: an icon, a name and a price button.
 func _offer_tile(key: String, title: String, art: Texture2D, price: int,
-		box: Vector2, on_buy: Callable) -> Control:
+		box: Vector2, on_buy: Callable, blurb := "") -> Control:
 	var tile := PanelContainer.new()
 	tile.custom_minimum_size = box
 	tile.add_theme_stylebox_override("panel", TierStyle.panel(0))
@@ -289,7 +296,10 @@ func _offer_tile(key: String, title: String, art: Texture2D, price: int,
 	icon.texture = art
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(box.x * 0.42, box.x * 0.42)
+	var icon_ratio := 0.40 if blurb != "" else 0.42
+	if key == "reel":
+		icon_ratio = 0.78
+	icon.custom_minimum_size = Vector2(box.x * icon_ratio, box.x * icon_ratio)
 	icon_holder.add_child(icon)
 	column.add_child(icon_holder)
 
@@ -297,9 +307,23 @@ func _offer_tile(key: String, title: String, art: Texture2D, price: int,
 	name_label.text = title
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.theme_type_variation = &"SubtitleLabel"
+	name_label.add_theme_font_size_override("font_size", 22)
 	name_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(name_label)
+
+	if blurb != "":
+		var blurb_label := Label.new()
+		blurb_label.text = blurb
+		blurb_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		blurb_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		blurb_label.add_theme_font_override("font", AbilityCard.body_font())
+		blurb_label.add_theme_font_size_override("font_size", 17)
+		blurb_label.add_theme_color_override("font_color", Color(0.93, 0.97, 0.95))
+		blurb_label.add_theme_color_override("font_outline_color", Color(0.03, 0.02, 0.06, 0.9))
+		blurb_label.add_theme_constant_override("outline_size", 3)
+		blurb_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(blurb_label)
 
 	column.add_child(_price_button(key, price, on_buy))
 	return tile

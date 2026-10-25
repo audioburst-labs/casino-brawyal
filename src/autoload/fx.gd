@@ -165,21 +165,29 @@ func hitstop(duration := 0.06) -> void:
 				_apply_time_scale())
 
 
-## Floating damage/heal number: pops in with an overshoot punch, tilts like a
-## thrown chip, scales with magnitude, and goes gold on big hits (20+).
+## Floating damage/heal/status text: pops in with an overshoot punch, tilts like a
+## thrown chip, scales with magnitude, and goes gold on big hits (20+). Neon look
+## (0.126, the mock's): a near-white fill in the display face with a glow in the
+## event's colour. The default colour (damage) glows in the act's tube colour.
 func spawn_number(global_pos: Vector2, text: String, color := Color(1.0, 0.35, 0.3)) -> void:
 	var amount := text.to_int()
 	var big := amount >= 20
+	var glow := color
+	if color == Color(1.0, 0.35, 0.3):
+		glow = NeonPalette.current().money if big else NeonPalette.current().tube
 	var label := Label.new()
 	label.text = text
 	label.z_index = 100
+	label.add_theme_font_override("font", load("res://assets/fonts/AlfaSlabOne-Regular.ttf"))
 	label.add_theme_font_size_override("font_size",
-		int(clampf(40.0 + absf(amount) * 1.2, 40.0, 92.0)))
-	label.add_theme_color_override("font_color",
-		Color(1.0, 0.85, 0.3) if big and amount > 0 and color == Color(1.0, 0.35, 0.3) else color)
-	label.add_theme_color_override("font_outline_color", Color(0.1, 0.05, 0.05))
-	label.add_theme_constant_override("outline_size", 12)
-	label.theme_type_variation = &"TitleLabel"
+		int(clampf(40.0 + absf(amount) * 1.2, 40.0, 92.0)) if text.is_valid_int() else 34)
+	label.add_theme_color_override("font_color", glow.lerp(Color.WHITE, 0.82))
+	label.add_theme_color_override("font_outline_color", Color(glow.r, glow.g, glow.b, 0.9))
+	label.add_theme_constant_override("outline_size", 10)
+	label.add_theme_color_override("font_shadow_color", Color(glow.r, glow.g, glow.b, 0.55))
+	label.add_theme_constant_override("shadow_offset_x", 0)
+	label.add_theme_constant_override("shadow_offset_y", 0)
+	label.add_theme_constant_override("shadow_outline_size", 26)
 	label.rotation = randf_range(-0.14, 0.14)
 	get_tree().root.add_child(label)
 	label.global_position = global_pos + Vector2(randf_range(-24, 24), -24)

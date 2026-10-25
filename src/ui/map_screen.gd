@@ -29,13 +29,13 @@ const TYPE_FLAVOR := {
 	&"boss": "Time to settle the score.",
 }
 
-const CARD_SIZE := Vector2(380, 250)
+const CARD_SIZE := Vector2(440, 330)
 
 
 func _ready() -> void:
 	_debug_standalone_run()
-	build_screen("Encounter %d of 10" % Game.run.encounter_number(),
-		"res://assets/backgrounds/bg_map.png")
+	build_screen("Choose Your Path", "res://assets/backgrounds/bg_map.png")
+	add_eyebrow("Encounter %d of 10" % Game.run.encounter_number())
 
 	var options := Game.map_options()
 
@@ -91,7 +91,7 @@ func _option_card(option: Dictionary) -> Button:
 		icon.texture = load(art)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(96, 96)
+		icon.custom_minimum_size = Vector2(150, 150)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		holder.add_child(icon)
 		column.add_child(holder)
@@ -101,6 +101,7 @@ func _option_card(option: Dictionary) -> Button:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.theme_type_variation = &"SubtitleLabel"
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.add_theme_font_size_override("font_size", 38)
 	column.add_child(name_label)
 
 	var description := Label.new()
@@ -111,9 +112,11 @@ func _option_card(option: Dictionary) -> Button:
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description.custom_minimum_size = Vector2(CARD_SIZE.x - 44, 0)
-	description.add_theme_color_override("font_color", Color(0.86, 0.82, 0.74))
+	description.add_theme_color_override("font_color", NeonPalette.current().dim)
+	description.add_theme_font_size_override("font_size", 20)
 	description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(description)
+	column.add_child(choose_tag())
 
 	return button
 

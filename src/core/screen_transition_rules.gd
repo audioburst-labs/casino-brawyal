@@ -33,3 +33,13 @@ static func wants_curtain(from_path: String, to_path: String) -> bool:
 
 static func _name(path: String) -> String:
 	return path.get_file().get_basename()
+
+
+## Screens where the player chooses what to trash. Leaving one destroys whatever
+## still sits in the bin (0.126, designer: "immediately gone once you leave the
+## screen you trashed it"); before, it lingered until the next combat began.
+const TRASH_SCREENS := ["shop_screen", "loadout_screen"]
+
+
+static func empties_trash(from_path: String, to_path: String) -> bool:
+	return TRASH_SCREENS.has(_name(from_path)) and _name(from_path) != _name(to_path)

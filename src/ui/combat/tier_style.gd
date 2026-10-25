@@ -36,6 +36,12 @@ static func panel(tier: int, thickness: int = 3) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.13, 0.07, 0.09, 0.92)
 	box.border_color = color(tier)
+	if tier <= 0:
+		var p := NeonPalette.current()
+		box.bg_color = p.glass
+		box.border_color = NeonPalette.alpha(p.tube, 0.6)
+		box.shadow_color = NeonPalette.alpha(p.tube, 0.16)
+		box.shadow_size = 8
 	box.set_border_width_all(thickness if tier > 0 else 2)
 	box.set_corner_radius_all(10)
 	box.set_content_margin_all(10)
@@ -118,11 +124,9 @@ static func glow_ring(to_tier: int) -> Control:
 ## The shop's loadout panel (patch 0.125): the same teal as the ability cards, with
 ## the gold trim the felt panel had.
 static func teal_panel() -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0.043, 0.239, 0.251, 0.97)
-	box.border_color = Color(0.831, 0.686, 0.216, 0.9)
-	box.set_border_width_all(3)
-	box.set_corner_radius_all(14)
+	# Not teal any more (0.126): the neon glass, edged in the act's tube colour.
+	var p := NeonPalette.current()
+	var box := NeonTheme.plate(p, p.tube)
 	box.content_margin_left = 16.0
 	box.content_margin_top = 12.0
 	box.content_margin_right = 16.0

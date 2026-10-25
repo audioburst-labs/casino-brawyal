@@ -18,6 +18,11 @@ var _curtain: CurtainTransition = null
 var _queued_nav: Dictionary = {}
 var _combat_gold := Vector2i.ZERO   # gold range of the lineup being fought
 
+
+func _ready() -> void:
+	NeonTheme.apply_project()
+
+
 ## The header (HeaderHud) hides itself outside an active run — main menu and
 ## the end-of-run summary screens — by checking this against its own denylist.
 var current_screen_path := ""
@@ -41,6 +46,8 @@ func register_curtain(curtain: CurtainTransition) -> void:
 
 func goto_screen(scene_path: String, args: Dictionary = {}) -> void:
 	assert(_screen_root != null, "Main scene must register its ScreenRoot before navigation.")
+	if run != null and ScreenTransitionRules.empties_trash(current_screen_path, scene_path):
+		run.process_trash()
 	if _curtain != null and _screen_root.get_child_count() > 0:
 		if _curtain.is_covering():
 			# Asked again while the cloth is still closing: the later destination wins.

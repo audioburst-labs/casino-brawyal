@@ -33,3 +33,13 @@ func test_the_menu_and_game_over_keep_their_plain_cuts() -> void:
 
 func test_the_first_screen_has_nothing_to_hide() -> void:
 	assert_false(ScreenTransitionRules.wants_curtain("", MENU))
+
+
+func test_leaving_the_shop_or_the_loadout_screen_empties_the_trash() -> void:
+	var shop := "res://scenes/screens/shop_screen.tscn"
+	var loadout := "res://scenes/screens/loadout_screen.tscn"
+	assert_true(ScreenTransitionRules.empties_trash(shop, MAP))
+	assert_true(ScreenTransitionRules.empties_trash(loadout, COMBAT))
+	assert_false(ScreenTransitionRules.empties_trash(REWARD, MAP), "a reward's funnelled ability can still be rescued")
+	assert_false(ScreenTransitionRules.empties_trash(shop, shop), "reloading the same screen is not leaving it")
+	assert_false(ScreenTransitionRules.empties_trash(MAP, shop))
