@@ -27,7 +27,7 @@ const KEEP: Array[StringName] = [
 ## Counted into the combat summary, never a row of their own.
 const AGGREGATE: Array[StringName] = [
 	&"damage_dealt", &"block_gained", &"healed", &"status_applied",
-	&"relic_triggered", &"mark_cashed", &"encore", &"rage_spent",
+	&"relic_triggered", &"relic_spent", &"mark_cashed", &"encore", &"rage_spent",
 	&"damage_negated", &"chips_generated",
 ]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c6hg2qyy1hlcj"
-path="res://.godot/imported/relic_red_emblems.png-ee2f6408431d52ccca533ebe115736e5.ctex"
+uid="uid://bihb32onds33h"
+path="res://.godot/imported/relic_signed_policy.png-94fe3576e806f66acbb3a16f22ab6803.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_red_emblems.png"
-dest_files=["res://.godot/imported/relic_red_emblems.png-ee2f6408431d52ccca533ebe115736e5.ctex"]
+source_file="res://assets/icons/relic_signed_policy.png"
+dest_files=["res://.godot/imported/relic_signed_policy.png-94fe3576e806f66acbb3a16f22ab6803.ctex"]
 
 [params]
 

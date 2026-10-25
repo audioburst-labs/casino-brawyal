@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtypuxfdh4u2i"
-path="res://.godot/imported/relic_lucky_foot.png-f8f83730cf7664a2107a811285fc5552.ctex"
+uid="uid://cerechcyy634q"
+path="res://.godot/imported/relic_rabbits_foot_keychain.png-6eb54a497ec87c943212aeaa274d4ced.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_lucky_foot.png"
-dest_files=["res://.godot/imported/relic_lucky_foot.png-f8f83730cf7664a2107a811285fc5552.ctex"]
+source_file="res://assets/icons/relic_rabbits_foot_keychain.png"
+dest_files=["res://.godot/imported/relic_rabbits_foot_keychain.png-6eb54a497ec87c943212aeaa274d4ced.ctex"]
 
 [params]
 

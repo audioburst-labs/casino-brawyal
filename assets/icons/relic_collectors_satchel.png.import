@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7mrxl0l6ouaa"
-path="res://.godot/imported/relic_spade_protection.png-4e8acc1a07e8d2d1b5ee293e5fd38eef.ctex"
+uid="uid://dj1ifut4up3on"
+path="res://.godot/imported/relic_collectors_satchel.png-b87142ea64a1f7f34452cb709c9504f9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_spade_protection.png"
-dest_files=["res://.godot/imported/relic_spade_protection.png-4e8acc1a07e8d2d1b5ee293e5fd38eef.ctex"]
+source_file="res://assets/icons/relic_collectors_satchel.png"
+dest_files=["res://.godot/imported/relic_collectors_satchel.png-b87142ea64a1f7f34452cb709c9504f9.ctex"]
 
 [params]
 

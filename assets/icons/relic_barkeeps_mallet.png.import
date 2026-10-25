@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://crei04jkj0tr7"
-path="res://.godot/imported/relic_winners_aura.png-b9b829c644b2ae32200064877c47a9ed.ctex"
+uid="uid://dk2huww36ynnp"
+path="res://.godot/imported/relic_barkeeps_mallet.png-35cc50da84765b91aa9b2b98da828740.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_winners_aura.png"
-dest_files=["res://.godot/imported/relic_winners_aura.png-b9b829c644b2ae32200064877c47a9ed.ctex"]
+source_file="res://assets/icons/relic_barkeeps_mallet.png"
+dest_files=["res://.godot/imported/relic_barkeeps_mallet.png-35cc50da84765b91aa9b2b98da828740.ctex"]
 
 [params]
 

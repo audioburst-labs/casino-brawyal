@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cj7oq0rvxmh50"
-path="res://.godot/imported/relic_heart_protection.png-fcc754e1acc0e5e52b15baabaa7c36f6.ctex"
+uid="uid://cllcu335uo7mo"
+path="res://.godot/imported/relic_cold_stare_shades.png-abb101e0b70345fba09412d7766f9ab5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_heart_protection.png"
-dest_files=["res://.godot/imported/relic_heart_protection.png-fcc754e1acc0e5e52b15baabaa7c36f6.ctex"]
+source_file="res://assets/icons/relic_cold_stare_shades.png"
+dest_files=["res://.godot/imported/relic_cold_stare_shades.png-abb101e0b70345fba09412d7766f9ab5.ctex"]
 
 [params]
 

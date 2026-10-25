@@ -63,7 +63,7 @@ func test_every_description_fits_the_card_in_the_bold_face_at_a_readable_size() 
 			smallest = mini(smallest, size)
 			var height: float = font.get_multiline_string_size(def.description, HORIZONTAL_ALIGNMENT_CENTER, width, size).y
 			assert_lte(height, AbilityCard.DESC_HEIGHT, "%s tier %d overflows at %d" % [id, tier, size])
-	assert_gte(smallest, 16, "the band is tall enough that nothing has to shrink below 16")
+	assert_gte(smallest, 15, "even the longest text, balanced, stays at 15 or larger")
 
 
 func test_a_preview_is_the_card_at_the_asked_scale() -> void:
@@ -79,3 +79,47 @@ func test_a_plate_shows_the_name_and_the_cost() -> void:
 	AbilityPlate.fill(host, &"double_down", 0, Vector2(200, 124), 16)
 	assert_eq(host.custom_minimum_size, Vector2(200, 124))
 	assert_gt(host.get_child_count(), 1)
+
+
+# ---- option C: centred, balanced text (designer, 0.125) ---------------------------------
+
+func _lines(text: String, size := 17) -> Array[String]:
+	var font: Font = AbilityCard.body_font()
+	return AbilityCard.balanced_lines(font, size, text.split(" ", false), AbilityCard.text_width())
+
+
+func test_a_short_text_that_wraps_breaks_in_the_middle() -> void:
+	var lines := _lines("Deal 8 damage. If Spade - Mark.")
+	assert_eq(lines.size(), 2)
+	assert_eq(lines[0], "Deal 8 damage.", "the break falls after the first sentence")
+	assert_eq(lines[1], "If Spade - Mark.")
+
+
+func test_every_text_fits_the_band_in_its_balanced_lines() -> void:
+	var font: Font = AbilityCard.body_font()
+	for id in db.all_ability_ids():
+		for tier in 3:
+			var text: String = db.get_ability(id, tier).description
+			var size := AbilityCard.fit_size(font, text)
+			var lines := AbilityCard.balanced_lines(font, size, text.split(" ", false), AbilityCard.text_width())
+			assert_lte(lines.size() * font.get_height(size), AbilityCard.DESC_HEIGHT, "%s tier %d overflows at %d" % [id, tier, size])
+
+
+func test_no_line_starts_with_a_dash() -> void:
+	for id in db.all_ability_ids():
+		for tier in 3:
+			var text: String = db.get_ability(id, tier).description
+			var font: Font = AbilityCard.body_font()
+			for line in AbilityCard.balanced_lines(font, AbilityCard.fit_size(font, text), text.split(" ", false), AbilityCard.text_width()):
+				assert_false(line.begins_with("- ") or line == "-", "%s: '%s'" % [id, line])
+
+
+func test_balanced_lines_are_closer_in_length_than_greedy_ones() -> void:
+	var font: Font = AbilityCard.body_font()
+	var text := "Deal 5 to all enemies. If Club - 10 instead. If Heart - Apply Weak 1."
+	var size := AbilityCard.fit_size(font, text)
+	var lines := AbilityCard.balanced_lines(font, size, text.split(" ", false), AbilityCard.text_width())
+	var widths: Array[float] = []
+	for line in lines:
+		widths.append(font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x)
+	assert_lt(widths.max() - widths.min(), 80.0, "lines are close in length: %s" % str(lines))

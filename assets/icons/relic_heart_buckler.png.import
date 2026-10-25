@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckwrutto4jnt4"
-path="res://.godot/imported/relic_diamond_protection.png-e999c6218dc05f4e1d0328579d33006c.ctex"
+uid="uid://gtld4nkqnqgb"
+path="res://.godot/imported/relic_heart_buckler.png-6648d645f0c1f7b11d46d43641d3cb75.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_diamond_protection.png"
-dest_files=["res://.godot/imported/relic_diamond_protection.png-e999c6218dc05f4e1d0328579d33006c.ctex"]
+source_file="res://assets/icons/relic_heart_buckler.png"
+dest_files=["res://.godot/imported/relic_heart_buckler.png-6648d645f0c1f7b11d46d43641d3cb75.ctex"]
 
 [params]
 

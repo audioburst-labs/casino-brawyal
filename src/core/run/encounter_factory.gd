@@ -60,6 +60,7 @@ static func combat_config(db: ContentDB, run: RunState,
 		"hp_mult": hp_mult,
 		"dmg_mult": dmg_mult,
 		"relics": run.relic_ids,
+		"spent_relics": run.spent_relics,
 		"gold_min": lineup.gold_min,
 		"gold_max": lineup.gold_max,
 	}

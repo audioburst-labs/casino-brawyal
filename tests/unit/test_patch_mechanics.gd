@@ -263,39 +263,39 @@ func test_intent_display_includes_strength_buff() -> void:
 		"displayed damage includes strength")
 
 
-func test_winners_aura_relic_weakens_enemies_at_combat_start() -> void:
-	var sim := _sim(["bouncer"], ["card_sling"], 7, ["winners_aura"])
+func test_cold_stare_shades_relic_weakens_enemies_at_combat_start() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["cold_stare_shades"])
 	sim.begin_round()
 	assert_eq(sim.enemies[0].status_stacks(&"weak"), 2,
 		"Winner's Aura applies Weak 2 to all enemies at combat start")
 
 
-func test_gamblers_confidence_relic_grants_starting_block() -> void:
-	var sim := _sim(["bouncer"], ["card_sling"], 7, ["gamblers_confidence"])
+func test_croupiers_vest_relic_grants_starting_block() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["croupiers_vest"])
 	sim.begin_round()
-	assert_eq(sim.hero.block, 20, "Gambler's Confidence starts combat with 20 Block")
+	assert_eq(sim.hero.block, 10, "Croupier's Vest starts combat with 10 Block")
 
 
-func test_high_roller_relic_hits_a_random_enemy_on_triple() -> void:
-	var sim := _sim(["bouncer"], ["card_sling"], 7, ["high_roller"])
+func test_lucky_sevens_revolver_relic_hits_a_random_enemy_on_triple() -> void:
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["lucky_sevens_revolver"])
 	sim.begin_round()
 	var hp_before := sim.enemies[0].hp
 	sim.last_payout = {&"spade": 3}
 	sim._fire_relics(&"spin_resolved")
-	assert_eq(sim.enemies[0].hp, hp_before - 20, "High Roller deals 20 on a forced triple")
+	assert_eq(sim.enemies[0].hp, hp_before - 10, "Lucky Sevens Revolver deals 10 on a forced triple")
 
 
-func test_dark_emblem_boosts_spade_club_abilities() -> void:
-	var sim := _sim(["bouncer"], ["double_down"], 7, ["dark_emblem"])
+func test_jade_knucklers_boost_spade_club_abilities() -> void:
+	var sim := _sim(["bouncer"], ["double_down"], 7, ["jade_knucklers"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"heart", &"spade"])
-	assert_eq(enemy.hp, hp_start - 14, "11 * 1.3 = 14.3, half-up 14")
+	assert_eq(enemy.hp, hp_start - 13, "11 * 1.2 = 13.2, half-up 13")
 
 
 func test_block_per_chip_relic() -> void:
-	var sim := _sim(["bouncer"], ["card_sling"], 7, ["spade_protection"])
+	var sim := _sim(["bouncer"], ["card_sling"], 7, ["spade_buckler"])
 	sim.begin_round()
 	var spades: int = sim.last_payout.get(&"spade", 0)
 	assert_eq(sim.hero.block, spades * 2, "2 block per spade gem")

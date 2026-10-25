@@ -53,7 +53,7 @@ func test_sticker_prices_scale_with_encounter_and_cover_all_suits() -> void:
 
 func test_relic_offers_are_unowned_distinct_and_priced_per_sheet() -> void:
 	var run := RunState.new()
-	run.relic_ids = [&"bounty_list"]
+	run.relic_ids = [&"collectors_satchel"]
 	var stock := ShopStock.generate(_db, run, _rng())
 	assert_eq(stock.relics.size(), 3)
 	var seen: Array[StringName] = []

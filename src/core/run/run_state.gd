@@ -24,6 +24,8 @@ var trash_id: StringName = &""
 var ability_tiers: Dictionary = {}
 var needs_loadout := false
 var relic_ids: Array[StringName] = []
+## Relics used up for the rest of the run (Signed Policy, once per run).
+var spent_relics: Array[StringName] = []
 var seed_value := 0
 ## Which of the doc's six Paths this run walks (patch 0.114). Rolled the first
 ## time the map is asked for options; "" on a pre-0.114 save, which simply
@@ -203,6 +205,7 @@ func to_dict() -> Dictionary:
 		"ability_tiers": _tiers_to_dict(),
 		"needs_loadout": needs_loadout,
 		"relic_ids": relic_ids.map(func(s: StringName) -> String: return String(s)),
+		"spent_relics": spent_relics.map(func(s: StringName) -> String: return String(s)),
 		"sticker_inventory": sticker_inventory.map(func(s: StringName) -> String: return String(s)),
 		"seen_events": seen_events.map(func(s: StringName) -> String: return String(s)),
 		"history": history.map(func(s: StringName) -> String: return String(s)),
@@ -221,6 +224,17 @@ func _tiers_to_dict() -> Dictionary:
 	for id: StringName in ability_tiers:
 		out[String(id)] = int(ability_tiers[id])
 	return out
+
+
+## Relic ids before patch 0.125 -> after.
+const RELIC_RENAMES := {
+	&"gamblers_confidence": &"croupiers_vest", &"bounty_list": &"collectors_satchel",
+	&"spade_protection": &"spade_buckler", &"heart_protection": &"heart_buckler",
+	&"club_protection": &"club_buckler", &"diamond_protection": &"diamond_buckler",
+	&"winners_aura": &"cold_stare_shades", &"high_roller": &"lucky_sevens_revolver",
+	&"dark_emblem": &"jade_knucklers", &"red_emblems": &"ruby_knuckles",
+	&"lucky_foot": &"rabbits_foot_keychain",
+}
 
 
 static func from_dict(data: Dictionary) -> RunState:
@@ -243,7 +257,11 @@ static func from_dict(data: Dictionary) -> RunState:
 		run.ability_tiers[StringName(str(id))] = int(tiers[id])
 	run.needs_loadout = bool(data.get("needs_loadout", false))
 	for id in data.get("relic_ids", []):
-		run.relic_ids.append(StringName(str(id)))
+		# Patch 0.125 renamed the relics (new ids, new art): an in-flight save keeps what it held.
+		var relic := StringName(str(id))
+		run.relic_ids.append(RELIC_RENAMES.get(relic, relic))
+	for id in data.get("spent_relics", []):
+		run.spent_relics.append(StringName(str(id)))
 	for suit in data.get("sticker_inventory", []):
 		run.sticker_inventory.append(StringName(str(suit)))
 	run.tutorial_won = bool(data.get("tutorial_won", false))

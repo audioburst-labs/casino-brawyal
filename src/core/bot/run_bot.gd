@@ -64,6 +64,9 @@ static func _play_combat(db: ContentDB, run: RunState, rng: GameRng,
 	# A loan's coins landed during the fight, won or lost (0.117); the
 	# presenter applies them as they happen, the bot applies them here.
 	RunEffects.apply(sim.run_ops, db, run, rng.stream(&"rewards"))
+	for spent in sim.relics_spent:
+		if not run.spent_relics.has(spent):
+			run.spent_relics.append(spent)
 	if not won:
 		return false
 	run.hp = maxi(1, sim.hero.hp)
@@ -110,19 +113,19 @@ static func _play_shop(db: ContentDB, run: RunState, rng: GameRng,
 	# Priorities: reels are the core scaling (more chips per spin), then
 	# abilities, then a relic with whatever is left.
 	var reel: Dictionary = stock.reel
-	if reel.available and run.spend(int(reel.price)):
+	if reel.available and run.spend(ShopPricing.price(run, int(reel.price))):
 		run.machine.add_reel()
 	for offer: Dictionary in stock.abilities:
-		if run.spend(int(offer.price)):
+		if run.spend(ShopPricing.price(run, int(offer.price))):
 			run.acquire_ability(offer.id)
 	for offer: Dictionary in stock.relics:
-		if run.spend(int(offer.price)):
+		if run.spend(ShopPricing.price(run, int(offer.price))):
 			run.relic_ids.append(offer.id)
 			break
 	# One sticker toward spades when affordable, applied to a random slot.
 	if not stock.stickers.is_empty():
 		var sticker: Dictionary = stock.stickers[0]
-		if run.spend(int(sticker.price)):
+		if run.spend(ShopPricing.price(run, int(sticker.price))):
 			var machine := run.machine
 			var reel_index := choice_rng.randi_range(0, machine.reels.size() - 1)
 			var slot_index := choice_rng.randi_range(0,

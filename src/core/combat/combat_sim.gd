@@ -18,8 +18,11 @@ extends RefCounted
 enum Phase { ROUND_START, CHOICE, ASSIGNMENT, ENDED }
 
 const MAX_ENEMIES := 4      # patch 0.13: the field holds at most 4 fighters
-const EMBLEM_MULTIPLIER := 1.3
-const LUCKY_FOOT_CHANCE := 0.1
+## Sheet v0.123 (patch 0.125): the knuckles give 20%, the keychain 5%.
+const EMBLEM_MULTIPLIER := 1.2
+const LUCKY_FOOT_CHANCE := 0.05
+## Signed Policy: the HP a hero who would die survives with, once per run.
+const POLICY_HP := 20
 ## Rage X: "your next attack deals X bonus damage". The designer's call is that
 ## the bonus lands on EVERY hit of that attack, so a Rage 10 into a 2x0 move
 ## deals 20 (patch 0.22).
@@ -67,6 +70,10 @@ var _vuln_pct := StatusRules.VULNERABLE_PCT
 var _has_dark_emblem := false
 var _has_red_emblems := false
 var _has_lucky_foot := false
+var _has_policy := false
+## Relics used up this combat that stay used for the rest of the run (Signed
+## Policy). The presenter and the bot copy them onto the run.
+var relics_spent: Array[StringName] = []
 var _active_ability: AbilityState = null
 var _exclusive_lock: AbilityState = null   # set when an exclusive ability fires
 var _summon_counter := 0
@@ -115,12 +122,15 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 			continue
 		_relics.append(relic)
 		match relic.id:
-			&"dark_emblem":
+			&"jade_knucklers":
 				_has_dark_emblem = true
-			&"red_emblems":
+			&"ruby_knuckles":
 				_has_red_emblems = true
-			&"lucky_foot":
+			&"rabbits_foot_keychain":
 				_has_lucky_foot = true
+			&"signed_policy":
+				# Already used this run: it is carried but does nothing.
+				_has_policy = not (config.get("spent_relics", []) as Array).has("signed_policy")
 
 	for enemy_id in config.get("enemies", []):
 		_spawn_enemy(StringName(str(enemy_id)), false)
@@ -578,9 +588,12 @@ func check_death(actor: CombatActor) -> void:
 		targeting.manual_target_id = &""
 	_fire_relics(&"enemy_killed")
 	if enemies.all(func(e: CombatActor) -> bool: return not e.is_alive()):
+		# The after-fight relics (Hip Flask) fire BEFORE the win is announced, so
+		# their healing is on the event list ahead of the banner and the screen
+		# change that follows it.
+		_fire_relics(&"combat_won")
 		emit_event(&"combat_won", {})
 		phase = Phase.ENDED
-		_fire_relics(&"combat_won")
 
 
 ## Re-spins the machine and adds the payout (Go Again / High Roller).
@@ -851,6 +864,16 @@ func _hit_hero(enemy: CombatActor, base: int) -> void:
 ## then `combat_lost` (patch 0.19 — the defeat banner used to land while Ace
 ## was still standing, because he never got a death event at all).
 func _check_hero_death() -> void:
+	if not hero.is_alive() and phase != Phase.ENDED and _has_policy:
+		# Signed Policy (sheet v0.123): once per run, a blow that would kill
+		# leaves Ace standing on 20 HP instead.
+		_has_policy = false
+		relics_spent.append(&"signed_policy")
+		hero.hp = mini(POLICY_HP, hero.max_hp)
+		emit_event(&"relic_triggered", {"relic": &"signed_policy"})
+		emit_event(&"relic_spent", {"relic": &"signed_policy"})
+		emit_event(&"healed", {"actor": hero.id, "amount": hero.hp})
+		return
 	if hero.is_alive() or phase == Phase.ENDED:
 		return
 	emit_event(&"actor_died", {"actor": hero.id})

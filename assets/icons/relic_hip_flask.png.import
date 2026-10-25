@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bx6aqt6lysy8r"
-path="res://.godot/imported/relic_bounty_list.png-6f5abe7a5dae81c02920a10889c513a1.ctex"
+uid="uid://7wt11emrysm5"
+path="res://.godot/imported/relic_hip_flask.png-668659fd0891a7997613752b3760cc2e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_bounty_list.png"
-dest_files=["res://.godot/imported/relic_bounty_list.png-6f5abe7a5dae81c02920a10889c513a1.ctex"]
+source_file="res://assets/icons/relic_hip_flask.png"
+dest_files=["res://.godot/imported/relic_hip_flask.png-668659fd0891a7997613752b3760cc2e.ctex"]
 
 [params]
 

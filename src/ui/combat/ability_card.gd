@@ -374,7 +374,9 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	box.add_child(text_margin)
 	_description = RichTextLabel.new()
 	_description.bbcode_enabled = true
-	_description.fit_content = false
+	# Centred in the band (designer, 0.125): the label is only as tall as its text
+	# and a CenterContainer puts it halfway between the art and the sockets.
+	_description.fit_content = true
 	_description.scroll_active = false
 	_description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_description.add_theme_font_size_override("normal_font_size", DESC_FONT_MAX)
@@ -383,9 +385,11 @@ func setup(state: AbilityState, index: int, sim: CombatSim = null) -> void:
 	_description.add_theme_font_override("bold_font", body_font())
 	_description.add_theme_color_override("font_outline_color", Color(0.0, 0.07, 0.08, 0.85))
 	_description.add_theme_constant_override("outline_size", 3)
-	_description.custom_minimum_size = Vector2(0, DESC_HEIGHT)
-	_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	text_margin.add_child(_description)
+	_description.custom_minimum_size = Vector2(text_width(), 0)
+	var centred := CenterContainer.new()
+	centred.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	centred.add_child(_description)
+	text_margin.add_child(centred)
 
 	# Use limits (doc "Per Turn & Per Combat", patch 0.113): since 0.125 a small
 	# metal-rimmed tab hung from the line under the art at the right, so it covers a
@@ -732,8 +736,13 @@ func _refresh_description() -> void:
 			text = _replace_number(text, base, "[color=%s]%d[/color]" % [tint, modified])
 	# Measured against what actually renders: a buffed figure can be a glyph
 	# wider than the plain one and overflow the fixed band (patch 0.20).
-	_fit_description_font(_plain_text(text))
-	_description.text = "[center]%s[/center]" % text
+	var size := fit_size(body_font(), _plain_text(text))   # words of the tinted text break the same way
+	_description.add_theme_font_size_override("normal_font_size", size)
+	# Option C (designer, 0.125): lines of near-equal length, never a short last
+	# line, and a dash stays with the words either side of it.
+	var lines := balanced_lines(body_font(), size, text.split(" ", false), text_width())
+	_description.text = "[center]%s[/center]" % "
+".join(lines)
 
 
 ## Swaps whole numbers only, so "10" never matches inside "100" and never
@@ -791,11 +800,71 @@ static func body_font() -> Font:
 	return face
 
 
+## The width the description wraps in.
+static func text_width() -> float:
+	return CARD_SIZE.x - FRAME * 2.0 - DESC_PAD * 2.0
+
+
+## Breaks `words` (bbcode and all) into lines of near-equal length without adding a
+## line: the line count is what a plain greedy wrap needs at `width`, then the
+## narrowest width that still needs only that many lines decides the breaks. A "-"
+## stays glued to the words either side of it, so no line starts with a dash.
+static func balanced_lines(font: Font, size: int, words: Array, width: float) -> Array[String]:
+	var tokens: Array[String] = []
+	var i := 0
+	while i < words.size():
+		var token := str(words[i])
+		while i + 2 < words.size() and _plain_text(str(words[i + 1])) == "-":
+			token += " - " + str(words[i + 2])
+			i += 2
+		tokens.append(token)
+		i += 1
+	var widths: Array[float] = []
+	var widest := 0.0
+	for token in tokens:
+		var w := font.get_string_size(_plain_text(token), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+		widths.append(w)
+		widest = maxf(widest, w)
+	var space := font.get_string_size(" ", HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var needed := _wrap(tokens, widths, space, width).size()
+	var narrowest := width
+	var probe := width
+	while probe >= widest:
+		if _wrap(tokens, widths, space, probe).size() != needed:
+			break
+		narrowest = probe
+		probe -= 1.0
+	var out: Array[String] = []
+	for line: Array in _wrap(tokens, widths, space, narrowest):
+		out.append(" ".join(line))
+	return out
+
+
+static func _wrap(tokens: Array[String], widths: Array[float], space: float, width: float) -> Array:
+	var lines: Array = []
+	var line: Array = []
+	var used := 0.0
+	for k in tokens.size():
+		var need := widths[k] if line.is_empty() else used + space + widths[k]
+		if not line.is_empty() and need > width:
+			lines.append(line)
+			line = []
+			need = widths[k]
+		line.append(tokens[k])
+		used = need
+	if not line.is_empty():
+		lines.append(line)
+	return lines
+
+
 ## The largest size at which `plain` fits the description band.
 static func fit_size(font: Font, plain: String) -> int:
-	var width := CARD_SIZE.x - FRAME * 2.0 - DESC_PAD * 2.0
+	var words := plain.split(" ", false)
 	for font_size in range(DESC_FONT_MAX, DESC_FONT_MIN - 1, -1):
-		if font.get_multiline_string_size(plain, HORIZONTAL_ALIGNMENT_CENTER, width, font_size).y <= DESC_HEIGHT:
+		# The lines it will really be drawn in (a dash glued to its neighbours can need
+		# one more line than a plain wrap), times the line height.
+		var lines := balanced_lines(font, font_size, words, text_width())
+		if lines.size() * font.get_height(font_size) <= DESC_HEIGHT:
 			return font_size
 	return DESC_FONT_MIN
 

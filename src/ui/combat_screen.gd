@@ -1347,6 +1347,14 @@ func _play_events(events: Array[CombatEvent]) -> void:
 				_vfx.vignette(0.4, 0.7)
 				_hero_view.refresh_statuses()
 				await get_tree().create_timer(0.3).timeout
+			&"relic_spent":
+				# Signed Policy is used up for the rest of the run (patch 0.125).
+				if run_mode and Game.run != null:
+					var spent := StringName(str(event.data.relic))
+					if not Game.run.spent_relics.has(spent):
+						Game.run.spent_relics.append(spent)
+					Fx.spawn_number(_hero_view.sprite_center(), "Signed Policy", Color(1.0, 0.85, 0.4))
+					await get_tree().create_timer(0.35).timeout
 			&"run_effect":
 				# A loan's coins land the moment they happen (0.117), not when
 				# the fight ends: "Cash Advance should always give coins".

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5vpjknkkucro"
-path="res://.godot/imported/relic_high_roller.png-4baa3ed2a4d1baa29d57286800f1b462.ctex"
+uid="uid://cldu1cwktmono"
+path="res://.godot/imported/relic_diamond_buckler.png-4a5fc368dcbaa72d0528d6f444bade48.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_high_roller.png"
-dest_files=["res://.godot/imported/relic_high_roller.png-4baa3ed2a4d1baa29d57286800f1b462.ctex"]
+source_file="res://assets/icons/relic_diamond_buckler.png"
+dest_files=["res://.godot/imported/relic_diamond_buckler.png-4a5fc368dcbaa72d0528d6f444bade48.ctex"]
 
 [params]
 

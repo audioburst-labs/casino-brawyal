@@ -807,84 +807,140 @@
       "prompt": "A game status icon on a fully transparent background: a playing-card spade symbol blazing with green, teal and purple magical flames, hovering like a curse mark. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
     },
     {
-      "id": "relic_gamblers_confidence",
-      "out": "assets/icons/relic_gamblers_confidence.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a polished gold-trimmed maroon shield shaped like a casino chip, a bold spade embossed dead centre, a soft blue barrier glow rimming its edge and two small sparkles. Reads instantly as protection. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_croupiers_vest",
+        "out":  "assets/icons/relic_croupiers_vest.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a burgundy waistcoat (vest) with gold trim and piping, a large gold spade-shaped buckle on the front, small gold buttons, sturdy like light armour"
     },
     {
-      "id": "relic_bounty_list",
-      "out": "assets/icons/relic_bounty_list.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a rolled parchment bounty list with three crossed-out silhouette portraits and a gold coin pinned to it. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_collectors_satchel",
+        "out":  "assets/icons/relic_collectors_satchel.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a plump canvas money bag tied at the neck with a gold cord, a stamped skull mark on the front, gold coins spilling out of the top"
     },
     {
-      "id": "relic_spade_protection",
-      "out": "assets/icons/relic_spade_protection.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a midnight-blue spade symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_spade_buckler",
+        "out":  "assets/icons/relic_spade_buckler.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a small round buckler shield made from an oversized casino chip: cream and navy edge stripes, a large gold spade in the middle of a metal boss, riveted rim"
     },
     {
-      "id": "relic_heart_protection",
-      "out": "assets/icons/relic_heart_protection.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a crimson heart symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_heart_buckler",
+        "out":  "assets/icons/relic_heart_buckler.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a small round buckler shield made from an oversized casino chip: cream and red edge stripes, a large gold heart in the middle of a metal boss, riveted rim"
     },
     {
-      "id": "relic_club_protection",
-      "out": "assets/icons/relic_club_protection.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a dark-green club (clover) symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_club_buckler",
+        "out":  "assets/icons/relic_club_buckler.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a small round buckler shield made from an oversized casino chip: cream and green edge stripes, a large gold club in the middle of a metal boss, riveted rim"
     },
     {
-      "id": "relic_diamond_protection",
-      "out": "assets/icons/relic_diamond_protection.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a small emerald-green shield charm with a sapphire-blue diamond (lozenge) symbol embossed in its center, gold border, soft glow. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_diamond_buckler",
+        "out":  "assets/icons/relic_diamond_buckler.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a small round buckler shield made from an oversized casino chip: cream and blue edge stripes, a large gold diamond in the middle of a metal boss, riveted rim"
     },
     {
-      "id": "relic_winners_aura",
-      "out": "assets/icons/relic_winners_aura.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a golden laurel-wreathed winner's crown radiating a wide teal-green aura, with three small cowering shadow wisps shrinking away beneath it. Reads instantly as intimidation. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_cold_stare_shades",
+        "out":  "assets/icons/relic_cold_stare_shades.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a pair of mirrored sunglasses with gold rims, the dark mirrored lenses reflecting two tiny frightened faces, a confident menacing look"
     },
     {
-      "id": "relic_high_roller",
-      "out": "assets/icons/relic_high_roller.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: three golden slot-machine reels all showing the same glowing spade symbol, with a burst of golden light behind them. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_lucky_sevens_revolver",
+        "out":  "assets/icons/relic_lucky_sevens_revolver.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: an ornate gold revolver pistol seen from the side with the cylinder showing three red lucky sevens, engraved grip with a spade, cartoon prop gun"
     },
     {
-      "id": "relic_dark_emblem",
-      "out": "assets/icons/relic_dark_emblem.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a dark iron medallion split in two halves showing a midnight spade and a deep-green club, joined by a gold rivet, faint purple aura. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_jade_knucklers",
+        "out":  "assets/icons/relic_jade_knucklers.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: heavy gold brass knuckles with a large polished green jade gem cut in the shape of a club and a large polished purple amethyst gem cut in the shape of a spade."
     },
     {
-      "id": "relic_red_emblems",
-      "out": "assets/icons/relic_red_emblems.png",
-      "size": "1024x1024",
-      "transparent": true,
-      "quality": "medium",
-      "prompt": "A square game relic icon on a fully transparent background: a polished gold medallion split in two halves showing a crimson heart and a sapphire diamond, joined by a gold rivet, faint warm aura. Thick dark outlines, chunky cartoon shape, centered, fills the frame. Nothing else."
+        "id":  "relic_ruby_knuckles",
+        "out":  "assets/icons/relic_ruby_knuckles.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: heavy gold brass knuckles with a large red ruby heart gem on one side and a blue-white diamond gem on the other"
+    },
+    {
+        "id":  "relic_rabbits_foot_keychain",
+        "out":  "assets/icons/relic_rabbits_foot_keychain.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a white plush rabbit\u0027s foot on a gold chain ring with a small gold horseshoe charm and a green four-leaf clover"
+    },
+    {
+        "id":  "relic_sleeve_garter",
+        "out":  "assets/icons/relic_sleeve_garter.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a black elastic sleeve garter band with a gold buckle, a single casino chip with a gold spade tucked under the band, as if hiding a trick"
+    },
+    {
+        "id":  "relic_barkeeps_mallet",
+        "out":  "assets/icons/relic_barkeeps_mallet.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a wooden bar mallet with a thick gold ring band around the head and a leather grip, slightly dented, a spark at the head"
+    },
+    {
+        "id":  "relic_cursed_coin",
+        "out":  "assets/icons/relic_cursed_coin.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a large cracked black coin with a glowing gold rim and a thin jagged crack through the middle, wisps of purple curse smoke rising from it"
+    },
+    {
+        "id":  "relic_hip_flask",
+        "out":  "assets/icons/relic_hip_flask.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: an engraved silver hip flask with a gold spade on the front, a gold cap on a little chain, a few drops of green liquid glowing at the neck"
+    },
+    {
+        "id":  "relic_vip_comp_card",
+        "out":  "assets/icons/relic_vip_comp_card.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a sleek black metal membership card with a gold border and a gold spade emblem, a gold ribbon corner, glossy, reads as exclusive VIP"
+    },
+    {
+        "id":  "relic_signed_policy",
+        "out":  "assets/icons/relic_signed_policy.png",
+        "size":  "1024x1024",
+        "transparent":  true,
+        "quality":  "high",
+        "prompt":  "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a folded cream contract paper with fine gold-ink lines of tiny writing, a red-and-gold wax seal with a spade stamped in it, a feather pen resting across it"
     },
     {
       "id": "ace_portrait",

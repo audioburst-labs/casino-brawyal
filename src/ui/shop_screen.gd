@@ -307,7 +307,10 @@ func _offer_tile(key: String, title: String, art: Texture2D, price: int,
 
 ## The mock's "Price" selector: one per item, showing its gold price, stamped
 ## SOLD once bought and greyed when it is out of reach.
-func _price_button(key: String, price: int, on_buy: Callable) -> Button:
+func _price_button(key: String, base_price: int, on_buy: Callable) -> Button:
+	# The VIP Comp Card takes 10% off (patch 0.125); asked again on every refresh,
+	# so buying it discounts the rest of the shelf at once.
+	var price := ShopPricing.price(Game.run, base_price)
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, 34)
 	if _sold.get(key, false):

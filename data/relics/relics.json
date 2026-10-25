@@ -2,152 +2,181 @@
   "type": "relics",
   "items": [
     {
-      "id": "gamblers_confidence",
-      "name": "Gambler's Confidence",
+      "id": "croupiers_vest",
+      "name": "Croupier's Vest",
       "trigger": "combat_started",
       "price_min": 97,
       "price_max": 103,
       "effects": [
-        {
-          "op": "gain_block",
-          "amount": 20
-        }
+        {"op": "gain_block", "amount": 10}
       ],
-      "description": "Start combat with 20 Block."
+      "description": "Start combat: Gain 10 Block."
     },
     {
-      "id": "bounty_list",
-      "name": "Bounty List",
+      "id": "collectors_satchel",
+      "name": "Collector's Satchel",
       "trigger": "enemy_killed",
       "price_min": 97,
       "price_max": 103,
       "effects": [
-        {
-          "op": "gain_coins",
-          "amount": 7
-        }
+        {"op": "gain_coins", "amount": 7}
       ],
-      "description": "At the end of each fight, gain 7 gold for each enemy killed."
+      "description": "At the end of each fight, for each enemy killed, gain 7 gold."
     },
     {
-      "id": "spade_protection",
-      "name": "Spade's Protection",
+      "id": "spade_buckler",
+      "name": "Spade Buckler",
       "trigger": "spin_resolved",
-      "price_min": 117,
-      "price_max": 123,
+      "price_min": 116,
+      "price_max": 124,
       "effects": [
-        {
-          "op": "block_per_chip",
-          "suit": "spade",
-          "amount": 2
-        }
+        {"op": "block_per_chip", "suit": "spade", "amount": 2}
       ],
       "description": "When you get a Spade Chip, gain 2 Block."
     },
     {
-      "id": "heart_protection",
-      "name": "Heart's Protection",
+      "id": "heart_buckler",
+      "name": "Heart Buckler",
       "trigger": "spin_resolved",
-      "price_min": 117,
-      "price_max": 123,
+      "price_min": 116,
+      "price_max": 124,
       "effects": [
-        {
-          "op": "block_per_chip",
-          "suit": "heart",
-          "amount": 2
-        }
+        {"op": "block_per_chip", "suit": "heart", "amount": 2}
       ],
       "description": "When you get a Heart Chip, gain 2 Block."
     },
     {
-      "id": "club_protection",
-      "name": "Club's Protection",
+      "id": "club_buckler",
+      "name": "Club Buckler",
       "trigger": "spin_resolved",
-      "price_min": 117,
-      "price_max": 123,
+      "price_min": 116,
+      "price_max": 124,
       "effects": [
-        {
-          "op": "block_per_chip",
-          "suit": "club",
-          "amount": 2
-        }
+        {"op": "block_per_chip", "suit": "club", "amount": 2}
       ],
       "description": "When you get a Club Chip, gain 2 Block."
     },
     {
-      "id": "diamond_protection",
-      "name": "Diamond's Protection",
+      "id": "diamond_buckler",
+      "name": "Diamond Buckler",
       "trigger": "spin_resolved",
-      "price_min": 117,
-      "price_max": 123,
+      "price_min": 116,
+      "price_max": 124,
       "effects": [
-        {
-          "op": "block_per_chip",
-          "suit": "diamond",
-          "amount": 2
-        }
+        {"op": "block_per_chip", "suit": "diamond", "amount": 2}
       ],
       "description": "When you get a Diamond Chip, gain 2 Block."
     },
     {
-      "id": "winners_aura",
-      "name": "Winner's Aura",
+      "id": "cold_stare_shades",
+      "name": "Cold Stare Shades",
       "trigger": "combat_started",
       "price_min": 97,
       "price_max": 103,
       "effects": [
-        {
-          "op": "apply_status",
-          "status": "weak",
-          "stacks": 2,
-          "target": "all_enemies"
-        }
+        {"op": "apply_status", "status": "weak", "stacks": 2, "target": "all_enemies"}
       ],
       "description": "At the start of combat, apply Weak 2 to all enemies."
     },
     {
-      "id": "high_roller",
-      "name": "High Roller",
+      "id": "lucky_sevens_revolver",
+      "name": "Lucky Sevens Revolver",
       "trigger": "spin_resolved",
-      "price_min": 137,
-      "price_max": 143,
+      "price_min": 136,
+      "price_max": 144,
       "effects": [
-        {
-          "op": "damage",
-          "amount": 20,
-          "times": 1,
-          "target": "random_enemy",
-          "condition": "spin_has_triple"
-        }
+        {"op": "damage", "amount": 10, "times": 1, "target": "random_enemy", "condition": "spin_has_triple"}
       ],
-      "description": "When you roll 3 of the same type, deal 20 to a random enemy."
+      "description": "When you roll 3 of the same type, deal 10 to a random enemy."
     },
     {
-      "id": "dark_emblem",
-      "name": "Dark Emblem",
+      "id": "jade_knucklers",
+      "name": "Jade Knucklers",
       "trigger": "combat_started",
-      "price_min": 157,
-      "price_max": 163,
+      "price_min": 155,
+      "price_max": 165,
       "effects": [],
-      "description": "Attacks that require a Spade or a Club deal 30% more damage."
+      "description": "Attacks that require a Spade or a Club deal 20% more damage."
     },
     {
-      "id": "red_emblems",
-      "name": "Red Emblem",
+      "id": "ruby_knuckles",
+      "name": "Ruby Knuckles",
       "trigger": "combat_started",
-      "price_min": 157,
-      "price_max": 163,
+      "price_min": 155,
+      "price_max": 165,
       "effects": [],
-      "description": "Attacks that require a Heart or a Diamond deal 30% more damage."
+      "description": "Attacks that require a Heart or a Diamond deal 20% more damage."
     },
     {
-      "id": "lucky_foot",
-      "name": "Lucky Foot",
+      "id": "rabbits_foot_keychain",
+      "name": "Rabbit's Foot Keychain",
       "trigger": "combat_started",
-      "price_min": 157,
-      "price_max": 163,
+      "price_min": 155,
+      "price_max": 165,
       "effects": [],
-      "description": "When attacked, there's a 10% chance the damage is reduced to 0."
+      "description": "When attacked, there's a 5% chance the damage is reduced to 0."
+    },
+    {
+      "id": "sleeve_garter",
+      "name": "Sleeve Garter",
+      "trigger": "combat_started",
+      "price_min": 97,
+      "price_max": 103,
+      "effects": [
+        {"op": "add_chips", "suit": "random", "count": 1}
+      ],
+      "description": "Start combat: Earn a random chip."
+    },
+    {
+      "id": "barkeeps_mallet",
+      "name": "Barkeep's Mallet",
+      "trigger": "combat_started",
+      "price_min": 116,
+      "price_max": 124,
+      "effects": [
+        {"op": "apply_status", "status": "strength", "stacks": 1, "target": "self"}
+      ],
+      "description": "Start combat: Gain Strength 1."
+    },
+    {
+      "id": "cursed_coin",
+      "name": "Cursed Coin",
+      "trigger": "combat_started",
+      "price_min": 116,
+      "price_max": 124,
+      "effects": [
+        {"op": "apply_status", "status": "vulnerable", "stacks": 1, "target": "all_enemies"}
+      ],
+      "description": "Start combat: Apply Vulnerable 1 to all enemies."
+    },
+    {
+      "id": "hip_flask",
+      "name": "Hip Flask",
+      "trigger": "combat_won",
+      "price_min": 116,
+      "price_max": 124,
+      "effects": [
+        {"op": "heal", "amount": 6}
+      ],
+      "description": "After each fight: Heal 6."
+    },
+    {
+      "id": "vip_comp_card",
+      "name": "VIP Comp Card",
+      "trigger": "shop_entered",
+      "price_min": 136,
+      "price_max": 144,
+      "effects": [],
+      "description": "Shop prices are 10% lower."
+    },
+    {
+      "id": "signed_policy",
+      "name": "Signed Policy",
+      "trigger": "damage_taken",
+      "price_min": 155,
+      "price_max": 165,
+      "effects": [],
+      "description": "Once per run: When you would die, survive with 20 HP instead."
     }
   ]
 }

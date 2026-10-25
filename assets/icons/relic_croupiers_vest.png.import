@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bsevf7dhfgj30"
-path="res://.godot/imported/relic_club_protection.png-fc94b3cc4b27f833609f4b7513722224.ctex"
+uid="uid://btv52m48h6gqt"
+path="res://.godot/imported/relic_croupiers_vest.png-8acf8644dfd542063d40a0617f5686e0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/relic_club_protection.png"
-dest_files=["res://.godot/imported/relic_club_protection.png-fc94b3cc4b27f833609f4b7513722224.ctex"]
+source_file="res://assets/icons/relic_croupiers_vest.png"
+dest_files=["res://.godot/imported/relic_croupiers_vest.png-8acf8644dfd542063d40a0617f5686e0.ctex"]
 
 [params]
 

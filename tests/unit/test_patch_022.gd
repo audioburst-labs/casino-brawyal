@@ -67,12 +67,14 @@ func test_gold_tier_block_figures_are_previewed_too() -> void:
 
 func test_relic_prices_match_the_sheet() -> void:
 	var expected := {
-		&"gamblers_confidence": [97, 103], &"bounty_list": [97, 103],
-		&"spade_protection": [117, 123], &"heart_protection": [117, 123],
-		&"club_protection": [117, 123], &"diamond_protection": [117, 123],
-		&"winners_aura": [97, 103], &"high_roller": [137, 143],
-		&"dark_emblem": [157, 163], &"red_emblems": [157, 163],
-		&"lucky_foot": [157, 163],
+		&"croupiers_vest": [97, 103], &"collectors_satchel": [97, 103],
+		&"spade_buckler": [116, 124], &"heart_buckler": [116, 124],
+		&"club_buckler": [116, 124], &"diamond_buckler": [116, 124],
+		&"cold_stare_shades": [97, 103], &"lucky_sevens_revolver": [136, 144],
+		&"jade_knucklers": [155, 165], &"ruby_knuckles": [155, 165],
+		&"rabbits_foot_keychain": [155, 165],
+		&"sleeve_garter": [97, 103], &"barkeeps_mallet": [116, 124], &"cursed_coin": [116, 124],
+		&"hip_flask": [116, 124], &"vip_comp_card": [136, 144], &"signed_policy": [155, 165],
 	}
 	for id: StringName in expected:
 		var relic := _db.get_relic(id)
