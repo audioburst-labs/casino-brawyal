@@ -177,6 +177,39 @@
       "price_max": 165,
       "effects": [],
       "description": "Once per run: When you would die, survive with 20 HP instead."
+    },
+    {
+      "id": "heavy_hitters_ring",
+      "name": "Heavy Hitter's Ring",
+      "trigger": "ability_activated",
+      "price_min": 136,
+      "price_max": 144,
+      "effects": [
+        {"op": "add_chips", "suit": "used", "count": 1, "condition": "first_mighty_this_combat"}
+      ],
+      "description": "The first Mighty ability you use each combat earns you one of the used chips."
+    },
+    {
+      "id": "strongmans_belt",
+      "name": "Strongman's Belt",
+      "trigger": "ability_activated",
+      "price_min": 116,
+      "price_max": 124,
+      "effects": [
+        {"op": "gain_block", "amount": 3, "condition": "mighty_ability"}
+      ],
+      "description": "When you use a Mighty ability, gain 3 Block."
+    },
+    {
+      "id": "kaleidoscope_loupe",
+      "name": "Kaleidoscope Loupe",
+      "trigger": "spin_resolved",
+      "price_min": 116,
+      "price_max": 124,
+      "effects": [
+        {"op": "damage", "amount": 2, "times": 1, "target": "random_enemy", "condition": "spin_three_different"}
+      ],
+      "description": "When you roll 3 or more different symbols, deal 2 to a random enemy."
     }
   ]
 }

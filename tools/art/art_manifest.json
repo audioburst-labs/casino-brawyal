@@ -1388,6 +1388,30 @@
       "quality": "high",
       "prompt": "A foreground stage-curtain frame for a 2D casino battle scene, on a fully transparent background: two heavy deep-maroon velvet theatre curtains hanging from the very top edge and gathered with thick braided gold rope tie-backs with long gold tassels, one curtain filling ONLY the leftmost 14% of the image and one filling ONLY the rightmost 14%, painted folds with warm gold rim light. The entire middle 72% of the image is completely empty transparent background, nothing drawn there at all. No floor, no wall, no props, no text.",
       "post": "python tools/art/spread_curtains.py"
+    },
+    {
+      "id": "relic_heavy_hitters_ring",
+      "out": "assets/icons/relic_heavy_hitters_ring.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "high",
+      "prompt": "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a chunky gold signet ring with a big flat face bearing an embossed clenched fist, the band wide and scuffed, two small casino-chip shaped gold studs on the shoulders"
+    },
+    {
+      "id": "relic_strongmans_belt",
+      "out": "assets/icons/relic_strongmans_belt.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "high",
+      "prompt": "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a wide circus strongman champion's leather belt in deep red with gold stitching and a huge brass buckle shaped like a barbell with a star in the middle, slightly curled as if just taken off"
+    },
+    {
+      "id": "relic_kaleidoscope_loupe",
+      "out": "assets/icons/relic_kaleidoscope_loupe.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "high",
+      "prompt": "A single game relic item icon, centered, filling the frame, thick dark outlines, chunky cartoon shape, rich gold highlights with a soft glow. The object: a jeweller's brass eyepiece loupe on a short chain with a round lens that splits light into a small rainbow of red, gold, green and blue beams fanning out of it"
     }
   ]
 }

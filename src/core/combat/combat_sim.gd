@@ -43,6 +43,9 @@ var rng: GameRng
 var pending_rewards: Array[Dictionary] = []  # run-level ops for the run layer
 var passives: Array = []                     # Defs.AbilityDef fired as passives
 var abilities_fired_this_round := 0
+## Mighty abilities used this combat, counted before their relics run, so "the
+## first one" is the moment it reads 1 (Heavy Hitter's Ring).
+var mighty_fired_this_combat := 0
 var last_symbols: Array[StringName] = []
 var last_payout: Dictionary = {}
 
@@ -706,6 +709,8 @@ func _fire_ability(ability: AbilityState) -> void:
 	ability.uses_this_round += 1
 	ability.uses_this_combat += 1
 	abilities_fired_this_round += 1
+	if ability.def.is_mighty():
+		mighty_fired_this_combat += 1
 	if ability.def.exclusive:
 		_exclusive_lock = ability
 	var target := targeting.effective_target(enemies)
@@ -737,6 +742,11 @@ func _fire_ability(ability: AbilityState) -> void:
 			if bonus:
 				EffectInterpreter.execute(ability.def.bonus_effects, self, hero, target)
 		_active_ability = null
+	# Relics that answer "when you use an ability" (0.128). The ability is still
+	# the active one, so "used" chips and Mighty are readable; its sockets clear after.
+	_active_ability = ability
+	_fire_relics(&"ability_activated")
+	_active_ability = null
 	ability.clear()
 
 

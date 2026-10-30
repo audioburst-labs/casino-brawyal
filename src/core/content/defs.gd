@@ -31,6 +31,11 @@ class AbilityDef:
 	var tier: int = 0                         # 0 base, 1 silver, 2 gold (doc "Ability Upgrades")
 
 
+	## Mighty (patch 0.128): an ability that costs 2 or more chips.
+	func is_mighty() -> bool:
+		return cost.size() >= 2
+
+
 class EnemyDef:
 	var id: StringName
 	var name: String

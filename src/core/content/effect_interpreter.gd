@@ -146,6 +146,17 @@ static func _condition_met(effect: Dictionary, sim: CombatSim,
 				if sim.last_payout[suit] >= 3:
 					return true
 			return false
+		"mighty_ability":
+			var resolving := sim.active_ability()
+			return resolving != null and resolving.def.is_mighty()
+		"first_mighty_this_combat":
+			var first := sim.active_ability()
+			return first != null and first.def.is_mighty() and sim.mighty_fired_this_combat == 1
+		"spin_three_different":
+			var kinds := {}
+			for symbol: StringName in sim.last_symbols:
+				kinds[symbol] = true
+			return kinds.size() >= 3
 		"target_weak":
 			return target != null and target.is_alive() and target.has_status(&"weak")
 		"target_not_weak":

@@ -95,6 +95,11 @@
       "id": "earn",
       "name": "Earn",
       "text": "Add chips to your chip pool."
+    },
+    {
+      "id": "mighty",
+      "name": "Mighty",
+      "text": "An ability that costs 2 or more chips."
     }
   ]
 }

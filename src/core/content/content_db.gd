@@ -45,6 +45,9 @@ const KNOWN_CONDITIONS: Array[String] = [
 	# cannot express, so suits became conditions (patch 0.115).
 	"target_weak", "target_not_weak", "any_enemy_weak", "no_enemy_weak",
 	"socket_has_suit", "socket_lacks_suit",
+	# Mighty (0.128): the ability resolving costs 2+ chips; the first such one of
+	# the combat; a spin showing 3+ different symbols.
+	"mighty_ability", "first_mighty_this_combat", "spin_three_different",
 ]
 ## Passive abilities fire at a round start unless they name a trigger.
 const KNOWN_PASSIVE_TRIGGERS: Array[String] = ["", "earn", "mark"]

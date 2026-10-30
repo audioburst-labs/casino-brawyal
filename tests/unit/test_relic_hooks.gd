@@ -75,7 +75,7 @@ func test_every_sheet_relic_exists_with_the_sheets_text() -> void:
 		&"vip_comp_card": "Shop prices are 10% lower.",
 		&"signed_policy": "Once per run: When you would die, survive with 20 HP instead.",
 	}
-	assert_eq(_db.all_relic_ids().size(), 17)
+	assert_eq(_db.all_relic_ids().size(), 20)
 	for id: StringName in sheet:
 		assert_eq(_db.get_relic(id).description, sheet[id], str(id))
 
@@ -178,3 +178,83 @@ func test_the_knuckles_give_twenty_percent_and_the_keychain_five() -> void:
 func test_old_relic_ids_in_a_save_become_the_new_ones() -> void:
 	var back := RunState.from_dict({"relic_ids": ["gamblers_confidence", "lucky_foot", "high_roller"]})
 	assert_eq(back.relic_ids, [&"croupiers_vest", &"rabbits_foot_keychain", &"lucky_sevens_revolver"] as Array[StringName])
+
+
+# ---- Mighty and its three relics (patch 0.128) ----------------------------------------
+
+func _mighty_fight(relics: Array) -> CombatSim:
+	var sim := CombatSim.new(_db, {"hero": "ace", "abilities": ["double_down", "card_sling"],
+		"enemies": ["bouncer"], "seed": 3, "relics": relics})
+	sim.begin_round()
+	sim.tray.discard_all()
+	return sim
+
+
+func _pay(sim: CombatSim, index: int, suits: Array) -> void:
+	for slot in suits.size():
+		sim.tray.add(suits[slot], 1)
+		sim.assign_chip(suits[slot], index, slot)
+
+
+func test_mighty_is_an_ability_that_costs_two_or_more_chips() -> void:
+	assert_true(_db.get_ability(&"double_down").is_mighty(), "two sockets")
+	assert_false(_db.get_ability(&"card_sling").is_mighty(), "one socket")
+	assert_not_null(_db.get_keyword(&"mighty"))
+	assert_eq(_db.get_keyword(&"mighty").text, "An ability that costs 2 or more chips.")
+
+
+func test_the_three_new_relics_say_what_the_designer_wrote() -> void:
+	assert_eq(_db.get_relic(&"heavy_hitters_ring").description,
+		"The first Mighty ability you use each combat earns you one of the used chips.")
+	assert_eq(_db.get_relic(&"strongmans_belt").description,
+		"When you use a Mighty ability, gain 3 Block.")
+	assert_eq(_db.get_relic(&"kaleidoscope_loupe").description,
+		"When you roll 3 or more different symbols, deal 2 to a random enemy.")
+
+
+func test_strongmans_belt_blocks_three_per_mighty_ability_and_ignores_small_ones() -> void:
+	var sim := _mighty_fight(["strongmans_belt"])
+	sim.hero.block = 0
+	_pay(sim, 1, [&"spade"])
+	assert_eq(sim.hero.block, 0, "Card Sling is not Mighty")
+	_pay(sim, 0, [&"heart", &"spade"])
+	assert_eq(sim.hero.block, 3, "Double Down is")
+
+
+func test_heavy_hitters_ring_returns_a_used_chip_for_the_first_mighty_only() -> void:
+	var sim := _mighty_fight(["heavy_hitters_ring"])
+	_pay(sim, 0, [&"heart", &"spade"])
+	assert_eq(sim.tray.total(), 1, "one of the two paid chips came back")
+	sim.tray.discard_all()
+	_pay(sim, 0, [&"heart", &"spade"])
+	assert_eq(sim.tray.total(), 0, "the second Mighty this combat earns nothing")
+
+
+func test_heavy_hitters_ring_ignores_a_cheap_ability_and_waits_for_a_mighty_one() -> void:
+	var sim := _mighty_fight(["heavy_hitters_ring"])
+	_pay(sim, 1, [&"spade"])
+	assert_eq(sim.tray.total(), 0)
+	_pay(sim, 0, [&"heart", &"spade"])
+	assert_eq(sim.tray.total(), 1, "the first MIGHTY one still counts")
+
+
+func test_kaleidoscope_loupe_needs_three_different_symbols() -> void:
+	var sim := _mighty_fight(["kaleidoscope_loupe"])
+	var before := sim.enemies[0].hp
+	sim.last_symbols = [&"spade", &"spade", &"heart"] as Array[StringName]
+	sim._fire_relics(&"spin_resolved")
+	assert_eq(sim.enemies[0].hp, before, "two kinds is not enough")
+	sim.last_symbols = [&"spade", &"club", &"heart"] as Array[StringName]
+	sim._fire_relics(&"spin_resolved")
+	assert_eq(sim.enemies[0].hp, before - 2)
+
+
+func test_kaleidoscope_loupe_counts_kinds_not_reels() -> void:
+	var sim := _mighty_fight(["kaleidoscope_loupe"])
+	var before := sim.enemies[0].hp
+	sim.last_symbols = [&"spade", &"spade", &"heart", &"heart"] as Array[StringName]
+	sim._fire_relics(&"spin_resolved")
+	assert_eq(sim.enemies[0].hp, before, "four reels, two kinds")
+	sim.last_symbols = [&"spade", &"spade", &"heart", &"club"] as Array[StringName]
+	sim._fire_relics(&"spin_resolved")
+	assert_eq(sim.enemies[0].hp, before - 2)

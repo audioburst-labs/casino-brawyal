@@ -927,8 +927,18 @@ func _on_hover_exited() -> void:
 	_hide_keywords()
 
 
+## The keywords a card explains on hover: the ones it lists, plus Mighty for any
+## ability that costs 2 or more chips (0.128), which no card has to list by hand.
+func _hover_keywords() -> Array[StringName]:
+	var ids: Array[StringName] = _state.def.keywords.duplicate()
+	if _state.def.is_mighty() and not ids.has(&"mighty"):
+		ids.append(&"mighty")
+	return ids
+
+
 func _show_keywords() -> void:
-	if (_state.def.keywords.is_empty() and _state.def.per_turn == 0
+	var keyword_ids := _hover_keywords()
+	if (keyword_ids.is_empty() and _state.def.per_turn == 0
 		and _state.def.per_combat == 0) or _keyword_panel != null:
 		return
 	_keyword_panel = PanelContainer.new()
@@ -940,7 +950,7 @@ func _show_keywords() -> void:
 	_keyword_panel.add_child(box)
 	# Keywords only (0.0.111): the card already shows its full description,
 	# so the hover panel no longer repeats it.
-	for keyword_id: StringName in _state.def.keywords:
+	for keyword_id: StringName in keyword_ids:
 		var keyword := Db.content.get_keyword(keyword_id)
 		if keyword == null:
 			continue
