@@ -37,6 +37,9 @@ var tutorial_completed := false
 ## tutorial whether or not it was completed before (for testing and for
 ## players who want it again).
 var play_tutorial := false
+## The opening comic has been shown on this machine (patch 0.129). It plays on a
+## new player's first run only; the Codex replays it.
+var intro_seen := false
 ## Stories already shown on this machine, so a new run leans on the ones the
 ## player has not met (`StoryPicker`).
 var seen_stories: Array[String] = []
@@ -78,6 +81,7 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	settings.combat_speed = SpeedRules.clamp_speed(float(gameplay.get("combat_speed", 1.0)))
 	settings.tutorial_completed = bool(gameplay.get("tutorial_completed", false))
 	settings.play_tutorial = bool(gameplay.get("play_tutorial", false))
+	settings.intro_seen = bool(gameplay.get("intro_seen", false))
 	for id: Variant in (gameplay.get("seen_stories", []) if gameplay.get("seen_stories") is Array else []):
 		settings.seen_stories.append(str(id))
 	for key: String in data:
@@ -97,7 +101,7 @@ func save(path: String = DEFAULT_PATH) -> bool:
 			"music_pct": music_pct, "sfx_pct": sfx_pct},
 		"display": {"mode": "fullscreen" if fullscreen else "windowed", "max_fps": max_fps},
 		"gameplay": {"combat_speed": combat_speed, "tutorial_completed": tutorial_completed,
-			"play_tutorial": play_tutorial,
+			"play_tutorial": play_tutorial, "intro_seen": intro_seen,
 			"seen_stories": seen_stories},
 	}
 	for key: String in _unknown:

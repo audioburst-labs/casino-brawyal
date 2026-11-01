@@ -81,10 +81,25 @@ func _ready() -> void:
 		body.add_child(_entry("%s (%s)" % [status.name, kind],
 			"%s %s" % [status.description, timing]))
 
+	var replay := Button.new()
+	replay.text = "Replay the intro"
+	replay.pressed.connect(_replay_intro)
+	column.add_child(replay)
+
 	var close := Button.new()
 	close.text = "Close"
 	close.pressed.connect(queue_free)
 	column.add_child(close)
+
+
+## The opening comic again, then whatever music was playing comes back.
+func _replay_intro() -> void:
+	var before := Audio.current_music()
+	Game.play_intro(func() -> void:
+		if before != &"":
+			Audio.play_music(before)
+		else:
+			Audio.stop_music())
 
 
 func _heading(text: String) -> Label:

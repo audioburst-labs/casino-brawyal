@@ -11,6 +11,10 @@ func _ready() -> void:
 	HeaderHud.attach(self)
 	_attach_curtain()
 	_restore_window_mode()
+	# CB_DEBUG_INTRO_NOW=1: open the opening comic on top of the menu (CB_DEBUG_INTRO_T
+	# seeks into its timeline), to review the spread.
+	if OS.get_environment("CB_DEBUG_INTRO_NOW") != "":
+		Game.play_intro(func() -> void: pass)
 	# CB_DEBUG_AUTORUN=1: skip the main menu straight into a fresh run
 	# (header/settings/layout-tab review).
 	if OS.get_environment("CB_DEBUG_AUTORUN") != "":

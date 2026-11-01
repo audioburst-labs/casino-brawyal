@@ -3,14 +3,12 @@ extends Node
 ## Encounter #1 auto-starts as combat; #10 is the boss; everything else goes
 ## through the map choice screen.
 
-const ACE_INTRO_VIDEO := "res://assets/video/ace_intro.ogv"
-const BOSS_INTRO_VIDEO := "res://assets/video/moneyman_boss_intro.ogv"
-
 var run: RunState
 var rng: GameRng
 
 ## Run duration, for the header Timer (doc: "does not include the videos").
 var run_elapsed_sec := 0.0
+## True while the opening comic is up: the header timer does not count it.
 var cinematic_playing := false
 
 var _screen_root: Node = null
@@ -111,11 +109,10 @@ func new_run(seed_value: int = -1, skip_cinematic := false) -> void:
 		"seed": run.seed_value, "max_hp": run.max_hp,
 		"abilities": run.ability_ids.map(func(id: StringName) -> String: return String(id)),
 	})
-	if skip_cinematic:
+	if skip_cinematic or not intro_wanted():
 		choose_encounter({"type": &"combat"})
 	else:
-		play_cinematic(ACE_INTRO_VIDEO,
-			func() -> void: choose_encounter({"type": &"combat"}))
+		play_intro(func() -> void: choose_encounter({"type": &"combat"}))
 
 
 var _cached_options: Array[Dictionary] = []
@@ -338,15 +335,37 @@ func _start_combat(option: Dictionary) -> void:
 	_combat_gold = Vector2i(int(config.gold_min), int(config.gold_max))
 	var start := func() -> void:
 		goto_screen("res://scenes/screens/combat_screen.tscn", config)
-	if option.type == &"boss":
-		play_cinematic(BOSS_INTRO_VIDEO, start)
-	else:
-		start.call()
+	start.call()
 
 
-## Fullscreen skippable video overlay. Calls on_done immediately when the
-## clip is missing (HeyGen videos are optional polish) or when running
-## headless (tests/CI can't play video).
+## The opening comic (patch 0.129) plays on a player's first run only; the Codex
+## replays it. `CB_DEBUG_INTRO=1` forces it for a review drive, and the other
+## debug drives stay clean without it.
+func intro_wanted() -> bool:
+	if OS.get_environment("CB_DEBUG_INTRO") != "":
+		return true
+	if OS.get_environment("CB_DEBUG_AUTORUN") != "":
+		return false
+	var settings := Telemetry.settings
+	return settings != null and not settings.intro_seen
+
+
+## Shows the comic over everything, then calls `on_done` (also when it is skipped).
+## Calls it at once when there is no window to show it in, so tests and the bots
+## still walk straight through.
+func play_intro(on_done: Callable) -> void:
+	if DisplayServer.get_name() == "headless":
+		on_done.call()
+		return
+	cinematic_playing = true
+	var comic := IntroComic.new(OS.get_environment("CB_DEBUG_INTRO_T").to_float())
+	comic.finished.connect(func() -> void:
+		cinematic_playing = false
+		SettingsTab.persist("intro_seen", true)
+		on_done.call())
+	get_tree().root.add_child(comic)
+
+
 ## What the run looked like when it ended. Mirrors what `RunBot._result()`
 ## reports, so human play can be compared directly against the 40-run balance
 ## instrument - which is the single most useful thing this telemetry produces.
@@ -376,60 +395,6 @@ func _run_report(outcome: String) -> Dictionary:
 		"reels": run.machine.reels.size() if run.machine != null else 0,
 		"duration_sec": int(run_elapsed_sec),
 	}
-
-
-func play_cinematic(path: String, on_done: Callable) -> void:
-	if not ResourceLoader.exists(path) or DisplayServer.get_name() == "headless":
-		on_done.call()
-		return
-	cinematic_playing = true
-	Audio.stop_music(0.5)                  # the clip carries its own score
-	var layer := CanvasLayer.new()
-	layer.layer = 50
-	var backdrop := ColorRect.new()
-	backdrop.color = Color.BLACK
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(backdrop)
-	var player := VideoStreamPlayer.new()
-	player.stream = load(path)
-	player.expand = true
-	player.autoplay = true
-	player.bus = &"Music"                  # so the Music slider governs it too
-	player.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(player)
-	var finish := func() -> void:
-		if is_instance_valid(layer):
-			layer.queue_free()
-			cinematic_playing = false
-			on_done.call()
-	player.finished.connect(finish)
-	backdrop.gui_input.connect(func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed:
-			finish.call())
-
-	# Explicit Skip and Mute controls (patch 0.11).
-	var controls := HBoxContainer.new()
-	controls.anchor_left = 0.8
-	controls.anchor_top = 0.9
-	controls.anchor_right = 0.98
-	controls.anchor_bottom = 0.98
-	controls.alignment = BoxContainer.ALIGNMENT_END
-	controls.add_theme_constant_override("separation", 12)
-	layer.add_child(controls)
-	var mute := Button.new()
-	mute.text = "🔊"
-	mute.tooltip_text = "Mute"
-	mute.pressed.connect(func() -> void:
-		var muted := player.volume_db > -70.0
-		player.volume_db = -80.0 if muted else 0.0
-		mute.text = "🔇" if muted else "🔊")
-	controls.add_child(mute)
-	var skip := Button.new()
-	skip.text = "Skip ▶"
-	skip.pressed.connect(finish)
-	controls.add_child(skip)
-
-	get_tree().root.add_child(layer)
 
 
 func _pick_story_event() -> StringName:
