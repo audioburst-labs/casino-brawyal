@@ -115,14 +115,14 @@ func test_chip_tricks_does_not_pay_for_an_earn_that_did_not_happen() -> void:
 ## Sheet 0.117: Pocket Rockets is "Deal 6 damage twice" (7, 8 upgraded).
 func test_pocket_rockets_hits_twice() -> void:
 	var def := db.get_ability(&"pocket_rockets")
-	assert_eq(int(def.effects[0].get("amount", 0)), 6)
+	assert_eq(int(def.effects[0].get("amount", 0)), 7)
 	assert_eq(int(def.effects[0].get("times", 1)), 2)
-	assert_eq(int(db.get_ability(&"pocket_rockets", 1).effects[0].get("amount", 0)), 7)
-	assert_eq(int(db.get_ability(&"pocket_rockets", 2).effects[0].get("amount", 0)), 8)
+	assert_eq(int(db.get_ability(&"pocket_rockets", 1).effects[0].get("amount", 0)), 9)
+	assert_eq(int(db.get_ability(&"pocket_rockets", 2).effects[0].get("amount", 0)), 11)
 	var sim := _sim(["bouncer"], ["pocket_rockets"])
 	var before := sim.enemies[0].hp
 	_fire(sim, 0, &"club")
-	assert_eq(before - sim.enemies[0].hp, 12, "two hits of 6")
+	assert_eq(before - sim.enemies[0].hp, 14, "two hits of 7")
 	assert_eq(_types(sim).count(&"damage_dealt"), 2)
 
 
@@ -264,7 +264,7 @@ func test_placement_rejects_a_suit_with_nowhere_to_go() -> void:
 ## damage_per_ability and the card's number walker only knew plain damage.
 func test_the_rivers_figure_is_a_damage_amount_the_card_can_modify() -> void:
 	var river := db.get_ability(&"the_river")
-	assert_eq(AbilityCard.damage_amounts(river), [10] as Array[int])
+	assert_eq(AbilityCard.damage_amounts(river), [12] as Array[int])
 
 
 func test_every_kit_ability_that_deals_damage_prints_a_modifiable_figure() -> void:

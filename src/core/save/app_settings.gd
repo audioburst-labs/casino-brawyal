@@ -43,6 +43,9 @@ var intro_seen := false
 ## Stories already shown on this machine, so a new run leans on the ones the
 ## player has not met (`StoryPicker`).
 var seen_stories: Array[String] = []
+## The paths the last runs were given, oldest first (PathPicker, 1.26): the next
+## runs cannot be given them again.
+var recent_paths: Array[String] = []
 ## Anything a newer build wrote that this one does not know about, kept so a
 ## downgrade does not silently drop the player's other preferences.
 var _unknown: Dictionary = {}
@@ -84,6 +87,8 @@ static func load_settings(path: String = DEFAULT_PATH) -> AppSettings:
 	settings.intro_seen = bool(gameplay.get("intro_seen", false))
 	for id: Variant in (gameplay.get("seen_stories", []) if gameplay.get("seen_stories") is Array else []):
 		settings.seen_stories.append(str(id))
+	for id: Variant in (gameplay.get("recent_paths", []) if gameplay.get("recent_paths") is Array else []):
+		settings.recent_paths.append(str(id))
 	for key: String in data:
 		if not ["v", "telemetry", "audio", "display", "gameplay"].has(key):
 			settings._unknown[key] = data[key]
@@ -102,7 +107,7 @@ func save(path: String = DEFAULT_PATH) -> bool:
 		"display": {"mode": "fullscreen" if fullscreen else "windowed", "max_fps": max_fps},
 		"gameplay": {"combat_speed": combat_speed, "tutorial_completed": tutorial_completed,
 			"play_tutorial": play_tutorial, "intro_seen": intro_seen,
-			"seen_stories": seen_stories},
+			"seen_stories": seen_stories, "recent_paths": recent_paths},
 	}
 	for key: String in _unknown:
 		data[key] = _unknown[key]

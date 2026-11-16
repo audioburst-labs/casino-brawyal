@@ -123,20 +123,20 @@
           "suit": "spade"
         }
       ],
-      "description": "Deal 11 damage. Cash In: Deal 18 instead.",
+      "description": "Deal 9 damage. Cash In: Deal 15 instead.",
       "effects": [
         {
           "op": "cash_in",
           "effects": [
             {
               "op": "damage",
-              "amount": 18
+              "amount": 15
             }
           ],
           "else_effects": [
             {
               "op": "damage",
-              "amount": 11
+              "amount": 9
             }
           ]
         }
@@ -192,22 +192,19 @@
       "name": "HeartSteal",
       "cost": [
         {
-          "suit": "diamond"
-        },
-        {
           "suit": "heart"
         }
       ],
-      "description": "Gain 10 Block. Apply Weak 2 to all enemies.",
+      "description": "Gain 8 Block. Apply Weak 1 to all enemies.",
       "effects": [
         {
           "op": "gain_block",
-          "amount": 10
+          "amount": 8
         },
         {
           "op": "apply_status",
           "status": "weak",
-          "stacks": 2,
+          "stacks": 1,
           "target": "all_enemies"
         }
       ],
@@ -216,11 +213,11 @@
       ],
       "tiers": [
         {
-          "description": "Gain 14 Block. Apply Weak 2 to all enemies.",
+          "description": "Gain 8 Block. Apply Weak 2 to all enemies.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 14
+              "amount": 8
             },
             {
               "op": "apply_status",
@@ -231,16 +228,16 @@
           ]
         },
         {
-          "description": "Gain 16 Block. Apply Weak 2 to all enemies.",
+          "description": "Gain 8 Block. Apply Weak 3 to all enemies.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 16
+              "amount": 8
             },
             {
               "op": "apply_status",
               "status": "weak",
-              "stacks": 2,
+              "stacks": 3,
               "target": "all_enemies"
             }
           ]
@@ -290,11 +287,11 @@
           "suit": "any"
         }
       ],
-      "description": "Deal 6 damage twice. If both are Spades, Earn a Spade.",
+      "description": "Deal 7 damage twice. If both are Spades, Earn a Spade.",
       "effects": [
         {
           "op": "damage",
-          "amount": 6,
+          "amount": 7,
           "times": 2
         }
       ],
@@ -312,21 +309,21 @@
       ],
       "tiers": [
         {
-          "description": "Deal 7 damage twice. If both are Spades, Earn a Spade.",
+          "description": "Deal 9 damage twice. If both are Spades, Earn a Spade.",
           "effects": [
             {
               "op": "damage",
-              "amount": 7,
+              "amount": 9,
               "times": 2
             }
           ]
         },
         {
-          "description": "Deal 8 damage twice. If both are Spades, Earn a Spade.",
+          "description": "Deal 11 damage twice. If both are Spades, Earn a Spade.",
           "effects": [
             {
               "op": "damage",
-              "amount": 8,
+              "amount": 11,
               "times": 2
             }
           ]
@@ -341,7 +338,7 @@
           "suit": "heart"
         }
       ],
-      "description": "Apply Weak 2. Gain Rage 1 for each Weak on an enemy.",
+      "description": "Apply Weak 2. Gain Strength 1 for each Weak on an enemy.",
       "effects": [
         {
           "op": "apply_status",
@@ -350,18 +347,18 @@
           "target": "enemy"
         },
         {
-          "op": "rage_per_weak",
+          "op": "strength_per_weak",
           "amount": 1
         }
       ],
       "keywords": [
         "weak",
-        "rage"
+        "strength"
       ],
       "per_turn": 1,
       "tiers": [
         {
-          "description": "Apply Weak 3. Gain Rage 1 for each Weak on an enemy.",
+          "description": "Apply Weak 3. Gain Strength 1 for each Weak on an enemy.",
           "effects": [
             {
               "op": "apply_status",
@@ -370,13 +367,13 @@
               "target": "enemy"
             },
             {
-              "op": "rage_per_weak",
+              "op": "strength_per_weak",
               "amount": 1
             }
           ]
         },
         {
-          "description": "Apply Weak 4. Gain Rage 1 for each Weak on an enemy.",
+          "description": "Apply Weak 4. Gain Strength 1 for each Weak on an enemy.",
           "effects": [
             {
               "op": "apply_status",
@@ -385,7 +382,7 @@
               "target": "enemy"
             },
             {
-              "op": "rage_per_weak",
+              "op": "strength_per_weak",
               "amount": 1
             }
           ]
@@ -446,14 +443,14 @@
           "suit": "club"
         }
       ],
-      "description": "Cash In: Deal 24 damage.",
+      "description": "Cash In: Deal 28 damage.",
       "effects": [
         {
           "op": "cash_in",
           "effects": [
             {
               "op": "damage",
-              "amount": 24
+              "amount": 28
             }
           ]
         }
@@ -463,28 +460,28 @@
       ],
       "tiers": [
         {
-          "description": "Cash In: Deal 28 damage.",
+          "description": "Cash In: Deal 31 damage.",
           "effects": [
             {
               "op": "cash_in",
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 28
+                  "amount": 31
                 }
               ]
             }
           ]
         },
         {
-          "description": "Cash In: Deal 32 damage.",
+          "description": "Cash In: Deal 34 damage.",
           "effects": [
             {
               "op": "cash_in",
               "effects": [
                 {
                   "op": "damage",
-                  "amount": 32
+                  "amount": 34
                 }
               ]
             }
@@ -497,13 +494,10 @@
       "name": "Dazzling Personality",
       "cost": [
         {
-          "suit": "heart"
-        },
-        {
           "suit": "club"
         }
       ],
-      "description": "Mark and apply Weak 2 to all enemies.",
+      "description": "Mark and apply Weak 1 to all enemies.",
       "effects": [
         {
           "op": "apply_status",
@@ -514,7 +508,7 @@
         {
           "op": "apply_status",
           "status": "weak",
-          "stacks": 2,
+          "stacks": 1,
           "target": "all_enemies"
         }
       ],
@@ -523,6 +517,23 @@
         "weak"
       ],
       "tiers": [
+        {
+          "description": "Mark and apply Weak 2 to all enemies.",
+          "effects": [
+            {
+              "op": "apply_status",
+              "status": "mark",
+              "stacks": 1,
+              "target": "all_enemies"
+            },
+            {
+              "op": "apply_status",
+              "status": "weak",
+              "stacks": 2,
+              "target": "all_enemies"
+            }
+          ]
+        },
         {
           "description": "Mark and apply Weak 3 to all enemies.",
           "effects": [
@@ -536,23 +547,6 @@
               "op": "apply_status",
               "status": "weak",
               "stacks": 3,
-              "target": "all_enemies"
-            }
-          ]
-        },
-        {
-          "description": "Mark and apply Weak 4 to all enemies.",
-          "effects": [
-            {
-              "op": "apply_status",
-              "status": "mark",
-              "stacks": 1,
-              "target": "all_enemies"
-            },
-            {
-              "op": "apply_status",
-              "status": "weak",
-              "stacks": 4,
               "target": "all_enemies"
             }
           ]
@@ -570,10 +564,10 @@
           "suit": "diamond"
         }
       ],
-      "description": "At the start of your turn, gain 2 Block per enemy.",
+      "description": "At the start of your turn, gain 2 Block per incoming hit this turn.",
       "effects": [
         {
-          "op": "block_per_enemy",
+          "op": "block_per_incoming_hit",
           "amount": 2
         }
       ],
@@ -584,19 +578,19 @@
       "passive": true,
       "tiers": [
         {
-          "description": "At the start of your turn, gain 3 Block per enemy.",
+          "description": "At the start of your turn, gain 3 Block per incoming hit this turn.",
           "effects": [
             {
-              "op": "block_per_enemy",
+              "op": "block_per_incoming_hit",
               "amount": 3
             }
           ]
         },
         {
-          "description": "At the start of your turn, gain 4 Block per enemy.",
+          "description": "At the start of your turn, gain 4 Block per incoming hit this turn.",
           "effects": [
             {
-              "op": "block_per_enemy",
+              "op": "block_per_incoming_hit",
               "amount": 4
             }
           ]
@@ -746,11 +740,11 @@
           "suit": "club"
         }
       ],
-      "description": "Deal 10. Go Again.",
+      "description": "Deal 20. Go Again.",
       "effects": [
         {
           "op": "damage",
-          "amount": 10
+          "amount": 20
         },
         {
           "op": "respin_reel"
@@ -761,11 +755,11 @@
       ],
       "tiers": [
         {
-          "description": "Deal 14. Go Again.",
+          "description": "Deal 24. Go Again.",
           "effects": [
             {
               "op": "damage",
-              "amount": 14
+              "amount": 24
             },
             {
               "op": "respin_reel"
@@ -773,11 +767,11 @@
           ]
         },
         {
-          "description": "Deal 18. Go Again.",
+          "description": "Deal 28. Go Again.",
           "effects": [
             {
               "op": "damage",
-              "amount": 18
+              "amount": 28
             },
             {
               "op": "respin_reel"
@@ -803,32 +797,32 @@
           "suit": "spade"
         }
       ],
-      "description": "Deal 20 to all enemies.",
+      "description": "Deal 25 to all enemies.",
       "effects": [
         {
           "op": "damage",
-          "amount": 20,
+          "amount": 25,
           "target": "all_enemies"
         }
       ],
       "keywords": [],
       "tiers": [
         {
-          "description": "Deal 25 to all enemies.",
-          "effects": [
-            {
-              "op": "damage",
-              "amount": 25,
-              "target": "all_enemies"
-            }
-          ]
-        },
-        {
           "description": "Deal 30 to all enemies.",
           "effects": [
             {
               "op": "damage",
               "amount": 30,
+              "target": "all_enemies"
+            }
+          ]
+        },
+        {
+          "description": "Deal 35 to all enemies.",
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 35,
               "target": "all_enemies"
             }
           ]
@@ -843,11 +837,11 @@
           "suit": "any"
         }
       ],
-      "description": "Passive: When you Earn, gain 1 Block. Active: Earn a random chip.",
+      "description": "Passive: When you Earn, gain 2 Block. Active: Earn a random chip.",
       "effects": [
         {
           "op": "gain_block",
-          "amount": 1
+          "amount": 2
         }
       ],
       "keywords": [
@@ -865,20 +859,20 @@
       ],
       "tiers": [
         {
-          "description": "Passive: When you Earn, gain 2 Block. Active: Earn a random chip.",
-          "effects": [
-            {
-              "op": "gain_block",
-              "amount": 2
-            }
-          ]
-        },
-        {
           "description": "Passive: When you Earn, gain 3 Block. Active: Earn a random chip.",
           "effects": [
             {
               "op": "gain_block",
               "amount": 3
+            }
+          ]
+        },
+        {
+          "description": "Passive: When you Earn, gain 4 Block. Active: Earn a random chip.",
+          "effects": [
+            {
+              "op": "gain_block",
+              "amount": 4
             }
           ]
         }
@@ -950,29 +944,29 @@
           "suit": "club"
         }
       ],
-      "description": "Deal 10. For each expended ability, Repeat 1.",
+      "description": "Deal 12. For each expended ability, Repeat 1.",
       "effects": [
         {
           "op": "damage_per_ability",
-          "amount": 10
+          "amount": 12
         }
       ],
       "tiers": [
-        {
-          "description": "Deal 12. For each expended ability, Repeat 1.",
-          "effects": [
-            {
-              "op": "damage_per_ability",
-              "amount": 12
-            }
-          ]
-        },
         {
           "description": "Deal 14. For each expended ability, Repeat 1.",
           "effects": [
             {
               "op": "damage_per_ability",
               "amount": 14
+            }
+          ]
+        },
+        {
+          "description": "Deal 16. For each expended ability, Repeat 1.",
+          "effects": [
+            {
+              "op": "damage_per_ability",
+              "amount": 16
             }
           ]
         }
@@ -1056,30 +1050,30 @@
           "suit": "any"
         }
       ],
-      "description": "Gain 30 Block.",
+      "description": "Gain 20 Block.",
       "effects": [
         {
           "op": "gain_block",
-          "amount": 30
+          "amount": 20
         }
       ],
       "per_combat": 1,
       "tiers": [
         {
-          "description": "Gain 35 Block.",
+          "description": "Gain 25 Block.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 35
+              "amount": 25
             }
           ]
         },
         {
-          "description": "Gain 40 Block.",
+          "description": "Gain 30 Block.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 40
+              "amount": 30
             }
           ]
         }
@@ -1201,11 +1195,11 @@
           "suit": "any"
         }
       ],
-      "description": "Deal 5 to all enemies. If Club - 10 instead. If Heart - Apply Weak 1.",
+      "description": "Deal 7 to all enemies. If Club - 10 instead. If Heart - Apply Weak 2.",
       "effects": [
         {
           "op": "damage",
-          "amount": 5,
+          "amount": 7,
           "target": "all_enemies",
           "condition": "socket_lacks_suit",
           "condition_suit": "club"
@@ -1220,7 +1214,7 @@
         {
           "op": "apply_status",
           "status": "weak",
-          "stacks": 1,
+          "stacks": 2,
           "target": "all_enemies",
           "condition": "socket_has_suit",
           "condition_suit": "heart"
@@ -1231,11 +1225,11 @@
       ],
       "tiers": [
         {
-          "description": "Deal 6 to all enemies. If Club - 12 instead. If Heart - Apply Weak 2.",
+          "description": "Deal 8 to all enemies. If Club - 12 instead. If Heart - Apply Weak 3.",
           "effects": [
             {
               "op": "damage",
-              "amount": 6,
+              "amount": 8,
               "target": "all_enemies",
               "condition": "socket_lacks_suit",
               "condition_suit": "club"
@@ -1250,7 +1244,7 @@
             {
               "op": "apply_status",
               "status": "weak",
-              "stacks": 2,
+              "stacks": 3,
               "target": "all_enemies",
               "condition": "socket_has_suit",
               "condition_suit": "heart"
@@ -1258,11 +1252,11 @@
           ]
         },
         {
-          "description": "Deal 7 to all enemies. If Club - 14 instead. If Heart - Apply Weak 3.",
+          "description": "Deal 9 to all enemies. If Club - 14 instead. If Heart - Apply Weak 4.",
           "effects": [
             {
               "op": "damage",
-              "amount": 7,
+              "amount": 9,
               "target": "all_enemies",
               "condition": "socket_lacks_suit",
               "condition_suit": "club"
@@ -1277,7 +1271,7 @@
             {
               "op": "apply_status",
               "status": "weak",
-              "stacks": 3,
+              "stacks": 4,
               "target": "all_enemies",
               "condition": "socket_has_suit",
               "condition_suit": "heart"
@@ -1294,16 +1288,16 @@
           "suit": "heart"
         }
       ],
-      "description": "Deal 8. If the target is Weak, deal 12 instead.",
+      "description": "Deal 10. If the target is Weak, deal 14 instead.",
       "effects": [
         {
           "op": "damage",
-          "amount": 8,
+          "amount": 10,
           "condition": "target_not_weak"
         },
         {
           "op": "damage",
-          "amount": 12,
+          "amount": 14,
           "condition": "target_weak"
         }
       ],
@@ -1312,31 +1306,31 @@
       ],
       "tiers": [
         {
-          "description": "Deal 9. If the target is Weak, deal 14 instead.",
+          "description": "Deal 12. If the target is Weak, deal 16 instead.",
           "effects": [
             {
               "op": "damage",
-              "amount": 9,
-              "condition": "target_not_weak"
-            },
-            {
-              "op": "damage",
-              "amount": 14,
-              "condition": "target_weak"
-            }
-          ]
-        },
-        {
-          "description": "Deal 10. If the target is Weak, deal 16 instead.",
-          "effects": [
-            {
-              "op": "damage",
-              "amount": 10,
+              "amount": 12,
               "condition": "target_not_weak"
             },
             {
               "op": "damage",
               "amount": 16,
+              "condition": "target_weak"
+            }
+          ]
+        },
+        {
+          "description": "Deal 14. If the target is Weak, deal 18 instead.",
+          "effects": [
+            {
+              "op": "damage",
+              "amount": 14,
+              "condition": "target_not_weak"
+            },
+            {
+              "op": "damage",
+              "amount": 18,
               "condition": "target_weak"
             }
           ]
@@ -1351,16 +1345,16 @@
           "suit": "diamond"
         }
       ],
-      "description": "Gain 6 Block. If a target is Weak, gain 10 instead.",
+      "description": "Gain 9 Block. If a target is Weak, gain 12 instead.",
       "effects": [
         {
           "op": "gain_block",
-          "amount": 6,
+          "amount": 9,
           "condition": "no_enemy_weak"
         },
         {
           "op": "gain_block",
-          "amount": 10,
+          "amount": 12,
           "condition": "any_enemy_weak"
         }
       ],
@@ -1369,31 +1363,31 @@
       ],
       "tiers": [
         {
-          "description": "Gain 8 Block. If a target is Weak, gain 12 instead.",
+          "description": "Gain 11 Block. If a target is Weak, gain 14 instead.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 8,
+              "amount": 11,
               "condition": "no_enemy_weak"
             },
             {
               "op": "gain_block",
-              "amount": 12,
+              "amount": 14,
               "condition": "any_enemy_weak"
             }
           ]
         },
         {
-          "description": "Gain 8 Block. If a target is Weak, gain 12 instead.",
+          "description": "Gain 13 Block. If a target is Weak, gain 16 instead.",
           "effects": [
             {
               "op": "gain_block",
-              "amount": 8,
+              "amount": 13,
               "condition": "no_enemy_weak"
             },
             {
               "op": "gain_block",
-              "amount": 12,
+              "amount": 16,
               "condition": "any_enemy_weak"
             }
           ]

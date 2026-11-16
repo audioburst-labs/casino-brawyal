@@ -4,9 +4,9 @@
     {
       "id": "pocket_change",
       "title": "Pocket Change",
-      "turns": 2,
+      "turns": 3,
       "reward_text": "Gain 1 random Chip.",
-      "penalty_text": "In 2 turns, take 10 damage.",
+      "penalty_text": "In 3 turns, take 10 damage.",
       "reward": [
         {
           "op": "add_chips",
@@ -22,31 +22,11 @@
       ]
     },
     {
-      "id": "quick_patch",
-      "title": "Quick Patch",
-      "turns": 2,
-      "reward_text": "Heal 10.",
-      "penalty_text": "In 2 turns, take 20 damage.",
-      "reward": [
-        {
-          "op": "heal",
-          "amount": 10
-        }
-      ],
-      "penalty": [
-        {
-          "op": "lose_hp",
-          "amount": 20
-        }
-      ],
-      "requires": "wounded"
-    },
-    {
       "id": "double_stack",
       "title": "Double Stack",
-      "turns": 4,
+      "turns": 3,
       "reward_text": "Gain 2 random Chips.",
-      "penalty_text": "In 4 turns, take 50 damage.",
+      "penalty_text": "In 3 turns, take 20 damage.",
       "reward": [
         {
           "op": "add_chips",
@@ -57,16 +37,36 @@
       "penalty": [
         {
           "op": "lose_hp",
-          "amount": 50
+          "amount": 20
         }
       ]
     },
     {
-      "id": "house_doctor",
-      "title": "House Doctor",
+      "id": "triple_stack",
+      "title": "Triple Stack",
+      "turns": 3,
+      "reward_text": "Gain 3 random Chips.",
+      "penalty_text": "In 3 turns, take 30 damage.",
+      "reward": [
+        {
+          "op": "add_chips",
+          "suit": "random",
+          "count": 3
+        }
+      ],
+      "penalty": [
+        {
+          "op": "lose_hp",
+          "amount": 30
+        }
+      ]
+    },
+    {
+      "id": "quick_patch",
+      "title": "Quick Patch",
       "turns": 3,
       "reward_text": "Heal 10.",
-      "penalty_text": "In 3 turns, take 30 damage.",
+      "penalty_text": "In 3 turns, take 15 damage.",
       "reward": [
         {
           "op": "heal",
@@ -76,27 +76,72 @@
       "penalty": [
         {
           "op": "lose_hp",
-          "amount": 30
+          "amount": 15
+        }
+      ]
+    },
+    {
+      "id": "muscle_loan",
+      "title": "Muscle Loan",
+      "turns": 3,
+      "reward_text": "Gain 3 Strength.",
+      "penalty_text": "In 3 turns, lose 5 Strength.",
+      "reward": [
+        {
+          "op": "apply_status",
+          "status": "strength",
+          "stacks": 3,
+          "target": "self"
         }
       ],
-      "requires": "wounded"
+      "penalty": [
+        {
+          "op": "apply_status",
+          "status": "strength",
+          "stacks": -5,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "plating_loan",
+      "title": "Plating Loan",
+      "turns": 3,
+      "reward_text": "Gain 2 Sturdy.",
+      "penalty_text": "In 3 turns, lose 4 Sturdy.",
+      "reward": [
+        {
+          "op": "apply_status",
+          "status": "sturdy",
+          "stacks": 2,
+          "target": "self"
+        }
+      ],
+      "penalty": [
+        {
+          "op": "apply_status",
+          "status": "sturdy",
+          "stacks": -4,
+          "target": "self"
+        }
+      ]
     },
     {
       "id": "cash_advance",
       "title": "Cash Advance",
-      "turns": 2,
-      "reward_text": "Gain 20 Coins.",
-      "penalty_text": "In 2 turns, lose 50 Coins.",
+      "turns": 3,
+      "reward_text": "Gain {coins} Coins.",
+      "penalty_text": "In 3 turns, lose {coins} Coins.",
       "reward": [
         {
           "op": "gain_coins",
-          "amount": 20
+          "per_encounter": 3
         }
       ],
       "penalty": [
         {
           "op": "lose_coins",
-          "amount": 50
+          "per_encounter": 5
         }
       ]
     }

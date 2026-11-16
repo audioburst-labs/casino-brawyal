@@ -1077,6 +1077,14 @@
       "prompt": "A game status icon on a fully transparent background: a pale blue-grey cartoon shield that is chipped and crumbling at its edges, with a bold downward-pointing arrow embossed on its face, clearly reading as 'weakened defense'. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
     },
     {
+      "id": "icon_sturdy",
+      "out": "assets/icons/status_sturdy.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "quality": "medium",
+      "prompt": "A game status icon on a fully transparent background: a gleaming, solid, intact steel-blue cartoon shield with a thick gold rim studded with round rivets, completely undamaged, with a bold upward-pointing arrow embossed on its face, clearly reading as 'strengthened defense', the opposite of the chipped Frail shield. Thick dark outline, chunky readable shape at tiny sizes, centered, fills most of the frame. Nothing else."
+    },
+    {
       "id": "cabinet_window",
       "out": "assets/props/cabinet_window.png",
       "size": "1536x1024",

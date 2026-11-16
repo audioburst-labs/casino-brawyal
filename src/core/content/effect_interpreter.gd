@@ -54,18 +54,24 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 				source.damage_bonus_pct += float(effect.get("pct", 0.0))
 				sim.emit_event(&"damage_bonus",
 					{"actor": source.id, "pct": source.damage_bonus_pct})
-			"rage_per_weak":
-				# Slow Playing: "Gain Rage 1 for each Weak on an enemy" - counted in
-				# STACKS, so Weak 2 on one enemy is worth Weak 1 on two.
+			"strength_per_weak":
+				# Slow Playing: "Gain Strength 1 for each Weak on an enemy" (sheet 1.26,
+				# it was Rage before) - counted in STACKS, so Weak 2 on one enemy is
+				# worth Weak 1 on two. Strength is permanent, unlike Rage.
 				var stacks := 0
 				for enemy in sim.enemies:
 					if enemy.is_alive():
 						stacks += enemy.status_stacks(&"weak")
-				var rage := stacks * maxi(1, int(effect.get("amount", 1)))
-				if rage > 0:
-					source.apply_status(&"rage", rage)
+				var strength := stacks * maxi(1, int(effect.get("amount", 1)))
+				if strength > 0:
+					source.apply_status(&"strength", strength)
 					sim.emit_event(&"status_applied",
-						{"actor": source.id, "status": &"rage", "stacks": rage})
+						{"actor": source.id, "status": &"strength", "stacks": strength})
+			"block_per_incoming_hit":
+				# Face Reader (sheet 1.26): every hit the enemies have announced for
+				# this turn, from every living enemy that is not stunned.
+				_grant_block_per_unit(int(effect.get("amount", 0)),
+					sim.incoming_hit_count(), sim, source)
 			"heal":
 				var healed := int(effect.get("amount", 0))
 				source.heal(healed)
@@ -120,8 +126,13 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 					# the fight, a lost fight paid nothing and a won one paid
 					# late. RunEffects clamps lose_coins at zero, which is the
 					# sheet's "taking as many as it can".
-					sim.run_ops.append(effect)
-					sim.emit_event(&"run_effect", effect.duplicate())
+					var landing := effect.duplicate()
+					if landing.has("per_encounter"):
+						# "[Encounter Value]" (sheet 1.26): the fight being played.
+						landing["amount"] = int(landing["per_encounter"]) * sim.encounter_value
+						landing.erase("per_encounter")
+					sim.run_ops.append(landing)
+					sim.emit_event(&"run_effect", landing.duplicate())
 				else:
 					sim.pending_rewards.append(effect)
 			var unknown:

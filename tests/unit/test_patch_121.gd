@@ -107,21 +107,23 @@ func test_rage_lands_on_every_hit_of_a_multi_hit_attack() -> void:
 	sim.hero.apply_status(&"rage", 2)
 	var enemy := sim.enemies[0]
 	var hp := enemy.hp
-	_fire(sim, 0)          # Pocket Rockets: 6 twice, +2 each
-	assert_eq(enemy.hp, hp - 16)
+	_fire(sim, 0)          # Pocket Rockets: 7 twice, +2 each
+	assert_eq(enemy.hp, hp - 18)
 	assert_false(sim.hero.has_status(&"rage"))
 
 
 func test_slow_playing_then_an_attack_pays_out() -> void:
+	# Sheet 1.26: Slow Playing grants Strength, not Rage, so it is permanent.
 	var sim := _sim(["bouncer"], ["slow_playing", "card_sling"])
 	_fire(sim, 0, &"heart")
-	var rage := sim.hero.status_stacks(&"rage")
-	assert_gt(rage, 0, "Slow Playing gave Rage for the Weak it applied")
+	var strength := sim.hero.status_stacks(&"strength")
+	assert_gt(strength, 0, "Slow Playing gave Strength for the Weak it applied")
+	assert_false(sim.hero.has_status(&"rage"), "and no Rage")
 	var enemy := sim.enemies[0]
 	var hp := enemy.hp
 	_fire(sim, 1)
 	assert_lt(enemy.hp, hp - 6, "Card Sling hit harder than its printed 6")
-	assert_false(sim.hero.has_status(&"rage"))
+	assert_eq(sim.hero.status_stacks(&"strength"), strength, "and the Strength stays")
 
 
 func test_the_card_preview_includes_rage() -> void:

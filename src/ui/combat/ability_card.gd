@@ -693,7 +693,7 @@ static func block_amounts(def: Defs.AbilityDef) -> Array[int]:
 static func _collect_block(effects: Array, into: Array[int]) -> void:
 	for effect: Dictionary in effects:
 		match str(effect.get("op", "")):
-			"gain_block", "block_per_enemy", "block_per_chip":
+			"gain_block", "block_per_enemy", "block_per_chip", "block_per_incoming_hit":
 				var amount := int(effect.get("amount", 0))
 				if amount > 0 and not into.has(amount):
 					into.append(amount)

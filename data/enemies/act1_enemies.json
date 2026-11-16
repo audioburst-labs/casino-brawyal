@@ -4,8 +4,8 @@
     {
       "id": "bouncer",
       "name": "Bouncer",
-      "hp_min": 56,
-      "hp_max": 60,
+      "hp_min": 53,
+      "hp_max": 59,
       "brain": {
         "type": "pair_then",
         "pair": [
@@ -56,7 +56,7 @@
       "id": "server",
       "name": "Server",
       "hp_min": 25,
-      "hp_max": 30,
+      "hp_max": 31,
       "brain": {
         "type": "weighted",
         "weights": {
@@ -93,8 +93,8 @@
         },
         "glass_barrage": {
           "intent": {
-            "instances": 2,
-            "per_hit": 3,
+            "instances": 1,
+            "per_hit": 8,
             "debuffs": []
           }
         }
@@ -143,7 +143,7 @@
       "id": "chip_goblin",
       "name": "Chip Goblin",
       "hp_min": 19,
-      "hp_max": 22,
+      "hp_max": 23,
       "passive": {
         "type": "break",
         "mode": "death"
@@ -189,8 +189,8 @@
     {
       "id": "dealer",
       "name": "Dealer",
-      "hp_min": 51,
-      "hp_max": 55,
+      "hp_min": 43,
+      "hp_max": 49,
       "brain": {
         "type": "sequence",
         "loop": true,
@@ -204,7 +204,7 @@
         "deal_low": {
           "intent": {
             "instances": 2,
-            "per_hit": 3,
+            "per_hit": 2,
             "debuffs": [],
             "self_status": [
               {
@@ -217,7 +217,7 @@
         "deal_high": {
           "intent": {
             "instances": 2,
-            "per_hit": 3,
+            "per_hit": 2,
             "debuffs": [],
             "self_status": [
               {
@@ -230,7 +230,7 @@
         "deal_fast": {
           "intent": {
             "instances": 2,
-            "per_hit": 3,
+            "per_hit": 2,
             "debuffs": [],
             "self_status": [
               {
@@ -249,8 +249,8 @@
     {
       "id": "manager",
       "name": "Manager",
-      "hp_min": 61,
-      "hp_max": 65,
+      "hp_min": 39,
+      "hp_max": 45,
       "brain": {
         "type": "intro_loop",
         "intro": [
@@ -393,7 +393,7 @@
             "instances": 1,
             "per_hit": 14,
             "debuffs": [],
-            "gift_chips": 1
+            "absorb": true
           }
         },
         "harden": {
@@ -401,8 +401,8 @@
             "instances": 0,
             "per_hit": 0,
             "debuffs": [],
-            "self_block": 10,
-            "absorb": true
+            "self_block": 15,
+            "gift_chips": 1
           }
         },
         "crush": {

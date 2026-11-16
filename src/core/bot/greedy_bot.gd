@@ -123,7 +123,7 @@ static func _score_effects(effects: Array[Dictionary], living_enemies: int) -> f
 				value += 4.0
 			"gain_block":
 				value += int(effect.get("amount", 0)) * 0.4
-			"block_per_enemy":
+			"block_per_enemy", "block_per_incoming_hit":
 				value += int(effect.get("amount", 0)) * living_enemies * 0.4
 			"apply_status":
 				var stacks := int(effect.get("stacks", 1))

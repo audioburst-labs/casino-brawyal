@@ -118,11 +118,11 @@ func test_server_spilled_drink_now_applies_frail() -> void:
 
 # ---- the sheet's other number changes ----
 
-func test_bouncer_health_is_fifty_to_fifty_five() -> void:
-	# 50-60 in the 0.120 sheet, 50-55 in the 0.121 pull (patch 0.113).
+func test_bouncer_health_is_fifty_three_to_fifty_nine() -> void:
+	# 56-60 in sheet v0.122, 53-59 in sheet 1.26.
 	var bouncer := _db.get_enemy(&"bouncer")
-	assert_eq(bouncer.hp_min, 56)
-	assert_eq(bouncer.hp_max, 60)
+	assert_eq(bouncer.hp_min, 53)
+	assert_eq(bouncer.hp_max, 59)
 
 
 func test_boss_summons_one_bouncer_and_grows_stronger_when_he_heals() -> void:

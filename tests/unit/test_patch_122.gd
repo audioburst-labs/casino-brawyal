@@ -99,7 +99,7 @@ func test_on_a_roll_reads_as_the_sheet_does() -> void:
 
 func test_the_river_reads_as_the_sheet_does() -> void:
 	assert_eq(db.get_ability(&"the_river", 0).description,
-		"Deal 10. For each expended ability, Repeat 1.")
+		"Deal 12. For each expended ability, Repeat 1.")
 
 
 # ---- Telemetry spool: draining a backlog by offset ---------------------------------

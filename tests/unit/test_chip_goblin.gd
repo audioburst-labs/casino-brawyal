@@ -22,7 +22,7 @@ func _sim(enemies: Array) -> CombatSim:
 func test_the_goblin_matches_the_sheet() -> void:
 	var def := _db.get_enemy(&"chip_goblin")
 	assert_eq(def.name, "Chip Goblin")
-	assert_eq([def.hp_min, def.hp_max], [19, 22])
+	assert_eq([def.hp_min, def.hp_max], [19, 23])
 	var flurry: Dictionary = def.moves["claw_flurry"].intent
 	assert_eq([int(flurry.instances), int(flurry.per_hit)], [4, 1], "Deal 1X4")
 	assert_eq(int(flurry.debuffs[0].stacks), 1, "Apply Weak 1")

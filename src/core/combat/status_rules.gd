@@ -38,13 +38,15 @@ static func _round_half_up(value: float) -> int:
 ## Damage a hit deals after the ATTACKER's modifiers.
 ## `weak_pct` can be overridden (High Stakes relic).
 static func attack_damage(base: int, attacker: CombatActor, weak_pct := WEAK_PCT) -> int:
-	var damage := base + attacker.status_stacks(&"strength")
+	# Strength can be NEGATIVE (the Strength loan, sheet 1.26: "negative Strength
+	# reduces damage by that amount"), but never takes a hit below nothing.
+	var damage := maxi(0, base + attacker.status_stacks(&"strength"))
 	# All In (sheet v0.122): a flat percentage on everything the hero throws
 	# this turn. Applied with Strength, before Weak, so a Weak attacker still
 	# loses its quarter of the boosted figure rather than of the base.
 	if attacker.damage_bonus_pct > 0.0:
 		damage = _round_half_up(damage * (1.0 + attacker.damage_bonus_pct))
-	if attacker.has_status(&"weak"):
+	if attacker.has_status(&"weak") and damage > 0:
 		damage = maxi(1, _round_half_up(damage * (1.0 - weak_pct)))
 	return damage
 
@@ -58,8 +60,14 @@ static func damage_taken(incoming: int, target: CombatActor, vulnerable_pct := V
 	return incoming
 
 
-## Block an ability grants after the RECIPIENT's modifiers (Frail).
+## Block an ability grants after the RECIPIENT's modifiers: Sturdy first (a flat
+## "Increase Block gained by X", which may be negative), then Frail's 25% off the
+## total, the same order Strength comes before Weak. A grant of nothing stays
+## nothing, so Sturdy never conjures Block out of an ability that gives none.
 static func block_gained(amount: int, recipient: CombatActor) -> int:
+	if amount <= 0:
+		return 0
+	var total := maxi(0, amount + recipient.status_stacks(&"sturdy"))
 	if recipient.has_status(&"frail"):
-		return _round_half_up(amount * (1.0 - FRAIL_PCT))
-	return amount
+		return _round_half_up(total * (1.0 - FRAIL_PCT))
+	return total

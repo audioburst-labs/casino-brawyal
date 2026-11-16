@@ -142,17 +142,17 @@ func test_the_river_scales_with_abilities_spent_this_turn() -> void:
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
-	# The River alone: it counts itself, so one ability -> 10.
+	# The River alone: it counts itself, so one ability -> 12 (sheet 1.26).
 	assert_true(_fire(sim, 0, [&"heart", &"club"]))
-	assert_eq(enemy.hp, hp_start - 10, "one ability spent, 10 damage")
+	assert_eq(enemy.hp, hp_start - 12, "one ability spent, 12 damage")
 
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
 	var hp_mid := enemy.hp
 	assert_true(_fire(sim, 1, [&"club"]))                  # Card Sling: 6
-	assert_true(_fire(sim, 0, [&"heart", &"club"]))        # now two spent: 20
-	assert_eq(enemy.hp, hp_mid - 6 - 20, "two abilities spent, 20 damage")
+	assert_true(_fire(sim, 0, [&"heart", &"club"]))        # now two spent: 24
+	assert_eq(enemy.hp, hp_mid - 6 - 24, "two abilities spent, 24 damage")
 
 
 func test_all_in_lifts_every_hit_for_the_rest_of_the_turn() -> void:
@@ -177,26 +177,28 @@ func test_the_all_in_bonus_expires_with_the_turn() -> void:
 	assert_eq(sim.hero.damage_bonus_pct, 0.0, "'this turn' means this turn")
 
 
-func test_slow_playing_converts_weak_stacks_into_rage() -> void:
+func test_slow_playing_converts_weak_stacks_into_strength() -> void:
 	var sim := _sim(["bouncer", "server"], ["slow_playing"])
 	sim.begin_round()
-	# Weak 2 on the target, and Rage counts STACKS across the field.
+	# Weak 2 on the target, and Strength counts STACKS across the field (sheet 1.26: it was Rage).
 	assert_true(_fire(sim, 0, [&"heart"]))
 	var stacks := 0
 	for enemy in sim.enemies:
 		stacks += enemy.status_stacks(&"weak")
-	assert_eq(sim.hero.status_stacks(&"rage"), stacks, "one Rage per Weak stack")
+	assert_gt(stacks, 0, "the Weak landed")
+	assert_eq(sim.hero.status_stacks(&"strength"), stacks, "one Strength per Weak stack")
+	assert_eq(sim.hero.status_stacks(&"rage"), 0, "and no Rage any more")
 
 
 # ---- suits as conditions ----------------------------------------------------
 
 func test_rainbow_reads_its_two_suits_independently() -> void:
-	# Neither suit: the plain 5 to everyone.
+	# Neither suit: the plain 7 to everyone (sheet 1.26).
 	var plain := _sim(["bouncer", "server"], ["rainbow"])
 	plain.begin_round()
 	var a := plain.enemies[0].hp
 	assert_true(_fire(plain, 0, [&"spade", &"diamond"]))
-	assert_eq(plain.enemies[0].hp, a - 5, "no Club, no Heart: 5")
+	assert_eq(plain.enemies[0].hp, a - 7, "no Club, no Heart: 7")
 	assert_eq(plain.enemies[0].status_stacks(&"weak"), 0)
 
 	# A Club upgrades the damage...
@@ -204,7 +206,7 @@ func test_rainbow_reads_its_two_suits_independently() -> void:
 	clubbed.begin_round()
 	var b := clubbed.enemies[0].hp
 	assert_true(_fire(clubbed, 0, [&"club", &"spade"]))
-	assert_eq(clubbed.enemies[0].hp, b - 10, "Club: 10 instead of 5")
+	assert_eq(clubbed.enemies[0].hp, b - 10, "Club: 10 instead of 7")
 
 	# ...and a Heart adds Weak on top, independently.
 	var both := _sim(["bouncer", "server"], ["rainbow"])
@@ -212,7 +214,7 @@ func test_rainbow_reads_its_two_suits_independently() -> void:
 	var c := both.enemies[0].hp
 	assert_true(_fire(both, 0, [&"club", &"heart"]))
 	assert_eq(both.enemies[0].hp, c - 10, "still the Club figure")
-	assert_eq(both.enemies[0].status_stacks(&"weak"), 1, "and the Heart's Weak")
+	assert_eq(both.enemies[0].status_stacks(&"weak"), 2, "and the Heart's Weak")
 
 
 func test_bluff_call_pays_more_into_a_weak_target() -> void:
@@ -221,7 +223,7 @@ func test_bluff_call_pays_more_into_a_weak_target() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	assert_true(_fire(sim, 0, [&"heart"]))
-	assert_eq(enemy.hp, hp_start - 8, "a healthy target takes 8")
+	assert_eq(enemy.hp, hp_start - 10, "a healthy target takes 10")
 
 	var weakened := _sim(["bouncer"], ["bluff_call"])
 	weakened.begin_round()
@@ -229,20 +231,20 @@ func test_bluff_call_pays_more_into_a_weak_target() -> void:
 	target.apply_status(&"weak", 1)
 	var before := target.hp
 	assert_true(_fire(weakened, 0, [&"heart"]))
-	assert_eq(target.hp, before - 12, "a Weak target takes 12 instead")
+	assert_eq(target.hp, before - 14, "a Weak target takes 14 instead")
 
 
 func test_safe_play_reads_the_whole_field_not_the_target() -> void:
 	var sim := _sim(["bouncer", "server"], ["safe_play"])
 	sim.begin_round()
 	assert_true(_fire(sim, 0, [&"diamond"]))
-	assert_eq(sim.hero.block, 6, "nobody Weak: 6")
+	assert_eq(sim.hero.block, 9, "nobody Weak: 9")
 
 	var weakened := _sim(["bouncer", "server"], ["safe_play"])
 	weakened.begin_round()
 	weakened.enemies[1].apply_status(&"weak", 1)      # not the default target
 	assert_true(_fire(weakened, 0, [&"diamond"]))
-	assert_eq(weakened.hero.block, 10, "ANY Weak enemy is enough: 10")
+	assert_eq(weakened.hero.block, 12, "ANY Weak enemy is enough: 12")
 
 
 # ---- the upgrades the sheet spells out --------------------------------------

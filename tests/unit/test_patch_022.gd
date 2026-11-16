@@ -31,11 +31,11 @@ func test_block_figures_are_collected_like_damage_figures() -> void:
 	assert_has(quick, 8)
 	# ...Bad Beat keeps its whole payoff nested inside a Cash In...
 	assert_eq(CardScript.block_amounts(_db.get_ability(&"bad_beat")), [10] as Array[int])
-	# ...Face Reader prints a per-enemy figure...
+	# ...Face Reader prints a per-hit figure...
 	assert_eq(CardScript.block_amounts(_db.get_ability(&"face_reader")), [2] as Array[int])
 	# ...and Fold is the plain case (Slow Playing stopped granting Block in
 	# sheet v0.122 - it applies Weak and converts it to Rage instead).
-	assert_eq(CardScript.block_amounts(_db.get_ability(&"fold")), [30] as Array[int])
+	assert_eq(CardScript.block_amounts(_db.get_ability(&"fold")), [20] as Array[int])
 	# A pure damage ability has none.
 	assert_eq(CardScript.block_amounts(_db.get_ability(&"card_sling")), [] as Array[int])
 
@@ -94,10 +94,11 @@ func test_sticker_price_is_twenty_five_plus_five_per_encounter() -> void:
 		"encounter 3: 25 + 15")
 
 
-func test_server_glass_barrage_hits_twice() -> void:
+func test_server_glass_barrage_is_one_hit_of_eight() -> void:
+	# Sheet 1.26: the Server's third move is "Deal 8."
 	var server := _db.get_enemy(&"server")
-	assert_eq(int(server.moves["glass_barrage"].intent.instances), 2)
-	assert_eq(int(server.moves["glass_barrage"].intent.per_hit), 3)
+	assert_eq(int(server.moves["glass_barrage"].intent.instances), 1)
+	assert_eq(int(server.moves["glass_barrage"].intent.per_hit), 8)
 
 
 # ---- "the animation should be exactly the same, but downwards" ----

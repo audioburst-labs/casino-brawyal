@@ -56,34 +56,38 @@ func test_an_unknown_passive_or_intent_key_is_an_error() -> void:
 
 # ---- Bust (the Dealer) ----
 
-func test_the_dealer_busts_at_twenty_one_damage() -> void:
+## Sheet 1.26: "When I reach 21 health, stun me and reduce my Strength to 0."
+## A health threshold now, not a tally of the damage taken, and it happens once.
+func test_the_dealer_busts_when_its_health_reaches_twenty_one() -> void:
 	var sim := _sim(["dealer"])
 	var dealer := sim.enemies[0]
-	dealer.hp = 500
-	dealer.max_hp = 500
+	dealer.hp = 30
+	dealer.max_hp = 49
+	dealer.passive_counter = 9
 	dealer.apply_status(&"strength", 4)
-	sim.on_enemy_damaged(dealer, 20)
-	assert_false(dealer.has_status(&"stun"), "20 is not 21 yet")
+	sim.on_enemy_damaged(dealer, dealer.take_damage(8))          # 22 health
+	assert_false(dealer.has_status(&"stun"), "22 is not 21 yet")
 	assert_eq(dealer.status_stacks(&"strength"), 4)
 	sim.drain_events()
 
-	sim.on_enemy_damaged(dealer, 1)
+	sim.on_enemy_damaged(dealer, dealer.take_damage(1))          # 21 health
 	assert_true(dealer.has_status(&"stun"), "stunned at 21")
 	assert_eq(dealer.status_stacks(&"strength"), 0, "and its Strength is gone")
 	assert_has(_types(sim.drain_events()), &"enemy_busted")
 
-	# The count resets, so the next 21 is a fresh bust.
-	sim.on_enemy_damaged(dealer, 20)
-	assert_eq(dealer.status_stacks(&"stun"), 1, "no second bust from one hit")
+	# Once: it does not bust again lower down.
+	sim.on_enemy_damaged(dealer, dealer.take_damage(5))
+	assert_eq(dealer.status_stacks(&"stun"), 1, "no second bust")
 
 
 func test_bust_keeps_multistrike_but_zeroes_strength() -> void:
 	var sim := _sim(["dealer"])
 	var dealer := sim.enemies[0]
-	dealer.hp = 500
+	dealer.hp = 21
+	dealer.passive_counter = 3
 	dealer.apply_status(&"strength", 3)
 	dealer.apply_status(&"multistrike", 2)
-	sim.on_enemy_damaged(dealer, 21)
+	sim.on_enemy_damaged(dealer, 3)
 	assert_eq(dealer.status_stacks(&"strength"), 0)
 	assert_eq(dealer.status_stacks(&"multistrike"), 2)
 
@@ -114,20 +118,28 @@ func test_break_gifts_a_chip_for_every_thirty_health_lost() -> void:
 	assert_eq(sim.tray.total(), 3, "65 more crosses two more thresholds")
 
 
-func test_gift_chips_arrive_after_the_next_spin() -> void:
+## Gift X (sheet 1.26): the chips are handed over at once. On the Golem's own
+## turn that is after the tray was discarded, and the tray carries into the next
+## round, so the chip is waiting for the player's next turn.
+func test_gift_chips_are_handed_over_at_once_and_wait_for_the_next_turn() -> void:
 	var sim := _sim(["chip_golem"])
 	sim.begin_round()
 	sim.tray.discard_all()
-	sim.end_assignment()          # round 1: Bash, Deal 20 + Gift 1
+	sim.end_assignment()          # round 1: Bash, Deal 14 + Absorb
 	sim.begin_round()
-	var types := _types(sim.drain_events())
-	var spin := types.find(&"spin_resolved")
-	var chips := -1
-	for i in range(types.size() - 1, -1, -1):
-		if types[i] == &"chips_generated":
-			chips = i
-	assert_gt(spin, -1, "the machine spun")
-	assert_gt(chips, spin, "the gifted chip lands after the payout, not before")
+	sim.tray.discard_all()
+	sim.drain_events()
+	sim.end_assignment()          # round 2: Harden, 15 Block + Gift 1
+	var gifts := sim.drain_events().filter(func(e: CombatEvent) -> bool:
+		return e.type == &"chips_generated" and str(e.data.source) == "gift")
+	assert_eq(gifts.size(), 1, "handed over on its own turn")
+	assert_eq(str(gifts[0].data.actor), String(sim.enemies[0].id), "the presenter knows who gave it")
+	assert_eq(sim.tray.total(), 1, "and kept for the next turn")
+	sim.begin_round()
+	var again := sim.drain_events().filter(func(e: CombatEvent) -> bool:
+		return e.type == &"chips_generated" and str(e.data.source) == "gift")
+	assert_eq(again.size(), 0, "not handed over a second time")
+	assert_gt(sim.tray.total(), 1, "the gift is still there beside the payout")
 
 
 func test_absorb_takes_every_chip_off_the_abilities() -> void:
@@ -209,10 +221,9 @@ func test_self_block_shields_the_enemy() -> void:
 
 func test_the_dealer_no_longer_raffles_blackjack() -> void:
 	var dealer := _db.get_enemy(&"dealer")
-	assert_eq(dealer.hp_min, 51)
-	assert_eq(dealer.hp_max, 55)
-	# Sheet v0.122: the first two moves are 2x3, the third is 2x3 too (sheet v0.121 corrected it from 2x2), with
-	# Multistrike (patch 0.114).
+	assert_eq(dealer.hp_min, 43)
+	assert_eq(dealer.hp_max, 49)
+	# Sheet 1.26: every move is 2x2, the third with Multistrike (patch 0.114).
 	for move_id: String in dealer.moves:
 		var intent: Dictionary = dealer.moves[move_id].intent
 		assert_false(intent.has("blackjack"), "%s still raffles" % move_id)

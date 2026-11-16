@@ -41,7 +41,7 @@
       "name": "Strength",
       "stack_mode": "intensity",
       "kind": "buff",
-      "description": "Adds bonus damage to every hit."
+      "description": "Adds bonus damage to every hit. Negative Strength removes damage."
     },
     {
       "id": "stun",
@@ -70,6 +70,13 @@
       "stack_mode": "intensity",
       "kind": "buff",
       "description": "The next attack deals X bonus damage on every hit, then Rage is spent."
+    },
+    {
+      "id": "sturdy",
+      "name": "Sturdy",
+      "stack_mode": "intensity",
+      "kind": "buff",
+      "description": "Increase Block gain by X."
     }
   ]
 }

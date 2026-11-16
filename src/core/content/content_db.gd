@@ -17,7 +17,8 @@ const KNOWN_OPS: Array[String] = [
 	# Sheet v0.122 (patch 0.115):
 	"damage_per_ability",     # The River: "for each ability expended this turn"
 	"damage_bonus_pct",       # All In: "deal 30% more damage this turn"
-	"rage_per_weak",          # Slow Playing: "Rage 1 for each Weak on an enemy"
+	"strength_per_weak",      # Slow Playing: "Strength 1 for each Weak on an enemy" (sheet 1.26)
+	"block_per_incoming_hit", # Face Reader: "2 Block per incoming hit this turn" (sheet 1.26)
 	# Sheet's Story tab (patch 0.116). Run level only: the story screen and
 	# the reward layer understand these, `EffectInterpreter` does not.
 	"grant_sticker",          # Cheap Tricks: a sticker of a named or random suit

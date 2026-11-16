@@ -53,10 +53,9 @@ var _db: ContentDB
 var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
 var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
-## Chips a Gift move promised; handed over after the next spin so the player
-## sees them arrive with the payout.
-var _pending_gift_chips := 0
-var _gift_giver: StringName = &""   # who promised them, for the arrival animation
+var _gift_giver: StringName = &""   # who gave the chip, for the arrival animation
+## The number of the fight being played, 1 to 10: the loans' "[Encounter Value]".
+var encounter_value := 1
 var _pending_choice: Dictionary = {}
 ## Run-level ops that must land NOW rather than when the fight ends (0.117):
 ## a loan's coins. "Cash Advance should always give coins" - a lost fight
@@ -95,6 +94,7 @@ func _init(db: ContentDB, config: Dictionary) -> void:
 	machine = config.get("machine", SlotMachine.new())
 	_dmg_mult = float(config.get("dmg_mult", 1.0))
 	_hp_mult = float(config.get("hp_mult", 1.0))
+	encounter_value = maxi(1, int(config.get("encounter", 1)))
 	_scripted_spins = (config.get("scripted_spins", []) as Array).duplicate(true)
 	_first_moves = (config.get("first_moves", {}) as Dictionary).duplicate()
 
@@ -243,7 +243,6 @@ func begin_round() -> bool:
 	if round_number == 1:
 		_fire_relics(&"combat_started")
 	_fire_relics(&"round_started")
-	_fire_passives()
 
 	_intents.clear()
 	_intent_ids.clear()
@@ -260,6 +259,9 @@ func begin_round() -> bool:
 		var entry := _build_intent_entry(enemy, move_id)
 		shown.append(entry)
 	emit_event(&"intents_shown", {"intents": shown})
+	# Passives fire once the intents are known: Face Reader pays per announced
+	# hit (sheet 1.26), and the rest do not care which comes first.
+	_fire_passives()
 
 	# An enemy may interrupt here to put a choice to the player (the Loan
 	# Shark). The machine is not spun until they have answered.
@@ -273,19 +275,8 @@ func begin_round() -> bool:
 ## The rest of the round start, after any "Options In Combat" decision.
 func _finish_round_start() -> void:
 	_spin_machine()
-	_deliver_gift_chips()
 	phase = Phase.ASSIGNMENT
 
-## Gift X (sheet v0.120): "give the player X random chips at the start of their
-## next turn". Handed over after the spin so they are seen landing with the
-## payout rather than appearing out of nowhere.
-func _deliver_gift_chips() -> void:
-	if _pending_gift_chips <= 0:
-		return
-	var count := _pending_gift_chips
-	_pending_gift_chips = 0
-	for i in count:
-		_grant_random_chip(&"gift")
 
 
 func _grant_random_chip(source: StringName, from_actor: StringName = &"") -> void:
@@ -323,7 +314,8 @@ func _offer_pending_choice() -> bool:
 			pool.remove_at(index)
 			offers.append({
 				"id": String(loan.id), "title": loan.title, "turns": loan.turns,
-				"reward_text": loan.reward_text, "penalty_text": loan.penalty_text,
+				"reward_text": loan_text(loan.reward_text, loan.reward),
+				"penalty_text": loan_text(loan.penalty_text, loan.penalty),
 			})
 		_pending_choice = {"actor": enemy.id, "kind": "loan", "options": offers}
 		emit_event(&"choice_offered", _pending_choice.duplicate(true))
@@ -340,6 +332,19 @@ func _loan_offerable(loan: Defs.LoanDef) -> bool:
 		"wounded":
 			return hero.hp < hero.max_hp
 	return true
+
+
+## A loan's text with its "{coins}" filled in for the fight being played
+## (sheet 1.26: "Gain 3X[Encounter Value] coins"). Other texts pass through.
+func loan_text(text: String, effects: Array) -> String:
+	if not text.contains("{coins}"):
+		return text
+	var coins := 0
+	for effect: Dictionary in effects:
+		if str(effect.get("op", "")) in ["gain_coins", "lose_coins"]:
+			coins = int(effect["amount"]) if effect.has("amount") \
+				else int(effect.get("per_encounter", 0)) * encounter_value
+	return text.replace("{coins}", str(coins))
 
 
 func pending_choice() -> Dictionary:
@@ -363,9 +368,10 @@ func choose(index: int) -> bool:
 	settling_loan = true
 	EffectInterpreter.execute(loan.reward, self, hero, targeting.effective_target(enemies))
 	settling_loan = false
-	hero.loans.append({"id": loan.id, "turns_left": loan.turns})
+	var penalty_text := loan_text(loan.penalty_text, loan.penalty)
+	hero.loans.append({"id": loan.id, "turns_left": loan.turns, "penalty_text": penalty_text})
 	emit_event(&"loan_taken", {"loan": loan.id, "title": loan.title,
-		"turns": loan.turns, "penalty_text": loan.penalty_text})
+		"turns": loan.turns, "penalty_text": penalty_text})
 	_finish_round_start()
 	return true
 
@@ -408,6 +414,21 @@ func _build_intent_entry(enemy: CombatActor, move_id: String) -> Dictionary:
 		entry["passive"] = _db.get_enemy(enemy.def_id).passive
 		entry["passive_count"] = enemy.passive_counter
 	return entry
+
+
+## Face Reader (sheet 1.26): the hits the enemies have announced for this turn.
+## A stunned enemy loses its action and a move that would deal nothing is not a
+## hit, so neither counts; Multistrike does.
+func incoming_hit_count() -> int:
+	var hits := 0
+	for enemy in enemies:
+		if not enemy.is_alive() or enemy.has_status(&"stun"):
+			continue
+		var intent: Dictionary = _intents.get(enemy.id, {}).get("intent", {})
+		if StatusRules.attack_damage(_move_per_hit(enemy, intent), enemy, _weak_pct) <= 0:
+			continue
+		hits += _move_instances(enemy, intent)
+	return hits
 
 
 ## Instances of damage this move will deal, Multistrike included.
@@ -526,20 +547,26 @@ func on_enemy_damaged(actor: CombatActor, hp_lost: int) -> void:
 	if str(passive.get("mode", "")) == "death":
 		return
 	var start := passive_start(passive)
+	if str(passive.get("type", "")) == "bust":
+		# Dealer (sheet 1.26): "When I reach 21 health, stun me and reduce my
+		# Strength to 0." A health threshold now, not a tally of damage, and it
+		# happens once. The plaque counts the health left above the line.
+		if actor.passive_counter < 0:
+			actor.passive_counter = maxi(0, actor.hp + hp_lost - start)
+		var above := maxi(0, actor.hp - start)
+		if actor.is_alive() and actor.passive_counter > 0 and above <= 0:
+			actor.statuses.erase(&"strength")
+			actor.apply_status(&"stun", 1)
+			emit_event(&"enemy_busted", {"actor": actor.id, "threshold": start})
+			emit_event(&"status_applied",
+				{"actor": actor.id, "status": &"stun", "stacks": 1})
+		actor.passive_counter = above
+		emit_event(&"passive_counter", {"actor": actor.id, "value": above})
+		return
 	if actor.passive_counter < 0:
 		actor.passive_counter = start
 	var remaining := actor.passive_counter - hp_lost
 	match str(passive.get("type", "")):
-		"bust":
-			# Dealer: the count runs down from 21 and fires at 0 — it is
-			# stunned and its Strength is wiped, then the count resets.
-			if remaining <= 0:
-				remaining = start
-				actor.statuses.erase(&"strength")
-				actor.apply_status(&"stun", 1)
-				emit_event(&"enemy_busted", {"actor": actor.id, "threshold": start})
-				emit_event(&"status_applied",
-					{"actor": actor.id, "status": &"stun", "stacks": 1})
 		"break":
 			# Chip Golem: a chip for every 20 health it loses.
 			while remaining <= 0:
@@ -567,7 +594,7 @@ func _tick_loans() -> void:
 		if def == null:
 			continue
 		emit_event(&"loan_due", {"loan": def.id, "title": def.title,
-			"penalty_text": def.penalty_text})
+			"penalty_text": loan_text(def.penalty_text, def.penalty)})
 		settling_loan = true
 		EffectInterpreter.execute(def.penalty, self, hero, null)
 		settling_loan = false
@@ -631,6 +658,8 @@ func _spawn_enemy(def_id: StringName, announce := true,
 	var hp := int(round(stream.randi_range(def.hp_min, def.hp_max) * _hp_mult))
 	var enemy := CombatActor.new(StringName("enemy_%d" % _summon_counter), def.id, def.name, hp)
 	enemy.passive_counter = passive_start(def.passive)
+	if str(def.passive.get("type", "")) == "bust":
+		enemy.passive_counter = maxi(0, hp - enemy.passive_counter)
 	_summon_counter += 1
 	var slot := _summon_slot(summoner)
 	if slot < 0:
@@ -788,15 +817,17 @@ func _execute_move(enemy: CombatActor, allow_encore: bool) -> void:
 		emit_event(&"chips_absorbed", {"actor": enemy.id, "count": taken})
 
 	if int(intent.get("self_block", 0)) > 0:
-		var shield := int(intent.get("self_block"))
+		# Sturdy raises an enemy's own Block too ("Increase Block gained by X").
+		var shield := StatusRules.block_gained(int(intent.get("self_block")), enemy)
 		enemy.gain_block(shield)
 		emit_event(&"block_gained", {"actor": enemy.id, "amount": shield})
 
-	if int(intent.get("gift_chips", 0)) > 0:
-		_pending_gift_chips += int(intent.get("gift_chips"))
+	# Gift X (sheet 1.26): the chips are handed over RIGHT NOW. On an enemy's
+	# turn that is after the hero's tray was discarded, and the tray carries
+	# over into the next round, so they are waiting for the next turn.
+	for i in int(intent.get("gift_chips", 0)):
 		_gift_giver = enemy.id
-		emit_event(&"gift_promised",
-			{"actor": enemy.id, "count": int(intent.get("gift_chips"))})
+		_grant_random_chip(&"gift")
 
 	var summon: Dictionary = intent.get("summon", {})
 	if not summon.is_empty():

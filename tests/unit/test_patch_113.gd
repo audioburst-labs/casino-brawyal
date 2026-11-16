@@ -54,10 +54,12 @@ func test_frail_taxes_the_per_enemy_figure_not_the_total() -> void:
 	var sim := _sim(["bouncer", "server", "dealer", "manager"], ["face_reader"])
 	sim.begin_round()
 	sim.hero.apply_status(&"frail", 2)
+	var hits := sim.incoming_hit_count()
+	assert_gt(hits, 0, "the field has announced at least one hit")
 	assert_true(_fire(sim, 0, [&"club", &"diamond"]))
-	# 2 Block taxed to 2 (25% of 2 rounds to 1 lost... half-up leaves 2 -> 2),
-	# four enemies: the reading the card promises, per enemy.
-	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * 4)
+	# Frail taxes the figure on the card (2 stays 2 half-up), and the total is that
+	# figure per announced hit (sheet 1.26: it was per enemy).
+	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * hits)
 
 
 func test_the_passive_keeps_paying_every_round_start() -> void:
@@ -72,15 +74,18 @@ func test_the_passive_keeps_paying_every_round_start() -> void:
 		if sim.phase == CombatSim.Phase.ENDED:
 			break
 		sim.begin_round()
-		assert_eq(sim.hero.block, 4, "2 per living enemy, round %d" % round_index)
+		assert_eq(sim.hero.block, 2 * sim.incoming_hit_count(),
+			"2 per announced hit, round %d" % round_index)
 
 
 # ---- 3 & 5. the Dealer's 21, worn as a permanent buff ----------------------
 
-func test_the_bust_counter_starts_at_twenty_one_on_every_dealer() -> void:
+## Sheet 1.26: Bust fires when the Dealer's health reaches 21, so the plaque
+## counts the health left above that line.
+func test_the_bust_counter_starts_at_the_health_above_twenty_one_on_every_dealer() -> void:
 	var sim := _sim(["dealer", "dealer"])
 	for enemy in sim.enemies:
-		assert_eq(enemy.passive_counter, 21, "the icon shows 21 before a hit")
+		assert_eq(enemy.passive_counter, enemy.hp - 21, "the icon shows the health above 21")
 	# A unit with no passive carries no number at all.
 	var plain := _sim(["bouncer"])
 	assert_eq(plain.enemies[0].passive_counter, -1)
@@ -92,21 +97,21 @@ func test_the_counter_runs_down_with_damage_and_is_announced() -> void:
 	var dealer := sim.enemies[0]
 	sim.drain_events()
 	assert_true(_fire(sim, 0, [&"club"]))
-	assert_eq(dealer.passive_counter, 21 - 6, "counts DOWN from 21, not up")
+	assert_eq(dealer.passive_counter, dealer.hp - 21, "counts DOWN toward 21 health")
 	var announced := sim.drain_events().filter(
 		func(e: CombatEvent) -> bool: return e.type == &"passive_counter")
 	assert_eq(announced.size(), 1, "the presenter is told, so the icon can tick")
-	assert_eq(int(announced[0].data.value), 15)
+	assert_eq(int(announced[0].data.value), dealer.hp - 21)
 
 
-func test_the_bust_fires_at_zero_and_the_count_resets() -> void:
+func test_the_bust_fires_at_zero_and_stays_spent() -> void:
 	var sim := _sim(["dealer"])
 	sim.begin_round()
 	var dealer := sim.enemies[0]
 	dealer.apply_status(&"strength", 3)
 	sim.drain_events()
-	sim.on_enemy_damaged(dealer, 21)
-	assert_eq(dealer.passive_counter, 21, "back to a fresh 21")
+	sim.on_enemy_damaged(dealer, dealer.take_damage(dealer.hp - 21))
+	assert_eq(dealer.passive_counter, 0, "the line is reached and the bust is spent")
 	assert_eq(dealer.status_stacks(&"stun"), 1, "it busts and loses its turn")
 	assert_eq(dealer.status_stacks(&"strength"), 0, "and its Strength with it")
 	var types := sim.drain_events().map(
@@ -120,8 +125,8 @@ func test_a_single_huge_hit_leaves_a_sane_number() -> void:
 	var sim := _sim(["dealer"])
 	sim.begin_round()
 	var dealer := sim.enemies[0]
-	sim.on_enemy_damaged(dealer, 40)
-	assert_eq(dealer.passive_counter, 21)
+	sim.on_enemy_damaged(dealer, dealer.take_damage(dealer.hp - 5))
+	assert_eq(dealer.passive_counter, 0, "past the line is still just zero, never negative")
 
 
 ## The Chip Golem wears the same kind of number: health to its next free chip.
@@ -140,9 +145,9 @@ func test_the_intent_entry_carries_the_same_number() -> void:
 	var sim := _sim(["dealer"])
 	sim.begin_round()
 	var dealer := sim.enemies[0]
-	sim.on_enemy_damaged(dealer, 5)
+	sim.on_enemy_damaged(dealer, dealer.take_damage(5))
 	var entry := sim.intent_display(dealer.id)
-	assert_eq(int(entry.passive_count), 16)
+	assert_eq(int(entry.passive_count), dealer.hp - 21)
 	assert_eq(str(entry.passive.type), "bust")
 
 
@@ -190,7 +195,7 @@ const SHEET_LINEUPS := {
 	"managers_goblin": ["manager", "chip_goblin"],
 	"full_shift": ["bouncer", "server", "server", "drunk_patron"],
 }
-const SHEET_STAGE_GOLD := {1: [37, 43], 2: [47, 53], 3: [57, 63], 4: [67, 73], 5: [77, 83]}
+const SHEET_STAGE_GOLD := {1: [36, 44], 2: [45, 55], 3: [54, 66], 4: [63, 77], 5: [72, 88]}
 
 
 func test_every_shipped_lineup_is_one_of_the_sheets() -> void:
@@ -213,19 +218,19 @@ func test_gold_matches_the_sheets_band_for_each_stage() -> void:
 	for lineup: Dictionary in _db.all_lineups():
 		var band := [int(lineup.gold_min), int(lineup.gold_max)]
 		if bool(lineup.elite):
-			assert_eq(band, [97, 103], String(lineup.id))
+			assert_eq(band, [90, 110], String(lineup.id))
 		elif int(lineup.stage) == 6:
-			assert_eq(band, [0, 0], "the boss pays none")
+			assert_eq(band, [0, 0], "the boss pays none until Act II lands")
 		else:
 			assert_eq(band, SHEET_STAGE_GOLD.get(int(lineup.stage), []),
 				String(lineup.id))
 
 
 func test_enemy_health_matches_the_sheet() -> void:
-	# Sheet v0.122 (patch 0.114) put health up across the board.
+	# Sheet 1.26 (it put health up in v0.122, and trimmed it again here).
 	var sheet := {
-		"bouncer": [56, 60], "server": [25, 30], "dealer": [51, 55],
-		"manager": [61, 65], "drunk_patron": [13, 15], "chip_goblin": [19, 22], "chip_golem": [100, 109], "loan_shark": [90, 99],
+		"bouncer": [53, 59], "server": [25, 31], "dealer": [43, 49],
+		"manager": [39, 45], "drunk_patron": [13, 15], "chip_goblin": [19, 23], "chip_golem": [100, 109], "loan_shark": [90, 99],
 	}
 	for id: String in sheet:
 		var def := _db.get_enemy(StringName(id))

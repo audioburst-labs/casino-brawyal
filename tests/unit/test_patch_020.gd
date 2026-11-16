@@ -133,8 +133,8 @@ func test_buffed_numbers_reach_damage_nested_in_cash_in() -> void:
 	sim.hero.apply_status(&"strength", 5)
 	var state: AbilityState = sim.abilities[0]
 	var amounts := AbilityCard.damage_amounts(state.def)
-	assert_has(amounts, 11, "the unmarked fallback")
-	assert_has(amounts, 18, "the cash-in payoff")
+	assert_has(amounts, 9, "the unmarked fallback")
+	assert_has(amounts, 15, "the cash-in payoff")
 	for base: int in amounts:
 		assert_eq(sim.preview_damage(base, state), base + 5,
 			"Strength lifts every figure on the card")
@@ -142,11 +142,11 @@ func test_buffed_numbers_reach_damage_nested_in_cash_in() -> void:
 
 func test_damage_amounts_covers_bonus_effects_too() -> void:
 	var pocket := _db.get_ability(&"pocket_rockets")
-	# Sheet 0.117: "Deal 6 damage twice" - one figure, hit twice.
-	assert_eq(AbilityCard.damage_amounts(pocket), [6] as Array[int],
+	# Sheet 1.26: "Deal 7 damage twice" - one figure, hit twice.
+	assert_eq(AbilityCard.damage_amounts(pocket), [7] as Array[int],
 		"one damage figure; the Spade bonus Earns rather than repeating")
 	var bust := _db.get_ability(&"bust")
-	assert_eq(AbilityCard.damage_amounts(bust), [24] as Array[int],
+	assert_eq(AbilityCard.damage_amounts(bust), [28] as Array[int],
 		"cash-in only, no fallback")
 	var card_sling := _db.get_ability(&"card_sling")
 	assert_eq(AbilityCard.damage_amounts(card_sling), [6] as Array[int])

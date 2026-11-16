@@ -29,7 +29,7 @@
     {
       "id": "strength",
       "name": "Strength",
-      "text": "Adds bonus damage to every hit."
+      "text": "Adds bonus damage to every hit. Negative Strength removes damage."
     },
     {
       "id": "stun",
@@ -69,7 +69,7 @@
     {
       "id": "gift",
       "name": "Gift X",
-      "text": "Give the player X random chips at the start of their next turn."
+      "text": "Give the player X random chips right away. Chips given on an enemy's turn wait for your next turn."
     },
     {
       "id": "absorb",
@@ -79,7 +79,7 @@
     {
       "id": "bust",
       "name": "Bust",
-      "text": "Counts all damage taken; at 21 it is stunned and loses its Strength."
+      "text": "When it reaches 21 health, it is stunned and loses its Strength."
     },
     {
       "id": "break",
@@ -95,6 +95,11 @@
       "id": "earn",
       "name": "Earn",
       "text": "Add chips to your chip pool."
+    },
+    {
+      "id": "sturdy",
+      "name": "Sturdy X",
+      "text": "Increase Block gain by X."
     },
     {
       "id": "mighty",

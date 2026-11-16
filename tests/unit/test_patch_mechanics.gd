@@ -80,10 +80,10 @@ func test_spade_card_sling_marks_and_cash_in_pays_bonus() -> void:
 	assert_true(_fire(sim, 0, [&"spade"]))  # card_sling: 6 dmg + Mark (spade bonus)
 	assert_eq(enemy.hp, hp_start - 6)
 	assert_eq(enemy.status_stacks(&"mark"), 1)
-	# double_down: "Deal 11 damage. Cash In: Deal 18 instead." (sheet v0.122);
+	# double_down: "Deal 9 damage. Cash In: Deal 15 instead." (sheet 1.26);
 	# its cost reads Any + Spade, so any chip fits the first slot.
 	assert_true(_fire(sim, 1, [&"club", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 6 - 18)
+	assert_eq(enemy.hp, hp_start - 6 - 15)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")
 
 
@@ -93,7 +93,7 @@ func test_cash_in_without_mark_falls_back_to_the_plain_damage() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"club", &"spade"])
-	assert_eq(enemy.hp, hp_start - 11)
+	assert_eq(enemy.hp, hp_start - 9)
 
 
 func test_summon_skips_to_next_move_when_field_is_full() -> void:
@@ -178,12 +178,16 @@ func test_replace_bonus_swaps_effects() -> void:
 func test_passive_pays_on_activation_and_every_round_start_after() -> void:
 	var sim := _sim(["bouncer", "server"], ["face_reader"])
 	sim.begin_round()
+	var hits := sim.incoming_hit_count()
+	assert_gt(hits, 0)
 	_fire(sim, 0, [&"club", &"diamond"])
-	assert_eq(sim.hero.block, 4, "2 block per living enemy, paid immediately")
+	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * hits,
+		"2 block per announced hit, paid immediately (sheet 1.26)")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
-	assert_eq(sim.hero.block, 4, "and again at the next round start")
+	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * sim.incoming_hit_count(),
+		"and again at the next round start")
 
 
 func test_summon_adds_a_new_enemy() -> void:
@@ -238,7 +242,7 @@ func test_pocket_rockets_earns_a_spade_on_a_double() -> void:
 	var hp_start := enemy.hp
 	sim.tray.discard_all()
 	assert_true(_fire(sim, 0, [&"spade", &"spade"]))
-	assert_eq(enemy.hp, hp_start - 12, "12 damage, once")
+	assert_eq(enemy.hp, hp_start - 14, "14 damage, once")
 	assert_eq(sim.tray.count(&"spade"), 1, "and a Spade back in the tray")
 	sim.tray.discard_all()
 	sim.end_assignment()
@@ -246,7 +250,7 @@ func test_pocket_rockets_earns_a_spade_on_a_double() -> void:
 	var hp_mid := enemy.hp
 	sim.tray.discard_all()
 	_fire(sim, 0, [&"spade", &"heart"])
-	assert_eq(enemy.hp, hp_mid - 12, "mixed chips deal the same 12")
+	assert_eq(enemy.hp, hp_mid - 14, "mixed chips deal the same 14")
 	assert_eq(sim.tray.count(&"spade"), 0, "but Earn nothing")
 
 
@@ -291,7 +295,7 @@ func test_jade_knucklers_boost_spade_club_abilities() -> void:
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	_fire(sim, 0, [&"heart", &"spade"])
-	assert_eq(enemy.hp, hp_start - 13, "11 * 1.2 = 13.2, half-up 13")
+	assert_eq(enemy.hp, hp_start - 11, "9 * 1.2 = 10.8, half-up 11")
 
 
 func test_block_per_chip_relic() -> void:
@@ -307,17 +311,17 @@ func test_flush_hits_all_enemies() -> void:
 	var hp_a := sim.enemies[0].hp
 	var hp_b := sim.enemies[1].hp
 	_fire(sim, 0, [&"spade", &"spade", &"spade", &"spade"])
-	assert_eq(sim.enemies[0].hp, hp_a - 20)
-	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 20))
+	assert_eq(sim.enemies[0].hp, hp_a - 25)
+	assert_eq(sim.enemies[1].hp, maxi(0, hp_b - 25))
 
 
 func test_bust_is_cash_in_only() -> void:
-	# Sheet v0.122: "Cash In: Deal 24 damage." — no base damage of its own.
+	# Sheet 1.26: "Cash In: Deal 28 damage." — no base damage of its own.
 	var sim := _sim(["bouncer"], ["bust"])
 	sim.begin_round()
 	var enemy := sim.enemies[0]
 	var hp_start := enemy.hp
 	enemy.apply_status(&"mark", 1)
 	_fire(sim, 0, [&"spade", &"club"])
-	assert_eq(enemy.hp, hp_start - 24)
+	assert_eq(enemy.hp, hp_start - 28)
 	assert_eq(enemy.status_stacks(&"mark"), 0, "cash in consumes the mark")

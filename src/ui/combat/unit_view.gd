@@ -590,7 +590,9 @@ const LOAN_TINTS := {
 	&"pocket_change": Color(0.55, 0.78, 1.0),
 	&"quick_patch": Color(0.55, 1.0, 0.7),
 	&"double_stack": Color(0.85, 0.6, 1.0),
-	&"house_doctor": Color(1.0, 0.85, 0.5),
+	&"triple_stack": Color(1.0, 0.85, 0.5),
+	&"muscle_loan": Color(1.0, 0.7, 0.45),
+	&"plating_loan": Color(0.7, 0.85, 1.0),
 	&"cash_advance": Color(1.0, 0.6, 0.55),
 }
 
@@ -602,7 +604,7 @@ func _add_loan_chip(loan: Dictionary) -> void:
 	var hint := "%s, in %d turn(s): %s" % [
 		def.title if def else String(id).capitalize(),
 		int(loan.get("turns_left", 0)),
-		def.penalty_text if def else "the debt comes due"]
+		str(loan.get("penalty_text", def.penalty_text if def else "the debt comes due"))]
 	if ResourceLoader.exists(LOAN_ICON):
 		var icon := TextureRect.new()
 		icon.texture = load(LOAN_ICON)
@@ -638,7 +640,7 @@ static func status_tooltip(status_id: StringName, stacks: int = 0) -> String:
 		if status != null:
 			title = status.name
 			body = status.description
-	if stacks > 0:
+	if stacks != 0:
 		title = "%s %d" % [title, stacks]
 	return title if body == "" else "%s: %s" % [title, body]
 

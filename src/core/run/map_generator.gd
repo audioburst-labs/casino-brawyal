@@ -19,7 +19,7 @@ extends RefCounted
 ## predates 0.114 (or any run whose path was never rolled) picks one the first
 ## time it asks for options, so an in-flight save keeps working.
 static func path_for(db: ContentDB, run: RunState,
-		rng: RandomNumberGenerator) -> Dictionary:
+		rng: RandomNumberGenerator, recent: Array = []) -> Dictionary:
 	var paths := db.all_paths()
 	if paths.is_empty():
 		return {}
@@ -27,15 +27,20 @@ static func path_for(db: ContentDB, run: RunState,
 		for path: Dictionary in paths:
 			if StringName(str(path.id)) == run.path_id:
 				return path
-	var picked: Dictionary = paths[rng.randi_range(0, paths.size() - 1)]
-	run.path_id = StringName(str(picked.id))
-	return picked
+	# The last two runs' paths are closed (PathPicker, designer 1.26). The bots pass
+	# nothing, so they keep drawing from all six.
+	var ids: Array = paths.map(func(p: Dictionary) -> String: return str(p.id))
+	run.path_id = PathPicker.pick(ids, recent, rng)
+	for path: Dictionary in paths:
+		if StringName(str(path.id)) == run.path_id:
+			return path
+	return paths[0]
 
 
 static func next_options(db: ContentDB, run: RunState,
-		rng: RandomNumberGenerator) -> Array[Dictionary]:
+		rng: RandomNumberGenerator, recent: Array = []) -> Array[Dictionary]:
 	var encounter := run.encounter_number()
-	var path := path_for(db, run, rng)
+	var path := path_for(db, run, rng, recent)
 	var options: Array[Dictionary] = []
 	var types := _types_at(path, encounter)
 	for type: StringName in types:

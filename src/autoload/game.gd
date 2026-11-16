@@ -157,8 +157,16 @@ func resume_run() -> void:
 ## (e.g. the Abilities screen) don't re-roll the choice (patch 0.12).
 func map_options() -> Array[Dictionary]:
 	if _cached_for_encounter != run.encounter_number():
+		# The last two runs' paths are closed to this one (designer, 1.26), and the
+		# path it is given is remembered the moment it is rolled.
+		var settings := Telemetry.settings
+		var recent: Array = settings.recent_paths if settings != null else []
+		var had_path := run.path_id != &""
 		_cached_options = MapGenerator.next_options(
-			Db.content, run, rng.stream(&"map"))
+			Db.content, run, rng.stream(&"map"), recent)
+		if not had_path and run.path_id != &"" and settings != null:
+			settings.recent_paths = PathPicker.remember(settings.recent_paths, run.path_id)
+			settings.save(Telemetry.SETTINGS_PATH)
 		_cached_for_encounter = run.encounter_number()
 	return _cached_options
 

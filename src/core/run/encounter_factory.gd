@@ -47,6 +47,9 @@ static func combat_config(db: ContentDB, run: RunState,
 				break
 	return {
 		"lineup": lineup.id,
+		# The loans' "[Encounter Value]" (sheet 1.26): the number of the fight
+		# being played, 1 to 10.
+		"encounter": encounter,
 		"hero": run.hero_id,
 		"hero_hp": run.hp,
 		# Max HP travels too (0.117): a run whose ceiling was raised by a story

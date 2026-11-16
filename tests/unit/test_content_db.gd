@@ -71,5 +71,5 @@ func test_keyword_and_status_ids_are_listed_for_the_codex() -> void:
 	assert_true(db.load_all("res://data"), str(db.errors))
 	assert_gt(db.all_keyword_ids().size(), 10)
 	assert_true(db.all_keyword_ids().has(&"mark"))
-	assert_eq(db.all_status_ids().size(), 10)
+	assert_eq(db.all_status_ids().size(), 11)
 	assert_true(db.all_status_ids().has(&"vulnerable"))
