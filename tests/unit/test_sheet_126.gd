@@ -122,7 +122,7 @@ func test_a_stunned_enemy_and_a_move_that_does_not_attack_add_no_hits() -> void:
 	assert_eq(sim.incoming_hit_count(), 0, "a stunned Dealer loses its action")
 
 
-func test_face_reader_pays_two_block_per_hit_when_it_is_played() -> void:
+func test_face_reader_pays_two_block_per_hit_at_the_next_turn_start() -> void:
 	var sim := _sim(["dealer"], ["face_reader"])
 	sim.begin_round()
 	sim.hero.block = 0
@@ -130,7 +130,12 @@ func test_face_reader_pays_two_block_per_hit_when_it_is_played() -> void:
 	sim.tray.add(&"diamond", 1)
 	assert_true(sim.assign_chip(&"club", 0, 0))
 	assert_true(sim.assign_chip(&"diamond", 0, 1))
-	assert_eq(sim.hero.block, 4, "2 hits, 2 Block each")
+	assert_eq(sim.hero.block, 0, "playing it pays nothing (designer, 1.29)")
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
+	assert_eq(sim.hero.block, 2 * sim.incoming_hit_count(), "2 Block per announced hit, at the turn start")
+	assert_gt(sim.hero.block, 0)
 
 
 func test_the_round_start_passive_sees_the_intents_it_is_paying_for() -> void:

@@ -85,8 +85,7 @@ func _build_floorplan() -> void:
 	add_child(curtains)
 	var plan := FloorplanMap.new()
 	add_child(plan)
-	plan.setup(Game.run.history, MapGenerator.path_by_id(Db.content, Game.run.path_id),
-		options, Game.run.equipped_ids.size(), Game.show_loadout)
+	plan.setup(Game.run.history, MapGenerator.path_by_id(Db.content, Game.run.path_id), options)
 
 
 ## The doc's four parts: frame, icon, name, description. Built as a Button

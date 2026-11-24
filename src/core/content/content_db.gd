@@ -331,6 +331,7 @@ func _build_ability(item: Dictionary, tier: int) -> Defs.AbilityDef:
 	ability.per_turn = int(item.get("per_turn", 0))
 	ability.per_combat = int(item.get("per_combat", 0))
 	ability.passive = bool(item.get("passive", false))
+	ability.proc_on_play = bool(item.get("proc_on_play", true))
 	ability.passive_trigger = str(item.get("passive_trigger", ""))
 	for effect: Dictionary in item.get("active_effects", []):
 		_validate_effect(effect, "%s (active)" % context)

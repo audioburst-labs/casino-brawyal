@@ -23,6 +23,10 @@ class AbilityDef:
 	var per_turn: int = 0                     # max activations per round; 0 = unlimited
 	var per_combat: int = 0                   # max activations per combat; 0 = unlimited
 	var passive: bool = false                 # once fired, effects recur at every round start
+	## A start-of-turn passive also pays the turn it is played (0.113). false waits
+	## for the NEXT turn start instead: Face Reader, "should proc only at the start
+	## of the turn" (designer, 1.29).
+	var proc_on_play: bool = true
 	var exclusive: bool = false               # firing this locks all other abilities this round
 	var keywords: Array[StringName] = []      # keyword ids shown as hover bubbles
 	var description: String

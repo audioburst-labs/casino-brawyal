@@ -38,13 +38,18 @@ func _fire(sim: CombatSim, index: int, suits: Array) -> bool:
 
 # ---- 1. Face Reader ---------------------------------------------------------
 
-## The first half of the bug: two chips bought nothing on the turn they were
-## spent, because a passive only paid from the NEXT round start.
-func test_face_reader_pays_the_turn_it_is_played() -> void:
+## Patch 0.113 made it pay the turn it was played, because two chips that bought
+## nothing read as broken math. The designer reversed that in 1.29 ("should proc
+## only at the start of the turn"): it pays from the NEXT turn start.
+func test_face_reader_pays_from_the_next_turn_start_not_the_turn_it_is_played() -> void:
 	var sim := _sim(["bouncer", "server", "dealer"], ["face_reader"])
 	sim.begin_round()
 	assert_true(_fire(sim, 0, [&"club", &"diamond"]))
-	assert_eq(sim.hero.block, 6, "2 Block per living enemy, three of them")
+	assert_eq(sim.hero.block, 0, "nothing the turn it is played")
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
+	assert_eq(sim.hero.block, 2 * sim.incoming_hit_count(), "2 Block per announced hit")
 
 
 ## The second half: Frail taxes the figure the CARD SHOWS, once, and the total
@@ -54,9 +59,13 @@ func test_frail_taxes_the_per_enemy_figure_not_the_total() -> void:
 	var sim := _sim(["bouncer", "server", "dealer", "manager"], ["face_reader"])
 	sim.begin_round()
 	sim.hero.apply_status(&"frail", 2)
+	assert_true(_fire(sim, 0, [&"club", &"diamond"]))
+	assert_eq(sim.hero.block, 0, "it only pays at a turn start (1.29)")
+	sim.tray.discard_all()
+	sim.end_assignment()
+	sim.begin_round()
 	var hits := sim.incoming_hit_count()
 	assert_gt(hits, 0, "the field has announced at least one hit")
-	assert_true(_fire(sim, 0, [&"club", &"diamond"]))
 	# Frail taxes the figure on the card (2 stays 2 half-up), and the total is that
 	# figure per announced hit (sheet 1.26: it was per enemy).
 	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * hits)

@@ -576,6 +576,7 @@
       ],
       "per_combat": 1,
       "passive": true,
+      "proc_on_play": false,
       "tiers": [
         {
           "description": "At the start of your turn, gain 3 Block per incoming hit this turn.",

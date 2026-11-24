@@ -546,7 +546,8 @@ static func wants_glow(def: Defs.AbilityDef, sim: CombatSim) -> bool:
 			continue
 		marked = marked or enemy.has_status(&"mark")
 		weakened = weakened or enemy.has_status(&"weak")
-	if marked and _mentions(def, ["cash_in"], []):
+	# Bad Beat has no Cash In: its Block hangs on "an enemy is marked" (1.29).
+	if marked and _mentions(def, ["cash_in"], ["enemy_marked"]):
 		return true
 	if weakened and _mentions(def, [], ["target_weak", "any_enemy_weak"]):
 		return true

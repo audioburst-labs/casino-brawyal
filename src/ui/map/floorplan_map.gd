@@ -67,9 +67,10 @@ var _portrait: Texture2D
 
 
 ## `history` is the types already visited, `path` the run's authored path, and
-## `options` the pair on offer now (from `Game.map_options()`).
-func setup(history: Array[StringName], path: Dictionary, options: Array[Dictionary],
-		equipped: int, on_loadout: Callable) -> void:
+## `options` the pair on offer now (from `Game.map_options()`). The abilities are
+## one click away in the header (the Layout button), so the map carries no button
+## of its own for them (designer, 1.29).
+func setup(history: Array[StringName], path: Dictionary, options: Array[Dictionary]) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_stop = history.size() + 1
 	_build_rooms(history, path, options)
@@ -103,7 +104,7 @@ func setup(history: Array[StringName], path: Dictionary, options: Array[Dictiona
 	for room_index in _rooms.size():
 		_stage.add_child(_room_button(room_index))
 
-	_build_title(equipped, on_loadout)
+	_build_title()
 	_build_tip()
 	if ResourceLoader.exists(ACE_PORTRAIT):
 		_portrait = load(ACE_PORTRAIT)
@@ -205,7 +206,7 @@ func _room_button(index: int) -> Button:
 	return button
 
 
-func _build_title(equipped: int, on_loadout: Callable) -> void:
+func _build_title() -> void:
 	var title := Label.new()
 	title.text = "Choose\nYour Path"
 	title.theme_type_variation = &"TitleLabel"
@@ -214,21 +215,15 @@ func _build_title(equipped: int, on_loadout: Callable) -> void:
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(title)
 
+	# The same face as the timer and the gold counters in the header (the
+	# SubtitleLabel variation), not the plain body font (1.29).
 	var sub := Label.new()
-	sub.text = "ENCOUNTER %d OF 10.\nPICK A DOOR." % _stop
-	sub.add_theme_font_size_override("font_size", 15)
-	sub.add_theme_color_override("font_color", NeonPalette.current().dim)
-	sub.position = Vector2(66, 238)
+	sub.text = "ENCOUNTER %d OF 10" % _stop
+	sub.theme_type_variation = &"SubtitleLabel"
+	sub.add_theme_font_size_override("font_size", 16)
+	sub.position = Vector2(66, 236)
 	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(sub)
-
-	var loadout := Button.new()
-	loadout.text = "Abilities (%d)" % equipped
-	loadout.position = Vector2(62, 284)
-	loadout.custom_minimum_size = Vector2(190, 44)
-	loadout.add_theme_font_size_override("font_size", 20)
-	loadout.pressed.connect(on_loadout)
-	_stage.add_child(loadout)
 
 
 func _build_tip() -> void:

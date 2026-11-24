@@ -762,7 +762,10 @@ func _fire_ability(ability: AbilityState) -> void:
 		# active half that runs now, and its passive half waits for the trigger.
 		_active_ability = ability
 		if ability.def.passive_trigger == "":
-			EffectInterpreter.execute(ability.def.effects, self, hero, target)
+			# Most start-of-turn passives pay now as well; Face Reader waits for the
+			# next turn start (`proc_on_play`, designer 1.29).
+			if ability.def.proc_on_play:
+				EffectInterpreter.execute(ability.def.effects, self, hero, target)
 		else:
 			EffectInterpreter.execute(ability.def.active_effects, self, hero, target)
 		_active_ability = null

@@ -175,19 +175,19 @@ func test_replace_bonus_swaps_effects() -> void:
 ## Patch 0.113 (designer's note: "Face Reader block gain math looks completely
 ## wrong"): a passive pays on the turn you PLAY it as well as at every round
 ## start after. It used to charge two chips and hand back nothing that turn.
-func test_passive_pays_on_activation_and_every_round_start_after() -> void:
+func test_the_passive_pays_at_every_round_start_after_it_is_played() -> void:
+	# Face Reader no longer pays the turn it is played (designer, 1.29: "should proc
+	# only at the start of the turn"), only from the next turn start on.
 	var sim := _sim(["bouncer", "server"], ["face_reader"])
 	sim.begin_round()
-	var hits := sim.incoming_hit_count()
-	assert_gt(hits, 0)
+	assert_gt(sim.incoming_hit_count(), 0)
 	_fire(sim, 0, [&"club", &"diamond"])
-	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * hits,
-		"2 block per announced hit, paid immediately (sheet 1.26)")
+	assert_eq(sim.hero.block, 0, "nothing the turn it is played")
 	sim.tray.discard_all()
 	sim.end_assignment()
 	sim.begin_round()
 	assert_eq(sim.hero.block, StatusRules.block_gained(2, sim.hero) * sim.incoming_hit_count(),
-		"and again at the next round start")
+		"2 block per announced hit at the next round start")
 
 
 func test_summon_adds_a_new_enemy() -> void:
