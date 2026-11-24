@@ -273,12 +273,61 @@ class OptionsOverlay:
 			card.position = Vector2(left + (card_size.x + gap) * index, top)
 			card.size = card_size
 			add_child(card)
+			# Review hook: CB_DEBUG_LOAN_TIP=N shows option N's keyword bubble as if hovered.
+			if OS.get_environment("CB_DEBUG_LOAN_TIP") == str(index):
+				_show_keyword_tip(card, options[index].get("keywords", []))
+
+
+	var _keyword_tip: PanelContainer = null
+
+
+	## The bubble under an option that explains the keywords it uses (1.28), the
+	## same wording as the ability cards' hover. It never takes the mouse, so it
+	## cannot flicker the hover it belongs to.
+	func _show_keyword_tip(card: Control, keyword_ids: Array) -> void:
+		_hide_keyword_tip()
+		var entries: Array[String] = []
+		for id: Variant in keyword_ids:
+			var keyword := Db.content.get_keyword(StringName(str(id)))
+			if keyword != null:
+				entries.append("%s: %s" % [keyword.name, keyword.text])
+		if entries.is_empty():
+			return
+		_keyword_tip = PanelContainer.new()
+		_keyword_tip.theme_type_variation = &"TooltipPanel"
+		_keyword_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_keyword_tip.z_index = 10
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 6)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_keyword_tip.add_child(box)
+		for text in entries:
+			var label := Label.new()
+			label.text = text
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.custom_minimum_size = Vector2(340, 0)
+			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			label.add_theme_font_size_override("font_size", 17)
+			box.add_child(label)
+		add_child(_keyword_tip)
+		_keyword_tip.position = card.position + Vector2(
+			(card.size.x - 360.0) * 0.5, card.size.y + 12.0)
+
+
+	func _hide_keyword_tip() -> void:
+		if _keyword_tip != null:
+			_keyword_tip.queue_free()
+			_keyword_tip = null
 
 
 	func _option_card(option: Dictionary, index: int) -> Button:
 		var card := Button.new()
 		card.custom_minimum_size = Vector2(380, 250)
 		card.pressed.connect(func() -> void: picked.emit(index))
+		var keyword_ids: Array = option.get("keywords", [])
+		if not keyword_ids.is_empty():
+			card.mouse_entered.connect(func() -> void: _show_keyword_tip(card, keyword_ids))
+			card.mouse_exited.connect(_hide_keyword_tip)
 		var box := VBoxContainer.new()
 		box.set_anchors_preset(Control.PRESET_FULL_RECT)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE

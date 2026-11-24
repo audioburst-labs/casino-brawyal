@@ -58,6 +58,9 @@ class LoanDef:
 	## Sheet v0.122's Notes column: "" offers always, "wounded" hides the loan
 	## while the hero is on full health (a heal you cannot use is not a choice).
 	var requires: String = ""
+	## Keywords the offer uses (Strength, Sturdy): the loan card explains them on
+	## hover, as an ability card does (1.28).
+	var keywords: Array[StringName] = []
 	var reward: Array[Dictionary] = []
 	var penalty: Array[Dictionary] = []
 

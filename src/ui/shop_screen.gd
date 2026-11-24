@@ -225,12 +225,18 @@ func _refresh_offers() -> void:
 	for offer: Dictionary in _stock.abilities:
 		_ability_grid.add_child(_ability_offer(offer))
 
+	# Every sticker tile is the same size with its title on one line, at the one
+	# size the longest title fits (1.28: "Diamond Sticker" used to wrap).
+	var sticker_titles: Array[String] = []
+	for offer: Dictionary in _stock.stickers:
+		sticker_titles.append("%s Sticker" % String(offer.suit).capitalize())
+	var sticker_title_size := _title_size_that_fits(sticker_titles, SMALL_OFFER.x - 40.0)
 	for offer: Dictionary in _stock.stickers:
 		var suit: StringName = offer.suit
 		_sticker_grid.add_child(_offer_tile(
 			"sticker_%s" % suit, "%s Sticker" % String(suit).capitalize(),
 			SuitAssets.suit_texture(suit), int(offer.price), SMALL_OFFER,
-			_buy_sticker.bind(suit)))
+			_buy_sticker.bind(suit), "", sticker_title_size, true))
 
 	for offer: Dictionary in _stock.relics:
 		var relic := Db.content.get_relic(offer.id)
@@ -279,9 +285,23 @@ func _ability_offer(offer: Dictionary) -> Control:
 	return tile
 
 
+## The largest title size, 22 down to 14, at which the widest of `titles` fits
+## `width` on one line in the display face.
+func _title_size_that_fits(titles: Array[String], width: float) -> int:
+	var face: Font = load("res://assets/fonts/AlfaSlabOne-Regular.ttf")
+	for size in range(22, 13, -1):
+		var widest := 0.0
+		for title in titles:
+			widest = maxf(widest, face.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x)
+		if widest <= width:
+			return size
+	return 14
+
+
 ## Everything else on the shelf: an icon, a name and a price button.
 func _offer_tile(key: String, title: String, art: Texture2D, price: int,
-		box: Vector2, on_buy: Callable, blurb := "") -> Control:
+		box: Vector2, on_buy: Callable, blurb := "", title_size := 22,
+		single_line := false) -> Control:
 	var tile := PanelContainer.new()
 	tile.custom_minimum_size = box
 	tile.add_theme_stylebox_override("panel", TierStyle.panel(0))
@@ -306,10 +326,20 @@ func _offer_tile(key: String, title: String, art: Texture2D, price: int,
 	var name_label := Label.new()
 	name_label.text = title
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 22)
-	name_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", title_size)
+	if single_line:
+		# One line at a size that every sibling shares, so no tile in the set
+		# wraps its title and grows (the Diamond Sticker, 1.28).
+		name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		name_label.clip_text = true
+		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	else:
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		# With a blurb the title keeps its own height: the free space is split
+		# between the icon above and the blurb below.
+		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER if blurb != "" \
+			else Control.SIZE_EXPAND_FILL
 	column.add_child(name_label)
 
 	if blurb != "":
@@ -323,7 +353,14 @@ func _offer_tile(key: String, title: String, art: Texture2D, price: int,
 		blurb_label.add_theme_color_override("font_outline_color", Color(0.03, 0.02, 0.06, 0.9))
 		blurb_label.add_theme_constant_override("outline_size", 3)
 		blurb_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		column.add_child(blurb_label)
+		# Centred between the title and the buy button (1.28): its own slot, as
+		# tall as what is left, with the text in the middle of it.
+		blurb_label.custom_minimum_size.x = box.x - 36.0
+		var blurb_slot := CenterContainer.new()
+		blurb_slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		blurb_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blurb_slot.add_child(blurb_label)
+		column.add_child(blurb_slot)
 
 	column.add_child(_price_button(key, price, on_buy))
 	return tile

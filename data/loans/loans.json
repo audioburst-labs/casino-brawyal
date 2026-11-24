@@ -86,6 +86,9 @@
       "turns": 3,
       "reward_text": "Gain 3 Strength.",
       "penalty_text": "In 3 turns, lose 5 Strength.",
+      "keywords": [
+        "strength"
+      ],
       "reward": [
         {
           "op": "apply_status",
@@ -109,6 +112,9 @@
       "turns": 3,
       "reward_text": "Gain 2 Sturdy.",
       "penalty_text": "In 3 turns, lose 4 Sturdy.",
+      "keywords": [
+        "sturdy"
+      ],
       "reward": [
         {
           "op": "apply_status",

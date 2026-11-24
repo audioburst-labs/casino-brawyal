@@ -54,6 +54,9 @@ var _brains: Dictionary = {}        # enemy id -> EnemyBrain
 var _intents: Dictionary = {}       # enemy id -> move Dictionary
 var _intent_ids: Dictionary = {}    # enemy id -> move id (for display refresh)
 var _gift_giver: StringName = &""   # who gave the chip, for the arrival animation
+## Weak stacks the ability now resolving has put on enemies (Slow Playing reads it:
+## Strength follows the Weak the card itself applies, not every Weak on the field).
+var weak_applied := 0
 ## The number of the fight being played, 1 to 10: the loans' "[Encounter Value]".
 var encounter_value := 1
 var _pending_choice: Dictionary = {}
@@ -314,6 +317,7 @@ func _offer_pending_choice() -> bool:
 			pool.remove_at(index)
 			offers.append({
 				"id": String(loan.id), "title": loan.title, "turns": loan.turns,
+				"keywords": loan.keywords.map(func(k: StringName) -> String: return String(k)),
 				"reward_text": loan_text(loan.reward_text, loan.reward),
 				"penalty_text": loan_text(loan.penalty_text, loan.penalty),
 			})
@@ -743,6 +747,7 @@ func _fire_ability(ability: AbilityState) -> void:
 	if ability.def.exclusive:
 		_exclusive_lock = ability
 	var target := targeting.effective_target(enemies)
+	weak_applied = 0
 	emit_event(&"ability_fired", {"ability": ability.def.id, "target": target.id if target else &""})
 	if ability.def.passive:
 		if not passives.has(ability.def):

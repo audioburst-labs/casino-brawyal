@@ -510,6 +510,11 @@ func _parse_loan(item: Dictionary) -> void:
 	loan.requires = str(item.get("requires", ""))
 	if not KNOWN_LOAN_REQUIREMENTS.has(loan.requires):
 		errors.append("loan %s: unknown requires '%s'" % [loan.id, loan.requires])
+	for keyword_id: Variant in item.get("keywords", []):
+		var keyword := StringName(str(keyword_id))
+		if not _keywords.has(keyword):
+			errors.append("loan %s: unknown keyword '%s'" % [loan.id, keyword])
+		loan.keywords.append(keyword)
 	if loan.turns <= 0:
 		errors.append("loan %s: turns must be positive" % loan.id)
 	for effect: Dictionary in item.get("reward", []):

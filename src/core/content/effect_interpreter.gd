@@ -56,13 +56,11 @@ static func execute(effects: Array[Dictionary], sim: CombatSim,
 					{"actor": source.id, "pct": source.damage_bonus_pct})
 			"strength_per_weak":
 				# Slow Playing: "Gain Strength 1 for each Weak on an enemy" (sheet 1.26,
-				# it was Rage before) - counted in STACKS, so Weak 2 on one enemy is
-				# worth Weak 1 on two. Strength is permanent, unlike Rage.
-				var stacks := 0
-				for enemy in sim.enemies:
-					if enemy.is_alive():
-						stacks += enemy.status_stacks(&"weak")
-				var strength := stacks * maxi(1, int(effect.get("amount", 1)))
+				# it was Rage before). Counted in STACKS, and only the Weak THIS card
+				# just applied (1.28): Strength is permanent, so counting every Weak
+				# already on the field snowballed it (2, 5, 9, 14, 20 over five turns)
+				# as the stacks piled up. Weak 2/3/4 by tier is what scales it.
+				var strength := sim.weak_applied * maxi(1, int(effect.get("amount", 1)))
 				if strength > 0:
 					source.apply_status(&"strength", strength)
 					sim.emit_event(&"status_applied",
@@ -329,6 +327,8 @@ static func _op_apply_status(effect: Dictionary, sim: CombatSim,
 			stacks = 1
 		else:
 			recipient.apply_status(status, stacks)
+			if status == &"weak" and not recipient.is_hero:
+				sim.weak_applied += stacks
 		sim.emit_event(&"status_applied",
 			{"actor": recipient.id, "status": status, "stacks": stacks})
 		# Sharp Edge: "when you Mark, also deal X" (sheet v0.122). Only a Mark

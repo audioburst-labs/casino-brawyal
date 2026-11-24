@@ -44,6 +44,10 @@ func build_screen(title: String, background_path: String) -> void:
 	_title_label.text = title
 	_title_label.theme_type_variation = &"TitleLabel"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# A title wider than the column wraps onto a second line. Left alone, its
+	# minimum width pushed the whole column wider than its anchors and everything
+	# under the banner sat off-centre (the victory screen, 1.28).
+	_title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_title_label)
 
 	content = VBoxContainer.new()
