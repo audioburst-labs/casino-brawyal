@@ -57,6 +57,20 @@ static func next_options(db: ContentDB, run: RunState,
 	return options
 
 
+## The pair of types a path offers at `stop` (1-based): the floorplan map draws the
+## whole path, not just the stop the player is on (build 1.29).
+static func pair_at(path: Dictionary, stop: int) -> Array[StringName]:
+	return _types_at(path, stop)
+
+
+## The path with this id, or an empty one.
+static func path_by_id(db: ContentDB, id: StringName) -> Dictionary:
+	for path: Dictionary in db.all_paths():
+		if StringName(str(path.id)) == id:
+			return path
+	return {}
+
+
 ## The encounter types offered at `encounter` (1-based) on `path`.
 static func _types_at(path: Dictionary, encounter: int) -> Array[StringName]:
 	var out: Array[StringName] = []

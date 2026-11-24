@@ -31,9 +31,18 @@ const TYPE_FLAVOR := {
 
 const CARD_SIZE := Vector2(440, 330)
 
+## Build 1.29: the Choice screen is the top-down casino floorplan (`FloorplanMap`).
+## **Set this to false to bring the old screen back** (the encounter cards over the
+## `PathRibbon`, all still below). The git tag `act1-map-ribbon` is the last commit
+## before the floorplan existed.
+const USE_FLOORPLAN := true
+
 
 func _ready() -> void:
 	_debug_standalone_run()
+	if USE_FLOORPLAN:
+		_build_floorplan()
+		return
 	build_screen("Choose Your Path", "res://assets/backgrounds/bg_map.png")
 	add_eyebrow("Encounter %d of 10" % Game.run.encounter_number())
 
@@ -63,6 +72,21 @@ func _ready() -> void:
 	loadout_button.text = "Abilities (%d equipped)" % Game.run.equipped_ids.size()
 	loadout_button.pressed.connect(Game.show_loadout)
 	loadout_row.add_child(loadout_button)
+
+
+## The floorplan version of the screen. The scene still needs an idle-curtain node
+## for the transition curtain to hang on and hide, but drapes over the lobby and the
+## penthouse would spoil the plan, so it is there and fully transparent.
+func _build_floorplan() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	var options := Game.map_options()
+	var curtains := _idle_curtains()
+	curtains.modulate.a = 0.0
+	add_child(curtains)
+	var plan := FloorplanMap.new()
+	add_child(plan)
+	plan.setup(Game.run.history, MapGenerator.path_by_id(Db.content, Game.run.path_id),
+		options, Game.run.equipped_ids.size(), Game.show_loadout)
 
 
 ## The doc's four parts: frame, icon, name, description. Built as a Button
