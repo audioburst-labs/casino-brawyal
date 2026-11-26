@@ -59,13 +59,13 @@ func setup(args: Dictionary) -> void:
 	tiles.alignment = BoxContainer.ALIGNMENT_CENTER
 	tiles.add_theme_constant_override("separation", 28)
 	content.add_child(tiles)
-	tiles.add_child(_coin_tile(coins))
+	tiles.add_child(RewardTiles.coin_tile(coins))
 
 	if args.get("elite", false):
 		var relic := Rewards.random_unowned_relic(Db.content, Game.run, reward_rng)
 		if relic != &"":
 			Game.run.relic_ids.append(relic)
-			tiles.add_child(_relic_tile(relic))
+			tiles.add_child(RewardTiles.relic_tile(relic, "Elite bonus relic"))
 
 	var choices := Rewards.ability_choices(Db.content, Game.run, reward_rng)
 	if not choices.is_empty():
@@ -100,89 +100,6 @@ func setup(args: Dictionary) -> void:
 	skip_box.add_child(hint)
 
 
-## A lit glass tile: the reward's own panel, edged in `edge`.
-func _tile(edge: Color) -> PanelContainer:
-	var tile := PanelContainer.new()
-	var box := StyleBoxFlat.new()
-	box.bg_color = NeonPalette.current().glass
-	box.border_color = edge
-	box.set_border_width_all(2)
-	box.set_corner_radius_all(18)
-	box.content_margin_left = 26
-	box.content_margin_right = 34
-	box.content_margin_top = 12
-	box.content_margin_bottom = 12
-	box.shadow_color = Color(edge, 0.45)
-	box.shadow_size = 16
-	tile.add_theme_stylebox_override("panel", box)
-	return tile
-
-
-func _icon(texture: Texture2D, side: float) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.texture = texture
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(side, side)
-	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	return icon
-
-
-func _caption(text: String, colour: Color) -> Label:
-	var label := Label.new()
-	label.text = text.to_upper()
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", colour)
-	return label
-
-
-func _coin_tile(coins: int) -> Control:
-	var palette := NeonPalette.current()
-	var tile := _tile(palette.tube)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 18)
-	tile.add_child(row)
-	if ResourceLoader.exists("res://assets/icons/coin.png"):
-		row.add_child(_icon(load("res://assets/icons/coin.png"), 72))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", -4)
-	row.add_child(column)
-	column.add_child(_caption("Coins won", palette.dim))
-	var number := Label.new()
-	number.text = "+%d" % coins
-	number.theme_type_variation = &"SubtitleLabel"
-	number.add_theme_font_size_override("font_size", 58)
-	number.add_theme_color_override("font_color", GOLD)
-	column.add_child(number)
-	return tile
-
-
-## The relic an Elite dropped (doc: "Relic (Elite Only)"), with its own art.
-func _relic_tile(relic: StringName) -> Control:
-	var def := Db.content.get_relic(relic)
-	var tile := _tile(GOLD)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 20)
-	tile.add_child(row)
-	row.add_child(_icon(SuitAssets.relic_texture(relic), 96))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 0)
-	row.add_child(column)
-	column.add_child(_caption("Elite bonus relic", GOLD))
-	var name_label := Label.new()
-	name_label.text = def.name
-	name_label.theme_type_variation = &"SubtitleLabel"
-	name_label.add_theme_font_size_override("font_size", 32)
-	column.add_child(name_label)
-	var text := Label.new()
-	text.text = def.description
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(500, 0)
-	text.add_theme_font_size_override("font_size", 21)
-	column.add_child(text)
-	return tile
-
-
 ## "Choose one ability" between two lit rules.
 func _choose_rule() -> Control:
 	var palette := NeonPalette.current()
@@ -210,7 +127,7 @@ func _rule(colour: Color) -> Control:
 
 ## Optional note at the side (designer: keep it): a new ability will open the loadout.
 func _full_hand_note() -> Control:
-	var tile := _tile(GOLD)
+	var tile := RewardTiles.tile(GOLD)
 	tile.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
 	tile.offset_left = -330.0
 	tile.offset_right = -60.0
