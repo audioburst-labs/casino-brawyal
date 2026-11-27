@@ -96,23 +96,24 @@ func test_it_is_still_usable_once_per_fight_and_is_a_passive() -> void:
 		assert_false(_db.get_ability(&"face_reader", tier).proc_on_play, "tier %d" % tier)
 
 
-func test_only_face_reader_waits_for_the_next_turn() -> void:
-	# The note named Face Reader alone. House Edge reads the same ("at the start of
-	# your turn") and keeps paying the turn it is played until the designer says.
+func test_only_face_reader_and_house_edge_wait_for_the_next_turn() -> void:
+	# Face Reader in 1.29, House Edge in 1.30 (designer: "should only mark on turn
+	# start, and not also when used").
 	var waiting: Array[String] = []
 	for id: StringName in _db.all_ability_ids():
 		var def := _db.get_ability(id)
 		if def.passive and def.passive_trigger == "" and not def.proc_on_play:
 			waiting.append(String(id))
-	assert_eq(waiting, ["face_reader"] as Array[String])
+	waiting.sort()
+	assert_eq(waiting, ["face_reader", "house_edge"] as Array[String])
 
 
-func test_house_edge_still_marks_the_turn_it_is_played() -> void:
+func test_house_edge_no_longer_marks_the_turn_it_is_played() -> void:
 	var sim := _sim(["bouncer"], ["house_edge"])
 	sim.begin_round()
 	sim.tray.add(&"spade", 1)
 	assert_true(sim.assign_chip(&"spade", 0, 0))
-	assert_true(sim.enemies[0].has_status(&"mark"), "unchanged")
+	assert_false(sim.enemies[0].has_status(&"mark"), "playing it only switches it on (1.30)")
 
 
 # ---- the images ----

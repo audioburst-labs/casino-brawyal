@@ -409,6 +409,7 @@
       ],
       "per_combat": 1,
       "passive": true,
+      "proc_on_play": false,
       "tiers": [
         {
           "description": "At the start of your turn, Mark 2 random unmarked enemies.",
